@@ -2,18 +2,18 @@
 #include<stdlib.h>
 #include<string.h>
 #define NULL ((void *)0)
- char *getEnv(char *substr, char *str[]){
-	size_t length = strlen(substr);
-	int i =0;
-	while(str[i]!=NULL){
+ char *getEnv(char *substr, char *str[]){ //function returns the string of the environment variable if it is present or 
+	size_t length = strlen(substr);		  //returns the string error
+	int i =0;							  //this function would be easy to break(minly optimized for PS1), we should make it 
+	while(str[i]!=NULL){				  //better later.
 		if(strncmp(substr,str[i],length) == 0)
 			return str[i]+length; 
 		i++;
 	}
 	return "error";
 }
-void setPS1(char *envp[], char *newPrompt){
-	char ps1[] = "PS1=";
+void setPS1(char *envp[], char *newPrompt){//function to setPS1, we should look at writing a standard method to set any 
+	char ps1[] = "PS1=";					//environment variable.
 	int i=0;
 	size_t length = strlen(ps1);
 	while(envp[i]!=NULL){
@@ -22,13 +22,10 @@ void setPS1(char *envp[], char *newPrompt){
 		i++;
 	}
 	if(envp[i]!=NULL){
-		strcat(ps1,newPrompt);
-		envp[i]=(char *)malloc(sizeof(ps1));
-		strcpy(envp[i],ps1);
+		envp[i] = newPrompt;
 	}
-	printf("%s in function %d\n",envp[i],strlen(newPrompt));
 }
-int isinEnv(char *newStr, char *envp[]){
+int isinEnv(char *newStr, char *envp[]){  //not using yet returns 1,0,-1 if the env variable is present, not present, error env variable
 	int indexequal = 0;
 	while(newStr[indexequal]!='\0'){
 		if(newStr[indexequal]=='=')
@@ -46,7 +43,7 @@ int isinEnv(char *newStr, char *envp[]){
 	}
 	return 0;
 }
-void printEnviron(char *envp[]){
+void printEnviron(char *envp[]){  //debug function to show the last few lines of environment variables.
 	int current = 0;
 	while(envp[current]!=NULL){
 		if(current>23)
@@ -57,36 +54,28 @@ void printEnviron(char *envp[]){
 int main(int argc, char *argv[], char *envp[]){
 	int status,i=0,j=0;
 	pid_t child;
-	
 	char buffer[200];
-	//char **envpp = envp;
-	//int death;
-	//int a = sizeof(i);
-	
-		char ps1[] = "PS1=prompt>>";
-	
-		while(envp[i]!=NULL){
-			i++;
-		}
-		char *dupenvp[i+2];
-		while(j!=i){
-			dupenvp[j] = envp[j];
-			j++;
-		}
-		dupenvp[j] = (char *)ps1;
-		dupenvp[j+1] = NULL;
-		i=0;
-		//*envpp = (char *)dupenvp;
-	
+	char ps1[] = "PS1=prompt>>";
+	while(envp[i]!=NULL){
+		i++;
+	}
+	char *dupenvp[i+2];
+	while(j!=i){
+		dupenvp[j] = envp[j];
+		j++;
+	}
+	dupenvp[j] = (char *)ps1;
+	dupenvp[j+1] = NULL;
+	i=0;
 	while(1){
 		char *prompt = getEnv("PS1=", dupenvp);
 		printf("%s", prompt);
 		scanf("%s",buffer);
 		if(strncmp("PS(",buffer,3)==0){
-			//printf("%s",buffer+3);
-			
-			setPS1(dupenvp,buffer+3);
-			printEnviron(dupenvp);
+			const  char*tempbuffer = buffer+3;
+			char temp[205] = "PS1=";
+			strcat(temp,tempbuffer);
+			setPS1(dupenvp,temp);
 		}
 		else if(strncmp("exit", buffer,4)==0){
 			break;
@@ -95,16 +84,11 @@ int main(int argc, char *argv[], char *envp[]){
 		child=fork();
 		if(child>=0){
 			if(child==0){
-				//printf("child process\n");
 				execve(buffer,NULL,NULL);
 				return 0;
-				//printf("error\n");
 			}
 			else {
-				//printf("parent process started\n");
-				waitpid(-1,&status,0);
-				//printf("child with ID %d done\n",death);
-				//printf("parent done\n");	
+				waitpid(-1,&status,0);	
 			}
 		}		
 		
