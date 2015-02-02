@@ -84,7 +84,31 @@ int main(int argc, char *argv[], char *envp[]){
 		child=fork();
 		if(child>=0){
 			if(child==0){
-				execve(buffer,NULL,NULL);
+				
+				char pathPrefix[250];
+				char *current, *next;
+				char *newargs[] = {"bs","-l",NULL}; // this is what Input has to change.
+				execve(newargs[0],newargs,NULL);
+				char *path = getEnv("PATH=",dupenvp);
+				current = path;
+				//printf("%s",path);
+				while(1){
+					next =strchr(current, ':'); 
+					if(next!=NULL){
+						strcpybtwptrs(current,next,pathPrefix);
+						strcat(pathPrefix,"/");
+						strcat(pathPrefix, newargs[0]);
+						//printf("%s\n",pathPrefix); //debug printf
+						execve(pathPrefix,newargs,NULL);
+						current=next+1;
+					}
+					else{
+						printf("command not found\n");
+						break;
+					}
+				}
+				
+				//printf("error\n");
 				return 0;
 			}
 			else {
