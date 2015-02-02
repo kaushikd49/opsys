@@ -48,7 +48,6 @@ void take_action(char ** tokens) {
 	}
 }
 
-// scanf can allocae memotry see tat..free has to be called later
 int main(int argc, char* argv[], char* envp[]) {
 
 	char input[ARG_LIMIT];
