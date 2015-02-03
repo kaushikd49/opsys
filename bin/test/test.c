@@ -10,7 +10,21 @@
 			return str[i]+length; 
 		i++;
 	}
-	return "error";
+	return NULL;
+}
+//purpose of this is usually for changing the path variable.
+int getEnvIndex(char *substr, char *str[]){
+	int i = 0, indexequal = 0;
+	while(substr[indexequal]!='\0' && substr[indexequal]!='='){
+		indexequal++;
+	}
+	while(str[i]!=NULL){
+		if(strncmp(substr,str[i],indexequal+1) == 0){
+			return i;
+		}
+		i++;
+	}
+	return -1;
 }
 void setPS1(char *envp[], char *newPrompt){//function to setPS1, we should look at writing a standard method to set any 
 	char ps1[] = "PS1=";					//environment variable.
@@ -27,18 +41,15 @@ void setPS1(char *envp[], char *newPrompt){//function to setPS1, we should look 
 }
 int isinEnv(char *newStr, char *envp[]){  //not using yet returns 1,0,-1 if the env variable is present, not present, error env variable
 	int indexequal = 0;
-	while(newStr[indexequal]!='\0'){
-		if(newStr[indexequal]=='=')
-			break;
+	while(newStr[indexequal]!='\0' && newStr[indexequal]!='='){
 		indexequal++;
-	}
-	if(newStr[indexequal]=='\0'){
-		return -1;
 	}
 	int current = 0;
 	while(envp[current] !=NULL){
-		if(strncmp(newStr, envp[current],indexequal+1))
+		if(strncmp(newStr, envp[current],indexequal+1)==0){
 			return 1;
+			
+		}
 		current++;
 	}
 	return 0;
@@ -51,34 +62,70 @@ void printEnviron(char *envp[]){  //debug function to show the last few lines of
 		current++;
 	}
 }
+char **setEnv(char *newVar, char *envpp[]){
+	if(isinEnv(newVar, envpp)){
+		int index = getEnvIndex(newVar, envpp);
+		printf("update variable %s\n", newVar);
+		if(index!=-1)
+			envpp[index] = newVar;
+		return envpp;
+	}
+	else{
+		printf("Initialize variable %s\n", newVar);
+		int i=0,j=0;
+		while(envpp[i]!=NULL)
+			i++;
+		size_t newSize = sizeof(char *) * i + 2;
+		char **dupenvp = (char **)malloc(newSize);
+		while(j!=i){
+			dupenvp[j] = (char *)envpp[j];
+			j++;
+		}
+		dupenvp[j] = (char *)newVar;
+		dupenvp[j+1] = NULL;
+		//printf("hello");
+		//printEnviron(dupenvp);
+		return dupenvp;
+		
+	
+	
+	}
+}
 int main(int argc, char *argv[], char *envp[]){
-	int status,i=0,j=0;
+	int status;
 	pid_t child;
 	char buffer[200];
 	char ps1[] = "PS1=prompt>>";
-	while(envp[i]!=NULL){
-		i++;
-	}
-	char *dupenvp[i+2];
-	while(j!=i){
-		dupenvp[j] = envp[j];
-		j++;
-	}
-	dupenvp[j] = (char *)ps1;
-	dupenvp[j+1] = NULL;
-	i=0;
+	char **envpp = envp;
+	envpp = setEnv(ps1,envpp);
 	while(1){
-		char *prompt = getEnv("PS1=", dupenvp);
+		char *prompt = getEnv("PS1=", envpp);
 		printf("%s", prompt);
 		scanf("%s",buffer);
 		if(strncmp("PS(",buffer,3)==0){
 			const  char*tempbuffer = buffer+3;
 			char temp[205] = "PS1=";
 			strcat(temp,tempbuffer);
-			setPS1(dupenvp,temp);
+			envpp = setEnv(temp,envpp);
 		}
 		else if(strncmp("exit", buffer,4)==0){
 			break;
+		}
+		else if(strncmp("setenv",buffer,6)==0){
+			int size=strlen("PS1") + strlen("helloworld>>")+strlen("=")+1;
+			char *newStr = (char *)malloc(size * sizeof(char));
+			strcpy(newStr,"PS1");
+			strcat(newStr,"=");
+			strcat(newStr,"helloworld>>");
+			envpp = setEnv(newStr,envpp);
+		}
+		else if(strncmp("getenv", buffer, 6)==0){
+			char *getenvOutput = getEnv("PS1", envpp);
+			if(getenvOutput!=NULL){
+				printf("%s\n", getenvOutput+1);
+			}
+			else
+				printf("\n");
 		}
 		else{
 		child=fork();
@@ -87,9 +134,9 @@ int main(int argc, char *argv[], char *envp[]){
 				
 				char pathPrefix[250];
 				char *current, *next;
-				char *newargs[] = {"bs","-l",NULL}; // this is what Input has to change.
+				char *newargs[] = {"echo","$PATH",NULL}; // this is what Input has to change.
 				execve(newargs[0],newargs,NULL);
-				char *path = getEnv("PATH=",dupenvp);
+				char *path = getEnv("PATH=",envpp);
 				current = path;
 				//printf("%s",path);
 				while(1){
