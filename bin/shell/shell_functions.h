@@ -117,3 +117,96 @@ char **advance_tokenize(char *input, char delim, char fieldEncloser) {
 	tokens[j] = NULL; 	//sentinel
 	return tokens;
 }
+
+
+
+// Imported below from Muthukumar's test.c
+
+char *getEnv(char *substr, char *str[]) { //function returns the string of the environment variable if it is present or
+	size_t length = strlen(substr);		  //returns the string error
+	int i = 0;//this function would be easy to break(minly optimized for PS1), we should make it
+	while (str[i] != NULL) {				  //better later.
+		if (strncmp(substr, str[i], length) == 0)
+			return str[i] + length;
+		i++;
+	}
+	return NULL;
+}
+//purpose of this is usually for changing the path variable.
+int getEnvIndex(char *substr, char *str[]) {
+	int i = 0, indexequal = 0;
+	while (substr[indexequal] != '\0' && substr[indexequal] != '=') {
+		indexequal++;
+	}
+	while (str[i] != NULL) {
+		if (strncmp(substr, str[i], indexequal + 1) == 0) {
+			return i;
+		}
+		i++;
+	}
+	return -1;
+}
+void setPS1(char *envp[], char *newPrompt) {//function to setPS1, we should look at writing a standard method to set any
+	char ps1[] = "PS1=";					//environment variable.
+	int i = 0;
+	size_t length = strlen(ps1);
+	while (envp[i] != NULL) {
+		if (strncmp(ps1, envp[i], length) == 0)
+			break;
+		i++;
+	}
+	if (envp[i] != NULL) {
+		envp[i] = newPrompt;
+	}
+}
+int isinEnv(char *newStr, char *envp[]) { //not using yet returns 1,0,-1 if the env variable is present, not present, error env variable
+	int indexequal = 0;
+	while (newStr[indexequal] != '\0' && newStr[indexequal] != '=') {
+		indexequal++;
+	}
+	int current = 0;
+	while (envp[current] != NULL) {
+		if (strncmp(newStr, envp[current], indexequal + 1) == 0) {
+			return 1;
+
+		}
+		current++;
+	}
+	return 0;
+}
+void printEnviron(char *envp[]) { //debug function to show the last few lines of environment variables.
+	int current = 0;
+	while (envp[current] != NULL) {
+		if (current > 23)
+			printf("\n%s\n", envp[current]);
+		current++;
+	}
+}
+char **setEnv(char *newVar, char *envpp[]) {
+	if (isinEnv(newVar, envpp)) {
+		int index = getEnvIndex(newVar, envpp);
+		printf("update variable %s\n", newVar);
+		if (index != -1)
+			envpp[index] = newVar;
+		return envpp;
+	} else {
+		printf("Initialize variable %s\n", newVar);
+		int i = 0, j = 0;
+		while (envpp[i] != NULL)
+			i++;
+		size_t newSize = sizeof(char *) * i + 2;
+		char **dupenvp = (char **) malloc(newSize);
+		while (j != i) {
+			dupenvp[j] = (char *) envpp[j];
+			j++;
+		}
+		dupenvp[j] = (char *) newVar;
+		dupenvp[j + 1] = NULL;
+		//printf("hello");
+		//printEnviron(dupenvp);
+		return dupenvp;
+
+	}
+}
+
+
