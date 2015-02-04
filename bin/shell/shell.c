@@ -12,6 +12,7 @@ void handleChildExec(char **tokens, char** envpp) {
 			char pathPrefix[250];
 			char *current, *next;
 			// this is what Input has to change.execve(newargs[0], newargs, NULL);
+			execve(tokens[0], tokens, envpp);
 			char* path = getEnv("PATH=", envpp);
 			current = path;
 			//printf("%s",path);
@@ -81,9 +82,22 @@ char ** take_action(char** tokens, char *envpp[]) {
 //todo : whitespave checks
 int main(int argc, char* argv[], char* envpp[]) {
 	char input[ARG_LIMIT];
+	int flag = 1;
+	if(argv[1] !=NULL){ //todo: check for size greater than ARG_LIMIT
+		int fileHandle = open(argv[1],O_RDONLY);
+		do{
+			flag = read_line(input,fileHandle);
+
+			char **tokens = advance_tokenize(input, ' ', '"');
+			if(tokens[0]==NULL || strncmp(tokens[0],"#",1)==0) //todo: check for comments in the middle
+				continue;
+			envpp = take_action(tokens,envpp);
+		}while(flag==1);
+		close(fileHandle);
+	}
+	else{
 	char ps1[] = "PS1=prompt>>";
 	envpp = setEnv(ps1, envpp);
-
 	while (1) {
 		printf("%s", getEnv("PS1=", envpp));
 		scanf(" %1000[^\n]", input);
@@ -95,6 +109,6 @@ int main(int argc, char* argv[], char* envpp[]) {
 		envpp = take_action(tokens, envpp);
 		free(tokens);
 	}
-
+	}
 	return 0;
 }

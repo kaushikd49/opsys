@@ -206,4 +206,15 @@ char **setEnv(char *newVar, char *envpp[]) {
 	}
 }
 
-
+int read_line(char *buffer, int FD){
+	int i=0,flag = 1, fileRet;
+	fileRet=read(FD,buffer+i,1);
+	while(fileRet!=0 && *(buffer+i)!='\n'){
+		i++;
+		fileRet = read(FD,buffer+i,1);
+	}
+	if(fileRet == 0)
+		flag = 0;
+	*(buffer+i)='\0';
+	return flag;
+}
