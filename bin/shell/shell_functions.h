@@ -71,11 +71,11 @@ void captureToken(char **tokens, char *input, int *endIdx, int *startIdx,
 	*endIdx = -1;
 }
 
-void take_action(char ** tokens) {
+void print_tokens(char ** tokens) {
 	int i = 0;
 	printf("received tokens\n");
 	while (tokens[i] != NULL) {
-		printf("%s\n", tokens[i]);
+		printf("%s_", tokens[i]);
 		i++;
 	}
 }
@@ -194,7 +194,7 @@ char **setEnv(char *newVar, char *envpp[]) {
 		int i = 0, j = 0;
 		while (envpp[i] != NULL)
 			i++;
-		size_t newSize = sizeof(char *) * i + 2;
+		size_t newSize = sizeof(char *) * (i + 2);
 		char **dupenvp = (char **) malloc(newSize);
 		while (j != i) {
 			dupenvp[j] = (char *) envpp[j];
@@ -202,10 +202,7 @@ char **setEnv(char *newVar, char *envpp[]) {
 		}
 		dupenvp[j] = (char *) newVar;
 		dupenvp[j + 1] = NULL;
-		//printf("hello");
-		//printEnviron(dupenvp);
 		return dupenvp;
-
 	}
 }
 
