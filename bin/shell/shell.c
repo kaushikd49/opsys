@@ -65,7 +65,7 @@ char ** take_action(char** tokens, char *envpp[]) {
 	} else if (strcmp("getenv", cmd) == 0) {
 		handleGetenv(tokens, envpp);
 	} else if (strcmp("cd", cmd) == 0) {
-		chdir(tokens[1]);
+		chdir(tokens[1]); //todo: return status
 	} else {
 		handleChildExec(tokens, envpp);
 	}
