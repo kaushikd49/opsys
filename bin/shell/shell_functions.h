@@ -3,9 +3,6 @@
 //#include<string.h>
 #define NULL ((void *)0)
 
-
-
-
 // Returns num of delims just based on their presence.
 // Not escaping aware, which is fine for now as this method
 // is used only to find the size of char ** tokens[] and the
@@ -73,11 +70,12 @@ void captureToken(char **tokens, char *input, int *endIdx, int *startIdx,
 
 void print_tokens(char ** tokens) {
 	int i = 0;
-	printf("received tokens\n");
+	printf("received tokens: ");
 	while (tokens[i] != NULL) {
-		printf("%s_", tokens[i]);
+		printf("%d) %s ", (i + 1), tokens[i]);
 		i++;
 	}
+	printf("\n");
 }
 
 char **advance_tokenize(char *input, char delim, char fieldEncloser) {
@@ -117,8 +115,6 @@ char **advance_tokenize(char *input, char delim, char fieldEncloser) {
 	tokens[j] = NULL; 	//sentinel
 	return tokens;
 }
-
-
 
 // Imported below from Muthukumar's test.c
 
@@ -206,15 +202,15 @@ char **setEnv(char *newVar, char *envpp[]) {
 	}
 }
 
-int read_line(char *buffer, int FD){
-	int i=0,flag = 1, fileRet;
-	fileRet=read(FD,buffer+i,1);
-	while(fileRet!=0 && *(buffer+i)!='\n'){
+int read_line(char *buffer, int FD) {
+	int i = 0, flag = 1, fileRet;
+	fileRet = read(FD, buffer + i, 1);
+	while (fileRet != 0 && *(buffer + i) != '\n') {
 		i++;
-		fileRet = read(FD,buffer+i,1);
+		fileRet = read(FD, buffer + i, 1);
 	}
-	if(fileRet == 0)
+	if (fileRet == 0)
 		flag = 0;
-	*(buffer+i)='\0';
+	*(buffer + i) = '\0';
 	return flag;
 }
