@@ -54,5 +54,6 @@ struct dirent
 void *opendir(const char *name);
 struct dirent *readdir(void *dir);
 int closedir(void *dir);
-
+//string functions
+size_t strlen(char *str);
 #endif
