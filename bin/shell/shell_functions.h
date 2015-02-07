@@ -173,20 +173,19 @@ int isinEnv(char *newStr, char *envp[]) { //not using yet returns 1,0,-1 if the 
 void printEnviron(char *envp[]) { //debug function to show the last few lines of environment variables.
 	int current = 0;
 	while (envp[current] != NULL) {
-		if (current > 23)
-			printf("\n%s\n", envp[current]);
+		printf("\n%s\n", envp[current]);
 		current++;
 	}
 }
 char **setEnv(char *newVar, char *envpp[]) {
 	if (isinEnv(newVar, envpp)) {
 		int index = getEnvIndex(newVar, envpp);
-		printf("update variable %s\n", newVar);
+		//printf("update variable %s\n", newVar);
 		if (index != -1)
 			envpp[index] = newVar;
 		return envpp;
 	} else {
-		printf("Initialize variable %s\n", newVar);
+		//printf("Initialize variable %s\n", newVar);
 		int i = 0, j = 0;
 		while (envpp[i] != NULL)
 			i++;
@@ -200,8 +199,13 @@ char **setEnv(char *newVar, char *envpp[]) {
 		dupenvp[j + 1] = NULL;
 		return dupenvp;
 	}
+	return envpp;
 }
-
+/*
+ * tested for no extra line in the end,
+ *  empty file,no whitespace in last line
+ *
+ */
 int read_line(char *buffer, int FD) {
 	int i = 0, flag = 1, fileRet;
 	fileRet = read(FD, buffer + i, 1);
