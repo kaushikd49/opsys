@@ -202,7 +202,6 @@ void pipetest(char *envpp[]) {
 	char *tokens2[] = { { "less" }, NULL };
 	int filedes[2];
 	int status = pipe(filedes);
-	int read_end = filedes[0], write_end = filedes[1];
 
 	if (status == 0) {
 		// write channel of filedes pointed to stdout of 1st child.
