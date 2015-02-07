@@ -4,33 +4,66 @@
 #include "shell_functions.h"
 #define ARG_LIMIT 1000
 
+void do_execute(char** tokens, char** envpp) {
+	char pathPrefix[250];
+	char *current, *next;
+	// this is what Input has to change.execve(newargs[0], newargs, NULL);
+	execve(tokens[0], tokens, envpp);
+	char* path = getEnv("PATH=", envpp);
+	current = path;
+	//printf("%s",path);
+	while (1) {
+		next = strchr(current, ':');
+		if (next != NULL) {
+			strcpybtwptrs(current, next, pathPrefix);
+			strcat(pathPrefix, "/");
+			strcat(pathPrefix, tokens[0]);
+			execve(pathPrefix, tokens, envpp);
+			current = next + 1;
+		} else {
+			printf("command not found\n");
+			break;
+		}
+	}
+}
+
 void handleChildExec(char **tokens, char** envpp) {
 	int status;
 	pid_t child = fork();
 	if (child >= 0) {
 		if (child == 0) {
-			char pathPrefix[250];
-			char *current, *next;
-			// this is what Input has to change.execve(newargs[0], newargs, NULL);
-			execve(tokens[0], tokens, envpp);
-			char* path = getEnv("PATH=", envpp);
-			current = path;
-			//printf("%s",path);
-			while (1) {
-				next = strchr(current, ':');
-				if (next != NULL) {
-					strcpybtwptrs(current, next, pathPrefix);
-					strcat(pathPrefix, "/");
-					strcat(pathPrefix, tokens[0]);
-					execve(pathPrefix, tokens, envpp);
-					current = next + 1;
-				} else {
-					printf("command not found\n");
-					break;
-				}
-			}
+			do_execute(tokens, envpp);
 		} else {
 			waitpid(-1, &status, 0);
+		}
+	} else {
+		printf("internal error unsuccessful fork");
+		exit(0);
+	}
+}
+
+void close_fds(int fds[]) {
+	// close both file descriptors
+	close(fds[0]);
+	close(fds[1]);
+}
+
+void handleChildPipeExec(char **tokens, char** envpp, int fds[], int fd_to) {
+	int fd_from = fds[fd_to];
+	pid_t child = fork();
+	if (child >= 0) {
+		if (child == 0) {
+			printf("copying fd from %d to %d", fd_from, fd_to);
+			// fd_from: fd that needs to be dup2'ed to fd_to
+			dup2(fd_from, fd_to);
+			// close both file descriptors
+//			close_fds(fds);
+			close(fds[1^fd_to]);
+			do_execute(tokens, envpp);
+		} else {
+			// todo: check why no wait has t be done in this case
+//			int status;
+//			waitpid(-1, &status, 0);
 		}
 	} else {
 		printf("internal error unsuccessful fork");
@@ -115,6 +148,27 @@ char ** process_main(char input[ARG_LIMIT], char* argv[], char* envpp[]) {
 	return envpp;
 }
 
+void pipetest(char *envpp[]) {
+	char *tokens1[] = { { "ps" }, NULL };
+	char *tokens2[] = { { "less"}, NULL };
+	int filedes[2];
+	int status = pipe(filedes);
+	int read_end = filedes[0], write_end = filedes[1];
+
+	if (status == 0) {
+		// write channel of filedes pointed to stdout of 1st child.
+		handleChildPipeExec(tokens1, envpp, filedes, 1);
+		// read channel of filedes pointed to stdin of 2nd child.
+		handleChildPipeExec(tokens2, envpp, filedes, 0);
+		int child_status;
+		waitpid(-1, &child_status, 0);
+		printf("status was %d", child_status);
+	} else {
+		printf("error while piping");
+	}
+	close_fds(filedes);
+}
+
 //Support changing current directory ( cd ) -
 //Execute binaries interactively
 //Execute scripts
@@ -123,7 +177,9 @@ char ** process_main(char input[ARG_LIMIT], char* argv[], char* envpp[]) {
 
 //todo : whitespave checks
 int main(int argc, char* argv[], char* envpp[]) {
-	char input[ARG_LIMIT];
-	envpp = process_main(input, argv, envpp);
+//	char input[ARG_LIMIT];
+//	envpp = process_main(input, argv, envpp);
+	pipetest(envpp);
 	return 0;
 }
+
