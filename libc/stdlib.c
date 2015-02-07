@@ -59,3 +59,12 @@ int scanf(const char *format, ...){
 
 void free(void *ptr){
 }
+
+int dup2(int oldfd, int newfd){
+	return 0;
+}
+
+int pipe(int pipefd[2]){
+	return 0;
+}
+

@@ -198,23 +198,23 @@ char ** process_main(int argc, char* argv[], char* envpp[]) {
 }
 
 void pipetest(char *envpp[]) {
-	char *tokens1[] = { { "ps" }, NULL };
-	char *tokens2[] = { { "less" }, NULL };
-	int filedes[2];
-	int status = pipe(filedes);
-
-	if (status == 0) {
-		// write channel of filedes pointed to stdout of 1st child.
-		handleChildPipeExec(tokens1, envpp, filedes, 1);
-		// read channel of filedes pointed to stdin of 2nd child.
-		handleChildPipeExec(tokens2, envpp, filedes, 0);
-		int child_status;
-		waitpid(-1, &child_status, 0);
-		printf("status was %d", child_status);
-	} else {
-		printf("error while piping");
-	}
-	close_fds(filedes);
+//	char *tokens1[] = { { "ps" }, NULL };
+//	char *tokens2[] = { { "less" }, NULL };
+//	int filedes[2];
+//	int status = pipe(filedes);
+//
+//	if (status == 0) {
+//		// write channel of filedes pointed to stdout of 1st child.
+//		handleChildPipeExec(tokens1, envpp, filedes, 1);
+//		// read channel of filedes pointed to stdin of 2nd child.
+//		handleChildPipeExec(tokens2, envpp, filedes, 0);
+//		int child_status;
+//		waitpid(-1, &child_status, 0);
+//		printf("status was %d", child_status);
+//	} else {
+//		printf("error while piping");
+//	}
+//	close_fds(filedes);
 }
 
 //Support changing current directory ( cd ) -
