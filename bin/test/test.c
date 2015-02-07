@@ -1,7 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#define NULL ((void *)0)
+//#define NULL ((void *)0)
 char *getEnv(char *substr, char *str[]) { //function returns the string of the environment variable if it is present or
 	size_t length = strlen(substr);		  //returns the string error
 	int i = 0;//this function would be easy to break(minly optimized for PS1), we should make it
