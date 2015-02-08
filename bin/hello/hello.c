@@ -19,6 +19,26 @@ int main(int argc, char* argv[], char* envp[]) {
 			int i =1024244;
 			char *str = "hello child";
 			printf("inside parent(s) %d process %s\n",i,str);
+			//void *ptr = NULL;
+			int *ptr = (int *)malloc(sizeof(int)*10);
+			char *ptr1 = malloc(sizeof(char)*4);
+			for(i=0;i<10;i++)
+				ptr[i]=i;
+			*ptr1 ='a';
+			*(ptr1+1) = 'b';
+			*(ptr1+2) = 'c';
+			*(ptr1+3) = '\0';
+			/*
+			for(i=0;i<4;i++)
+				printf("%d\t",ptr[i]);
+			printf("\n%s", ptr1);
+			*/
+			free(ptr);
+			int *ptr3 = (int *)malloc(sizeof(int)*5);
+			ptr3[0] = 33;
+			/*
+			printf("\nptr3:%d\n",ptr3[0]);
+			*/
 			exit(0);
 		}
 	}

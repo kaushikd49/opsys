@@ -5,17 +5,35 @@
 #include <sys/syscall.h>
 typedef uint64_t size_t;
 //typedef int32_t pid_t;
+/*
+static __inline uint64_t syscall_n(int formatc,format,...){
+	const char *format;
+	int i=0;
+	for(for i=0; i<formatc; i++){
+
+	}
+}*/
 static __inline uint64_t syscall_0(uint64_t n) {
 	uint64_t result;
 	__asm__ __volatile(
+			"xor %%rbx, %%rbx\n\t"
 			"syscall"
 			:"=a"(result)
 			:"0"(n)
-			:
+			:"rbx"
 			);
 	return result;
 }
 
+static __inline uint64_t syscall_1_p(uint64_t n, uint64_t size) {
+	uint64_t result;
+	__asm__ __volatile(
+		//"xor %%rbx, %%rbx\n\t"
+		"syscall"
+		:"=a"(result)
+		:"0"(n),"D"(size));
+	return result;
+}
 static __inline uint64_t syscall_1(uint64_t n, uint64_t a1) {
 	uint64_t result;
 	__asm__ __volatile(
@@ -37,7 +55,7 @@ static __inline uint64_t syscall_3(uint64_t n, uint64_t a1, uint64_t a2, uint64_
 				"syscall"
 				:"=a" (result)\
 				:"0"(n), "D"(a1), "S"(a2), "d"(a3));
-	return 0;
+	return result;
 }
 static __inline pid_t syscall_4_wait(uint64_t n, uint64_t a1, int *a2, int a3) {
 	uint64_t result;
@@ -46,14 +64,14 @@ static __inline pid_t syscall_4_wait(uint64_t n, uint64_t a1, int *a2, int a3) {
 				"syscall"
 				:"=a" (result)\
 				:"0"(n), "D"(a1), "S"(a2), "d"(a3));
-	return 0;
+	return result;
 }
 static __inline size_t syscall_4_write(uint64_t n,int a1, const void *a2, size_t a3){
 	uint64_t result;
 	__asm__ __volatile__ (
-														"syscall"
-														:"=a" (result)
-														:"0"(n), "D"(a1),"S"(a2),"d"(a3));
+				"syscall"
+				:"=a" (result)
+				:"0"(n), "D"(a1),"S"(a2),"d"(a3));
 	return result;
 }
 #endif
