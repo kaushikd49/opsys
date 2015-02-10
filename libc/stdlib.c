@@ -189,7 +189,8 @@ pid_t fork(void) {
 	return result;
 }
 int execve(const char *filename, char * const argv[], char * const envp[]) {
-	return 0;
+	return syscall_3(SYS_execve, (uint64_t) filename, (uint64_t) argv,
+			(uint64_t) envp);
 }
 
 char *strchr(const char *s, int c) {
@@ -203,6 +204,14 @@ char *strcat(char *dest, const char *src) {
 pid_t waitpid(pid_t pid, int *stat_loc, int options) {
 	//struct ruseage info;
 	return syscall_4_wait(SYS_wait4, pid, stat_loc, options);
+}
+
+pid_t getppid(void) {
+	return syscall_0(SYS_getppid);
+}
+
+pid_t getpid(void) {
+	return syscall_0(SYS_getpid);
 }
 
 int chdir(const char* path) {
