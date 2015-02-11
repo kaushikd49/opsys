@@ -134,7 +134,7 @@ void *malloc(uint64_t size){
 		struct blockHeader *metaData = (struct blockHeader *)loc;
 		metaData->size = memSize;
 		metaData->size=(metaData->size)|1;
-		void *returnAddress = (void *)(loc+sizeof(struct blockHeader));
+		void *returnAddress = (void *)((uint64_t)loc+sizeof(struct blockHeader));
 		printAllocmemory(head);
 		return returnAddress;
 	}
