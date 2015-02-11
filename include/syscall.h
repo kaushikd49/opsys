@@ -46,8 +46,16 @@ static __inline uint64_t syscall_1(uint64_t n, uint64_t a1) {
 	return result;
 }
 
-static __inline uint64_t syscall_2(uint64_t n, uint64_t a1, uint64_t a2) {
-	return 0;
+//todo:check if works
+static __inline uint64_t syscall_2(uint64_t n, const void *a1, int a2) {
+	uint64_t result;
+	__asm__ __volatile__(
+			"movq $0,%%rcx\n\t"
+			"syscall"
+			:"=a" (result)
+			:"0"(n), "D"(a1), "S"(a2));
+	return result;
+
 }
 
 // changed constraint to 'r' to make this method generic

@@ -6,6 +6,7 @@
 #define ALIGNMENT 16
 //typedef uint64_t size_t;
 //typedef int32_t pid_t;
+
 struct blockHeader {
 	uint64_t size;
 	struct blockHeader *next;
@@ -175,12 +176,14 @@ size_t strncmp(char *string1, char *string2, int n) {
 	return 0;
 }
 
-size_t open(char *filename, int access, int permission) {
-	return 0;
+//todo: open not working
+size_t open(char *filename, int permission) {
+	return syscall_2(SYS_open, filename, permission);
 }
 
 size_t read(size_t handle, void *buffer, size_t nbyte) {
-	return 0;
+	return syscall_3(SYS_read, (uint64_t) handle, (uint64_t) buffer,
+			(uint64_t) nbyte);
 }
 
 pid_t fork(void) {
@@ -215,11 +218,11 @@ pid_t getpid(void) {
 }
 
 int chdir(const char* path) {
-	return 0;
+	return syscall_1(SYS_chdir, (uint64_t) path);
 }
 
 int close(int handle) {
-	return 0;
+	return syscall_1(SYS_close, (uint64_t) handle);
 }
 
 int scanf(const char *format, ...) {
