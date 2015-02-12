@@ -12,6 +12,12 @@ struct blockHeader {
 	struct blockHeader *next;
 
 };
+
+ssize_t read(int fd, void *buf, size_t count) {
+	size_t size = syscall_4_write(SYS_read, fd, buf, count);
+	return size;
+}
+
 size_t write(int fd, const void *buf, size_t count) {
 	/*
 	 __asm__ __volatile__ (
@@ -92,6 +98,73 @@ int printf(const char *format, ...) {
 	return printed;
 }
 
+int is_digit(char c) {
+	int ascii = c - '0';
+	return (ascii >= 0 && ascii <= 9);
+}
+
+int atoi(char buffer[], char* s, char * e) {
+	char *temp = (e - 1);
+	if (*s == *e)
+		return 0;
+	int sum = 0, pow = 1;
+	while ((temp + 1) != s) {
+		char c = *temp;
+		sum += ((c - '0') * pow);
+		pow *= 10;
+		temp--;
+	}
+	return sum;
+}
+
+int scanf(const char *format, ...) {
+	int scanned = 0;
+	int limit = 1000;
+// static since scanf unread input across calls
+	static char buffer[1000];
+	static char *buffer_ptr = buffer;
+
+	read(0, buffer, limit);
+
+	va_list val;
+	va_start(val, format);
+	while (*format) {
+		if (*format == '%') {
+			format++;
+			switch (*format) {
+			case 'd':
+				format++;
+				scanned++;
+				char* temp = buffer_ptr;
+				while (buffer_ptr && is_digit(*buffer_ptr)) {
+					buffer_ptr++;
+				}
+				int *int_ptr = va_arg(val, int *);
+				*int_ptr = atoi(buffer, temp, buffer_ptr);
+				break;
+			case 's':
+				format++;
+				scanned++;
+				break;
+			case 'x':
+				format++;
+				scanned++;
+				break;
+			case 'c':
+				format++;
+				scanned++;
+				break;
+			default:
+				break;
+			}
+		} else {
+			return 0;
+		}
+	}
+	va_end(val);
+	return scanned;
+}
+
 uint64_t get_brk(uint64_t size) {
 	return syscall_1_p(SYS_brk, size);
 
@@ -127,7 +200,7 @@ void *malloc(uint64_t size) {
 	static struct blockHeader *tail = NULL;
 	uint64_t memSize = (size + sizeof(struct blockHeader) + (ALIGNMENT - 1))
 			& ~(ALIGNMENT - 1); //cracking the coding interview: page 247
-	//best fit algorithm to use the empty blocks in the middle of the heap
+//best fit algorithm to use the empty blocks in the middle of the heap
 	void *loc = findBest(head, memSize);
 	if (loc != NULL) {
 		struct blockHeader *metaData = (struct blockHeader *) loc;
@@ -137,16 +210,16 @@ void *malloc(uint64_t size) {
 		printAllocmemory(head);
 		return returnAddress;
 	}
-	//end of best fit
+//end of best fit
 
 	uint64_t memoryStart = get_brk(0);
-	//printf("memsize:%d  %d\n",memSize,memoryStart);
-	get_brk((uint64_t) (memoryStart + memSize));//todo: does get_brk return a value?? adding here: in our shell see if we free all mallocs
-	//printf("%d\n",get_brk(0));
+//printf("memsize:%d  %d\n",memSize,memoryStart);
+	get_brk((uint64_t) (memoryStart + memSize)); //todo: does get_brk return a value?? adding here: in our shell see if we free all mallocs
+//printf("%d\n",get_brk(0));
 	struct blockHeader *metaData = (struct blockHeader*) memoryStart;
 	metaData->size = memSize;
 	metaData->next = NULL;
-	metaData->size = (metaData->size) | 1;//flag for whether it is a valid address.
+	metaData->size = (metaData->size) | 1; //flag for whether it is a valid address.
 	if (head == NULL) {
 		head = metaData;
 		tail = metaData;
@@ -181,11 +254,6 @@ size_t open(char *filename, int permission) {
 	return syscall_2(SYS_open, filename, permission);
 }
 
-size_t read(size_t handle, void *buffer, size_t nbyte) {
-	return syscall_3(SYS_read, (uint64_t) handle, (uint64_t) buffer,
-			(uint64_t) nbyte);
-}
-
 pid_t fork(void) {
 	pid_t result;
 	result = syscall_0(SYS_fork);
@@ -205,7 +273,7 @@ char *strcat(char *dest, const char *src) {
 }
 
 pid_t waitpid(pid_t pid, int *stat_loc, int options) {
-	//struct ruseage info;
+//struct ruseage info;
 	return syscall_4_wait(SYS_wait4, pid, stat_loc, options);
 }
 
@@ -223,10 +291,6 @@ int chdir(const char* path) {
 
 int close(int handle) {
 	return syscall_1(SYS_close, (uint64_t) handle);
-}
-
-int scanf(const char *format, ...) {
-	return 0;
 }
 
 int dup2(int oldfd, int newfd) {

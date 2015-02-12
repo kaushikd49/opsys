@@ -4,6 +4,7 @@
 #include <sys/defs.h>
 #include <sys/syscall.h>
 typedef uint64_t size_t;
+typedef uint64_t ssize_t;
 //typedef int32_t pid_t;
 /*
  static __inline uint64_t syscall_n(int formatc,format,...){

@@ -24,7 +24,10 @@ void sample_file_readwrite() {
 }
 
 int main(int argc, char* argv[], char* envp[]) {
-
+	int a = 12;
+	scanf("%d", &a);
+	printf("%d", a);
+	exit(0);
 	pid_t pid = fork();
 	if (pid >= 0) {
 		if (pid == 0) {
