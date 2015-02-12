@@ -6,6 +6,7 @@
 #define ALIGNMENT 16
 //typedef uint64_t size_t;
 //typedef int32_t pid_t;
+typedef char * char_ptr;
 
 struct blockHeader {
 	uint64_t size;
@@ -98,12 +99,30 @@ int printf(const char *format, ...) {
 	return printed;
 }
 
-int is_digit(char c) {
+int is_int(char c) {
 	int ascii = c - '0';
 	return (ascii >= 0 && ascii <= 9);
 }
 
-int atoi(char buffer[], char* s, char * e) {
+int is_hex(char c) {
+	char *hexs = "0xXabcdefgABCDEF";
+	int i = 0;
+
+	if (is_int(c))
+		return 1;
+	for (i = 0; hexs[i] != '\0'; i++) {
+		if (c == hexs[i])
+			return 1;
+	}
+	return 0;
+}
+
+int isStrChar(char c) {
+	return c != ' ' && c != '\t' && c != '\n';
+}
+
+int atoi(char_ptr ptrs[]) {
+	char *s = ptrs[0], *e = ptrs[1];
 	char *temp = (e - 1);
 	if (*s == *e)
 		return 0;
@@ -117,6 +136,65 @@ int atoi(char buffer[], char* s, char * e) {
 	return sum;
 }
 
+int atox(char_ptr ptrs[]) {
+	int sum = 0, pow = 1;
+	char_ptr first = ptrs[0], second = ptrs[0] + 1, last = ptrs[1];
+
+	if (*first == *last)
+		return 0;
+
+	if (*first == 0 && (*second == 'x' || *second == 'X')) {
+		// 0x2342 or 0X2342
+		first += 2;
+	} else if (*first == 'x' || *first == 'X') {
+		//x123 or X3423
+		first++;
+	} else {
+		char_ptr temp = last - 1;
+		while ((temp + 1) != first) {
+			int val = 0;
+			int ascii = (*temp) - '0';
+			if (ascii >= 49 && ascii <= 54)
+				val = ascii - 39;
+			else if (ascii >= 17 && ascii <= 22)
+				val = ascii - 7;
+			else if (ascii >= 0 && ascii <= 9)
+				val = ascii;
+			else
+				return 0;
+
+			sum += val * pow;
+			pow *= 16;
+			temp--;
+		}
+	}
+	return sum;
+}
+
+void copy_to_str(char_ptr ptrs[], char *str) {
+	char *s = ptrs[0], *e = ptrs[1];
+	while (s != e) {
+		*str = *s;
+		s++;
+		str++;
+	}
+	*str = '\0';
+}
+
+void scan_token(int* scanned, char* buffer_ptr, char_ptr ptrs[],
+		int (func)(char)) {
+	ptrs[0] = NULL;
+	ptrs[1] = NULL;
+	*scanned = *scanned + 1;
+	char* temp = buffer_ptr;
+	while (buffer_ptr && func(*buffer_ptr)) {
+		buffer_ptr++;
+	}
+	ptrs[0] = temp;
+	ptrs[1] = buffer_ptr;
+
+}
+
 int scanf(const char *format, ...) {
 	int scanned = 0;
 	int limit = 1000;
@@ -128,27 +206,30 @@ int scanf(const char *format, ...) {
 
 	va_list val;
 	va_start(val, format);
+	char_ptr ptrs[2];
 	while (*format) {
 		if (*format == '%') {
 			format++;
 			switch (*format) {
 			case 'd':
 				format++;
-				scanned++;
-				char* temp = buffer_ptr;
-				while (buffer_ptr && is_digit(*buffer_ptr)) {
-					buffer_ptr++;
-				}
+				scan_token(&scanned, buffer_ptr, ptrs, is_int);
 				int *int_ptr = va_arg(val, int *);
-				*int_ptr = atoi(buffer, temp, buffer_ptr);
+				*int_ptr = atoi(ptrs);
 				break;
 			case 's':
 				format++;
-				scanned++;
+				//todo: below working and not giving seg fault
+				// even if str was allocated lesser space.
+				scan_token(&scanned, buffer_ptr, ptrs, isStrChar);
+				char *str = va_arg(val, char *);
+				copy_to_str(ptrs, str);
 				break;
 			case 'x':
 				format++;
-				scanned++;
+				scan_token(&scanned, buffer_ptr, ptrs, is_hex);
+				int *hex_ptr = va_arg(val, int *);
+				*hex_ptr = atox(ptrs);
 				break;
 			case 'c':
 				format++;

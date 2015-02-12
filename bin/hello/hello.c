@@ -24,9 +24,19 @@ void sample_file_readwrite() {
 }
 
 int main(int argc, char* argv[], char* envp[]) {
-	int a = 12;
-	scanf("%d", &a);
+//	int a = 12;
+//	scanf("%d", &a);
+//	printf("%d", a);
+
+//	char s[22];
+//	scanf("%s", s);
+//	printf("%s", s);
+
+	int a;
+	scanf("%x", &a);
 	printf("%d", a);
+
+
 	exit(0);
 	pid_t pid = fork();
 	if (pid >= 0) {
