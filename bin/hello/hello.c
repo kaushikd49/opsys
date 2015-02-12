@@ -13,7 +13,9 @@ void parent_sample_exec(char* argv[], char* envp[]) {
 }
 
 int main(int argc, char* argv[], char* envp[]) {
-
+	printf("%d\n",argc);
+	printf("%s\n",argv[3]);
+	printf("%s\n",envp[3]);
 	pid_t pid = fork();
 	if (pid >= 0) {
 		if (pid == 0) {
@@ -33,9 +35,9 @@ int main(int argc, char* argv[], char* envp[]) {
 			//void *ptr = NULL;
 			int *ptr = (int *) malloc(sizeof(int) * 10);
 			char *ptr1 = malloc(sizeof(char) * 4);
-			int i = 1024244;
-			for (i = 0; i < 10; i++)
-				ptr[i] = i;
+			//int i = 1024244;
+			//for (i = 0; i < 10; i++)
+			//	ptr[i] = i;
 			*ptr1 = 'a';
 			*(ptr1 + 1) = 'b';
 			*(ptr1 + 2) = 'c';
@@ -53,8 +55,21 @@ int main(int argc, char* argv[], char* envp[]) {
 			 */
 
 //			parent_sample_exec(argv, envp);
-			printf("\n");
-
+			//printf("\n");
+			//testing strcpy
+			//char *ptr4 = (char *)malloc(sizeof(char) * 10);
+			//char str4[10] = "S";
+			//strcpy(ptr4,str4);
+			//printf("\n%s\n", ptr4);
+			//testing strncmp(done all possible tests)
+			//char *ptr5 = "";
+			//char *ptr6 = "ABC";
+			//printf("%s",ptr5);
+			//printf("ANSWER:%d", strncmp(ptr5,ptr6,3));
+			//testing strchr
+			//printf("\nSTRCHR:%s",strchr(ptr6,'A'));//dont try a character not there seg fault but thats supposed to happen
+			//testing strcat
+			//printf("\nSTRCAT:%s", strcat(ptr4,ptr5));
 			exit(0);
 		}
 	} else {
