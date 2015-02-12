@@ -13,7 +13,9 @@ struct blockHeader {
 	struct blockHeader *next;
 
 };
-
+void exit(int status) {
+	syscall_1(SYS_exit, status);
+}
 ssize_t read(int fd, void *buf, size_t count) {
 	size_t size = syscall_4_write(SYS_read, fd, buf, count);
 	return size;
@@ -45,16 +47,23 @@ size_t strlen(const char *str) {
 	return current;
 }
 
-int printInteger(int n) {
-	if (n == 0)
+int printInteger(int n, int check) {
+	if (n == 0){
+		if(check == 0){
+			char *zeropointer;
+			char zero = 48;
+			zeropointer = &zero;
+			write(1, zeropointer, 1);
+		}
 		return 0;
+	}
 	int temp = n;
 	int rem;
 	char *apointer, a;
 	rem = temp % 10;
 	a = 48 + rem;
 	apointer = &a;
-	int prevcount = printInteger(temp / 10);
+	int prevcount = printInteger(temp / 10, 1);
 	write(1, apointer, 1);
 	return prevcount + 1;
 
@@ -74,7 +83,7 @@ int printf(const char *format, ...) {
 				++format;
 			} else if (*format == 'd') {
 				int tempd = va_arg(val, int);
-				int count = printInteger(tempd);
+				int count = printInteger(tempd, 0);
 				printed = printed + count;
 				++format;
 			} else if (*format == 's') {
@@ -286,17 +295,24 @@ void *malloc(uint64_t size) {
 	if (loc != NULL) {
 		struct blockHeader *metaData = (struct blockHeader *) loc;
 		metaData->size = memSize;
-		metaData->size = (metaData->size) | 1;
-		void *returnAddress = (void *) (loc + sizeof(struct blockHeader));
+		metaData->size=(metaData->size)|1;
+		void *returnAddress = (void *)((uint64_t)loc+sizeof(struct blockHeader));
 		printAllocmemory(head);
 		return returnAddress;
 	}
 //end of best fit
 
 	uint64_t memoryStart = get_brk(0);
-//printf("memsize:%d  %d\n",memSize,memoryStart);
-	get_brk((uint64_t) (memoryStart + memSize)); //todo: does get_brk return a value?? adding here: in our shell see if we free all mallocs
-//printf("%d\n",get_brk(0));
+	printf("MEMORY START:%d\n",memoryStart);
+	//printf("memsize:%d  %d\n",memSize,memoryStart);
+	uint64_t returnBrk = get_brk((uint64_t) (memoryStart + memSize));//todo: does get_brk return a value?? adding here: in our shell see if we free all mallocs
+	//heap overflow check.
+	if(returnBrk == memoryStart){
+		printf("\n out of memory!");
+		exit(0);
+	}
+	//printf("RRRRETURNBRK:%d\n",returnBrk);
+	//printf("%d\n",get_brk(0));
 	struct blockHeader *metaData = (struct blockHeader*) memoryStart;
 	metaData->size = memSize;
 	metaData->next = NULL;
@@ -309,7 +325,7 @@ void *malloc(uint64_t size) {
 		tail = metaData;
 	}
 	void *returnAddress = (void *) (memoryStart + sizeof(struct blockHeader));
-	printAllocmemory(head);
+	//printAllocmemory(head);
 	return returnAddress;
 
 }
@@ -318,16 +334,30 @@ void free(void *ptr) {
 			- sizeof(struct blockHeader));
 	current->size = (current->size) & 0xFFFFFFFFFFFFFFFE;
 }
-size_t strcpy(char *src, char *dst) {
-	return 0;
+char *strcpy(char *dst, char *src) {
+	size_t len = 0;
+	while(src[len] != '\0'){
+		dst[len] = src[len];
+		len++;
+	}
+	dst[len] = '\0';
+	return dst;
 }
 
-void exit(int status) {
-	syscall_1(SYS_exit, status);
-}
 
 size_t strncmp(char *string1, char *string2, int n) {
-	return 0;
+	size_t len = 0;
+	while(len<n && string1[len] != '\0' && string2[len] != '\0' ){
+		if(string1[len] != string2[len])
+			break;
+		len++;
+	}
+	if((len == n) || (string1[len] == string2[len]))
+		return 0;
+	else if(string1[len] >string2[len])
+		return (size_t)string1[len];
+	else
+		return (size_t)string2[len];
 }
 
 //todo: open not working
@@ -346,11 +376,24 @@ int execve(const char *filename, char * const argv[], char * const envp[]) {
 }
 
 char *strchr(const char *s, int c) {
-	return 0;
+	char *current =(char *)s;
+	while(*current != '\0' && *current!= c){
+		current++;
+	}
+	if(*current == c)
+		return current;
+	return NULL;
 }
 
 char *strcat(char *dest, const char *src) {
-	return 0;
+	size_t length = strlen(dest);
+	size_t len = 0;
+	while(src[len] != '\0'){
+		dest[length + len] = src[len];
+		len++;
+	}
+	dest[length+len] = '\0';
+	return dest;
 }
 
 pid_t waitpid(pid_t pid, int *stat_loc, int options) {

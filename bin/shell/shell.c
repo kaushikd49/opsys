@@ -176,6 +176,7 @@ char** interactive_case(char input[ARG_LIMIT], char* envpp[]) {
 	envpp = setEnv(ps1, envpp);
 	while (1) {
 		printf("%s", getEnv("PS1=", envpp));
+		printEnviron(envpp);
 		scanf(" %1000[^\n]", input);
 		if (strcmp(input, "exit") == 0) {
 			break;
@@ -226,10 +227,10 @@ void pipetest(char *envpp[]) {
 //todo : whitespave checks
 int main(int argc, char* argv[], char* envpp[]) {
 //	char input[ARG_LIMIT];
-//	envpp = process_main(argc, argv, envpp); //made input inside the process_main
-//	return 0;								//and checking if it is script with 1 script only
+	envpp = process_main(argc, argv, envpp); //made input inside the process_main
+	return 0;								//and checking if it is script with 1 script only
 
-	pipetest(envpp);
-	return 0;
+	//pipetest(envpp);
+	//return 0;
 }
 
