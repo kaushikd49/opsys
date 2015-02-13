@@ -48,8 +48,8 @@ size_t strlen(const char *str) {
 }
 
 int printInteger(int n, int check) {
-	if (n == 0){
-		if(check == 0){
+	if (n == 0) {
+		if (check == 0) {
 			char *zeropointer;
 			char zero = 48;
 			zeropointer = &zero;
@@ -77,27 +77,41 @@ int printf(const char *format, ...) {
 	while (*format) {
 		if (*format == '%') {
 			++format;
-			if (*format == '%') {
+			switch (*format) {
+			case '%': {
 				write(1, format, 1);
 				++printed;
 				++format;
-			} else if (*format == 'd') {
+				break;
+			}
+			case 'd': {
 				int tempd = va_arg(val, int);
 				int count = printInteger(tempd, 0);
 				printed = printed + count;
 				++format;
-			} else if (*format == 's') {
+				break;
+			}
+			case 's': {
 				char *temps = va_arg(val, char *);
 				int length = strlen(temps);
 				write(1, temps, length);
 				printed = printed + length;
 				++format;
+				break;
 			}
-			/*
-			 else if(*format == 'p'){
-			 void *tempp = va_arg(val,void *);
+			case 'c': {
+				// char promoted to int in va_arg
+				char tempc = va_arg(val, int);
+				write(1, &tempc, 1);
+				++printed;
+				++format;
+				break;
+			}
+			case 'x': {
+				break;
 
-			 }*/
+			}
+			}
 		} else {
 			write(1, format, 1);
 			++printed;
@@ -191,12 +205,14 @@ void copy_to_str(char_ptr ptrs[], char *str) {
 }
 
 void scan_token(int* scanned, char* buffer_ptr, char_ptr ptrs[],
-		int (func)(char)) {
+		int (func)(char), int num_chars) {
 	ptrs[0] = NULL;
 	ptrs[1] = NULL;
 	*scanned = *scanned + 1;
 	char* temp = buffer_ptr;
-	while (buffer_ptr && func(*buffer_ptr)) {
+	int i = 0;
+	while (buffer_ptr && func(*buffer_ptr)
+			&& (num_chars == -1 || ++i <= num_chars)) {
 		buffer_ptr++;
 	}
 	ptrs[0] = temp;
@@ -222,7 +238,7 @@ int scanf(const char *format, ...) {
 			switch (*format) {
 			case 'd':
 				format++;
-				scan_token(&scanned, buffer_ptr, ptrs, is_int);
+				scan_token(&scanned, buffer_ptr, ptrs, is_int, -1);
 				int *int_ptr = va_arg(val, int *);
 				*int_ptr = atoi(ptrs);
 				break;
@@ -230,19 +246,21 @@ int scanf(const char *format, ...) {
 				format++;
 				//todo: below working and not giving seg fault
 				// even if str was allocated lesser space.
-				scan_token(&scanned, buffer_ptr, ptrs, isStrChar);
+				scan_token(&scanned, buffer_ptr, ptrs, isStrChar, -1);
 				char *str = va_arg(val, char *);
 				copy_to_str(ptrs, str);
 				break;
 			case 'x':
 				format++;
-				scan_token(&scanned, buffer_ptr, ptrs, is_hex);
+				scan_token(&scanned, buffer_ptr, ptrs, is_hex, -1);
 				int *hex_ptr = va_arg(val, int *);
 				*hex_ptr = atox(ptrs);
 				break;
 			case 'c':
 				format++;
-				scanned++;
+				scan_token(&scanned, buffer_ptr, ptrs, isStrChar, 1);
+				char *chr_ptr = va_arg(val, char *);
+				*chr_ptr = *ptrs[0];
 				break;
 			default:
 				break;
@@ -295,19 +313,20 @@ void *malloc(uint64_t size) {
 	if (loc != NULL) {
 		struct blockHeader *metaData = (struct blockHeader *) loc;
 		metaData->size = memSize;
-		metaData->size=(metaData->size)|1;
-		void *returnAddress = (void *)((uint64_t)loc+sizeof(struct blockHeader));
+		metaData->size = (metaData->size) | 1;
+		void *returnAddress = (void *) ((uint64_t) loc
+				+ sizeof(struct blockHeader));
 		printAllocmemory(head);
 		return returnAddress;
 	}
 //end of best fit
 
 	uint64_t memoryStart = get_brk(0);
-	printf("MEMORY START:%d\n",memoryStart);
+	printf("MEMORY START:%d\n", memoryStart);
 	//printf("memsize:%d  %d\n",memSize,memoryStart);
-	uint64_t returnBrk = get_brk((uint64_t) (memoryStart + memSize));//todo: does get_brk return a value?? adding here: in our shell see if we free all mallocs
+	uint64_t returnBrk = get_brk((uint64_t) (memoryStart + memSize)); //todo: does get_brk return a value?? adding here: in our shell see if we free all mallocs
 	//heap overflow check.
-	if(returnBrk == memoryStart){
+	if (returnBrk == memoryStart) {
 		printf("\n out of memory!");
 		exit(0);
 	}
@@ -336,7 +355,7 @@ void free(void *ptr) {
 }
 char *strcpy(char *dst, char *src) {
 	size_t len = 0;
-	while(src[len] != '\0'){
+	while (src[len] != '\0') {
 		dst[len] = src[len];
 		len++;
 	}
@@ -344,20 +363,19 @@ char *strcpy(char *dst, char *src) {
 	return dst;
 }
 
-
 size_t strncmp(char *string1, char *string2, int n) {
 	size_t len = 0;
-	while(len<n && string1[len] != '\0' && string2[len] != '\0' ){
-		if(string1[len] != string2[len])
+	while (len < n && string1[len] != '\0' && string2[len] != '\0') {
+		if (string1[len] != string2[len])
 			break;
 		len++;
 	}
-	if((len == n) || (string1[len] == string2[len]))
+	if ((len == n) || (string1[len] == string2[len]))
 		return 0;
-	else if(string1[len] >string2[len])
-		return (size_t)string1[len];
+	else if (string1[len] > string2[len])
+		return (size_t) string1[len];
 	else
-		return (size_t)string2[len];
+		return (size_t) string2[len];
 }
 
 //todo: open not working
@@ -376,11 +394,11 @@ int execve(const char *filename, char * const argv[], char * const envp[]) {
 }
 
 char *strchr(const char *s, int c) {
-	char *current =(char *)s;
-	while(*current != '\0' && *current!= c){
+	char *current = (char *) s;
+	while (*current != '\0' && *current != c) {
 		current++;
 	}
-	if(*current == c)
+	if (*current == c)
 		return current;
 	return NULL;
 }
@@ -388,11 +406,11 @@ char *strchr(const char *s, int c) {
 char *strcat(char *dest, const char *src) {
 	size_t length = strlen(dest);
 	size_t len = 0;
-	while(src[len] != '\0'){
+	while (src[len] != '\0') {
 		dest[length + len] = src[len];
 		len++;
 	}
-	dest[length+len] = '\0';
+	dest[length + len] = '\0';
 	return dest;
 }
 

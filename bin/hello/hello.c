@@ -32,9 +32,13 @@ int main(int argc, char* argv[], char* envp[]) {
 //	scanf("%s", s);
 //	printf("%s", s);
 
-	int a;
-	scanf("%x", &a);
-	printf("%d", a);
+//	int a;
+//	scanf("%x", &a);
+//	printf("%d", a);
+
+	char c ;
+	scanf("%c", &c);
+	printf("%c", c);
 
 
 	exit(0);
