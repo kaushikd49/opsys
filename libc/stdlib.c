@@ -68,56 +68,68 @@ int printInteger(int n, int check) {
 	return prevcount + 1;
 
 }
+
+int printHexInt(int n) {
+	char res[] = "00000000", c = '0';
+	int base = 0xf, i = 7, new_n = n, j = 0;
+	while (new_n != 0) {
+		int nibble = (0xf) & (base & new_n) >> (4 * j);
+		if (nibble >= 10) {
+			c = (nibble + 87);
+		} else {
+			c = (nibble + 48);
+		}
+		j++;
+		res[i--] = c;
+		new_n = new_n & ~base;
+		base = base << 4;
+	}
+
+	int count = 7 - i;
+	if (count > 0) {
+		char *ptr = res + i + 1;
+		write(1, ptr, count);
+	}
+	return i;
+}
+
 int printf(const char *format, ...) {
 	va_list val;
 	int printed = 0;
 
-	va_start(val, format);
-
-	while (*format) {
-		if (*format == '%') {
-			++format;
-			switch (*format) {
-			case '%': {
-				write(1, format, 1);
-				++printed;
-				++format;
-				break;
-			}
-			case 'd': {
-				int tempd = va_arg(val, int);
-				int count = printInteger(tempd, 0);
-				printed = printed + count;
-				++format;
-				break;
-			}
-			case 's': {
-				char *temps = va_arg(val, char *);
-				int length = strlen(temps);
-				write(1, temps, length);
-				printed = printed + length;
-				++format;
-				break;
-			}
-			case 'c': {
-				// char promoted to int in va_arg
-				char tempc = va_arg(val, int);
-				write(1, &tempc, 1);
-				++printed;
-				++format;
-				break;
-			}
-			case 'x': {
-				break;
-
-			}
-			}
-		} else {
+	if (*format != '%') {
+		while (*format != '\0') {
 			write(1, format, 1);
-			++printed;
-			++format;
+			printed++;
 		}
+		return printed;
 	}
+
+	char character = *(format + 1);
+	va_start(val, format);
+	if (character == '%') {
+		write(1, format, 1);
+		printed++;
+	} else if (character == 'd') {
+		int tempd = va_arg(val, int);
+		int count = printInteger(tempd, 0);
+		printed = printed + count;
+	} else if (character == 'x') {
+		int tempd = va_arg(val, int);
+		int count = printHexInt(tempd);
+		printed = printed + count;
+	} else if (character == 's') {
+		char *temps = va_arg(val, char *);
+		int length = strlen(temps);
+		write(1, temps, length);
+		printed = printed + length;
+	} else if (character == 'c') {
+		// char promoted to int in va_arg
+		char tempc = va_arg(val, int);
+		write(1, &tempc, 1);
+		printed++;
+	}
+
 	va_end(val);
 	return printed;
 }
