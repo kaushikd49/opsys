@@ -47,26 +47,27 @@ size_t strlen(const char *str) {
 	return current;
 }
 
-int printInteger(int n, int check) {
-	if (n == 0) {
-		if (check == 0) {
-			char *zeropointer;
-			char zero = 48;
-			zeropointer = &zero;
-			write(1, zeropointer, 1);
-		}
-		return 0;
-	}
-	int temp = n;
-	int rem;
-	char *apointer, a;
-	rem = temp % 10;
-	a = 48 + rem;
-	apointer = &a;
-	int prevcount = printInteger(temp / 10, 1);
-	write(1, apointer, 1);
-	return prevcount + 1;
+int printInteger(int n) {
+	int count = 0, i = 10, neg = 0;
+	char number[11]; // log(2^31-1) + sign char
 
+	if (n < 0) {
+		neg = 1;
+		n *= -1;
+	}
+	while (n != 0) {
+		char rem = (n % 10) + '0';
+		number[i--] = rem;
+		n /= 10;
+		count++;
+	}
+	if (neg) {
+		number[i--] = '-';
+		count++;
+	}
+	char *ptr = number + i + 1;
+	write(1, ptr, count);
+	return count;
 }
 
 int printHexInt(int n) {
@@ -112,7 +113,7 @@ int printf(const char *format, ...) {
 		printed++;
 	} else if (character == 'd') {
 		int tempd = va_arg(val, int);
-		int count = printInteger(tempd, 0);
+		int count = printInteger(tempd);
 		printed = printed + count;
 	} else if (character == 'x') {
 		int tempd = va_arg(val, int);
@@ -136,11 +137,11 @@ int printf(const char *format, ...) {
 
 int is_int(char c) {
 	int ascii = c - '0';
-	return (ascii >= 0 && ascii <= 9);
+	return c == '-' || (ascii >= 0 && ascii <= 9);
 }
 
 int is_hex(char c) {
-	char *hexs = "0xXabcdefgABCDEF";
+	char *hexs = "0xXabcdefgABCDEF-";
 	int i = 0;
 
 	if (is_int(c))
@@ -159,8 +160,19 @@ int isStrChar(char c) {
 int atoi(char_ptr ptrs[]) {
 	char *s = ptrs[0], *e = ptrs[1];
 	char *temp = (e - 1);
-	if (*s == *e)
+	int flag = 1;
+
+	if (*s == *e) {
 		return 0;
+	}
+	if (*s == '-') {
+		flag = -1;
+		s++;
+		if (*s == *e) {
+			return 0;
+		}
+	}
+
 	int sum = 0, pow = 1;
 	while ((temp + 1) != s) {
 		char c = *temp;
@@ -168,7 +180,7 @@ int atoi(char_ptr ptrs[]) {
 		pow *= 10;
 		temp--;
 	}
-	return sum;
+	return sum * flag;
 }
 
 int atox(char_ptr ptrs[]) {
