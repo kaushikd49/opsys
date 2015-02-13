@@ -40,13 +40,13 @@ int main(int argc, char* argv[], char* envp[]) {
 //	scanf("%c", &c);
 //	printf("%c", c);
 
-//	int a = 22;
-//	scanf("%d", &a);
-//	printf("%x", a);
-
 	int a = 22;
-	scanf("%x", &a);
+	scanf("%d", &a);
 	printf("%x", a);
+
+//	int a = 22;
+//	scanf("%x", &a);
+//	printf("%x", a);
 
 	exit(0);
 	pid_t pid = fork();

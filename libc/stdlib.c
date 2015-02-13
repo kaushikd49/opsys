@@ -61,6 +61,7 @@ int printInteger(int n) {
 		n /= 10;
 		count++;
 	}
+
 	if (neg) {
 		number[i--] = '-';
 		count++;
@@ -184,11 +185,19 @@ int atoi(char_ptr ptrs[]) {
 }
 
 int atox(char_ptr ptrs[]) {
-	int sum = 0, pow = 1;
+	int sum = 0, pow = 1, flag = 1;
+	;
 	char_ptr first = ptrs[0], second = ptrs[0] + 1, last = ptrs[1];
 
 	if (*first == *last)
 		return 0;
+	if (*first == '-') {
+		flag = -1;
+		first++;
+		if (*first == *last) {
+			return 0;
+		}
+	}
 
 	if (*first == 0 && (*second == 'x' || *second == 'X')) {
 		// 0x2342 or 0X2342
@@ -215,7 +224,7 @@ int atox(char_ptr ptrs[]) {
 			temp--;
 		}
 	}
-	return sum;
+	return sum * flag;
 }
 
 void copy_to_str(char_ptr ptrs[], char *str) {
