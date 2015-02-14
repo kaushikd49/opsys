@@ -140,6 +140,8 @@ char ** handleSetenv(char **tokens, char *envpp[]) {
 char ** take_action(char** tokens, char *envpp[]) {
 	print_tokens(tokens);
 	char *cmd = tokens[0];
+	if (tokens[0] == NULL)
+		return envpp;
 	if (strcmp("setenv", cmd) == 0) {
 		envpp = handleSetenv(tokens, envpp);
 	} else if (strcmp("getenv", cmd) == 0) {
