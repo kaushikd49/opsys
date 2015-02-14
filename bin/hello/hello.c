@@ -41,10 +41,12 @@ int a=0;
 int b;
 // with duplicate type specifiers crap happens : todo
 	scanf("%s %d %x %c", s,&x, &a, &b);
-	printf("%s", s);
-	printf("%d",x);
-	printf("%x",a);
-	printf("%c",b);
+	printf("hello maga ..see this %s %d %x %c", s,x, a, b);
+
+//	printf("%s", s);
+//	printf("%d",x);
+//	printf("%x",a);
+//	printf("%c",b);
 
 //	int a;
 //	scanf("%x", &a);

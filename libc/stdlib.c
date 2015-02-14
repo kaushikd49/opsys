@@ -101,6 +101,14 @@ int printInteger(int n) {
 int printHexInt(int n) {
 	char res[] = "00000000", c = '0';
 	int base = 0xf, i = 7, new_n = n, j = 0;
+	
+	if(n == 0) {
+		char *zero = "0";
+		write(1, zero, 1);
+		return 1;
+	}
+
+
 	while (new_n != 0) {
 		int nibble = (0xf) & (base & new_n) >> (4 * j);
 		if (nibble >= 10) {
@@ -119,22 +127,13 @@ int printHexInt(int n) {
 		char *ptr = res + i + 1;
 		write(1, ptr, count);
 	}
-	return i;
+	return count;
 }
 
 int printf(const char *format, ...) {
 	va_list val;
 	int printed = 0;
 
-	if (*format != '%') {
-		while (*format != '\0') {
-			write(1, format, 1);
-			printed++;
-			format++;
-		}
-		return printed;
-	}
-	
 	va_start(val, format);
 
 	while(*format && *(format+1)) {
