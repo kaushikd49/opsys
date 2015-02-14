@@ -106,6 +106,7 @@ int printf(const char *format, ...) {
 		while (*format != '\0') {
 			write(1, format, 1);
 			printed++;
+			format++;
 		}
 		return printed;
 	}
@@ -472,10 +473,10 @@ int close(int handle) {
 }
 
 int dup2(int oldfd, int newfd) {
-	return 0;
+	return syscall_3_dup2(SYS_dup2, oldfd, newfd);
 }
 
 int pipe(int pipefd[2]) {
-	return 0;
+	return syscall_1_p(SYS_pipe, (uint64_t) pipefd);
 }
 #endif

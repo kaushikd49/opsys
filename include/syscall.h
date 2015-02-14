@@ -32,7 +32,7 @@ static __inline uint64_t syscall_1_p(uint64_t n, uint64_t size) {
 	__asm__ __volatile(
 			//"xor %%rbx, %%rbx\n\t"
 			"syscall"
-			:"=r"(result)
+			:"=a"(result)
 			:"0"(n),"D"(size));
 	return result;
 }
@@ -88,4 +88,15 @@ static __inline size_t syscall_4_write(uint64_t n, int a1, const void *a2,
 			:"0"(n), "D"(a1),"S"(a2),"d"(a3));
 	return result;
 }
+
+static __inline uint64_t syscall_3_dup2(uint64_t n, int a1, int a2) {
+	uint64_t result;
+	__asm__ __volatile__(
+			"movq $0,%%rcx\n\t"
+			"syscall"
+			:"=a" (result)
+			:"0"(n), "D"(a1), "S"(a2));
+	return result;
+}
+
 #endif

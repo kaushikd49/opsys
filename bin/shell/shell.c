@@ -22,6 +22,7 @@ void do_execute(char** tokens, char** envpp) {
 			current = next + 1;
 		} else {
 			printf("command not found\n");
+
 			break;
 		}
 	}
@@ -47,19 +48,30 @@ void close_fds(int fds[]) {
 	close(fds[0]);
 	close(fds[1]);
 }
+void add_terminating_char(int fd_to) {
+	if (fd_to == 1) {
+		char buffer = '\0';
+		write(fd_to, &buffer, 1);
+	}
+}
 
 void handleChildPipeExec(char **tokens, char** envpp, int fds[], int fd_to) {
 	int fd_from = fds[fd_to];
 	pid_t child = fork();
+//	int newfd = open("/tmp/file.txt", O_WRONLY);
 	if (child >= 0) {
 		if (child == 0) {
-			printf("copying fd from %d to %d", fd_from, fd_to);
+//			printf("copying fd from %d to %d", fd_from, fd_to);
 			// fd_from: fd that needs to be dup2'ed to fd_to
 			dup2(fd_from, fd_to);
+//			dup2(newfd, 1);
+//			dup2(newfd, 0);
 			// close both file descriptors
 //			close_fds(fds);
 			close(fds[1 ^ fd_to]);
 			do_execute(tokens, envpp);
+			add_terminating_char(fd_to);
+			exit(0);
 		} else {
 			// todo: check why no wait has t be done in this case
 //			int status;
@@ -199,23 +211,25 @@ char ** process_main(int argc, char* argv[], char* envpp[]) {
 }
 
 void pipetest(char *envpp[]) {
-//	char *tokens1[] = { { "ps" }, NULL };
-//	char *tokens2[] = { { "less" }, NULL };
-//	int filedes[2];
-//	int status = pipe(filedes);
-//
-//	if (status == 0) {
-//		// write channel of filedes pointed to stdout of 1st child.
-//		handleChildPipeExec(tokens1, envpp, filedes, 1);
-//		// read channel of filedes pointed to stdin of 2nd child.
-//		handleChildPipeExec(tokens2, envpp, filedes, 0);
-//		int child_status;
-//		waitpid(-1, &child_status, 0);
+	char* ps = "/bin/ps";
+	char *tokens1[] = { ps, NULL };
+	char* less = "/usr/bin/less";
+	char *tokens2[] = { less, NULL };
+
+	int filedes[2];
+	int status = pipe(filedes);
+	if (status == 0) {
+		// write channel of filedes pointed to stdout of 1st child.
+		handleChildPipeExec(tokens1, envpp, filedes, 1);
+		// read channel of filedes pointed to stdin of 2nd child.
+		handleChildPipeExec(tokens2, envpp, filedes, 0);
+		int child_status;
+		waitpid(-1, &child_status, 0);
 //		printf("status was %d", child_status);
-//	} else {
-//		printf("error while piping");
-//	}
-//	close_fds(filedes);
+	} else {
+		printf("error while piping");
+	}
+	close_fds(filedes);
 }
 
 //Support changing current directory ( cd ) -
@@ -224,13 +238,12 @@ void pipetest(char *envpp[]) {
 //Execute pipelines of binaries ( /bin/ls | /bin/grep test )
 //Set and use PATH and PS1 variables
 
-//todo : whitespave checks
 int main(int argc, char* argv[], char* envpp[]) {
 //	char input[ARG_LIMIT];
-	envpp = process_main(argc, argv, envpp); //made input inside the process_main
-	return 0;								//and checking if it is script with 1 script only
+//	envpp = process_main(argc, argv, envpp); //made input inside the process_main
+//	return 0;								//and checking if it is script with 1 script only
 
-	//pipetest(envpp);
-	//return 0;
+	pipetest(envpp);
+	return 0;
 }
 
