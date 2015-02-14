@@ -29,19 +29,29 @@ void sample_file_readwrite() {
 	close(write_fd);
 }
 
+
 int main(int argc, char* argv[], char* envp[]) {
 //	int a = 12;
 //	scanf("%d", &a);
 //	printf("%d", a);
+//
+	char s[22]="";
+int x=-2;
+int a=0;
+int b;
+// with duplicate type specifiers crap happens : todo
+	scanf("%s %d %x %c", s,&x, &a, &b);
+	printf("hello maga ..see this %s %d %x %c", s,x, a, b);
 
-//	char s[22];
-//	scanf("%s", s);
 //	printf("%s", s);
+//	printf("%d",x);
+//	printf("%x",a);
+//	printf("%c",b);
 
 //	int a;
 //	scanf("%x", &a);
 //	printf("%d", a);
-
+//
 //	char c ;
 //	scanf("%c", &c);
 //	printf("%c", c);
@@ -50,9 +60,6 @@ int main(int argc, char* argv[], char* envp[]) {
 //	scanf("%d", &a);
 //	printf("%x", a);
 
-//	int a = 22;
-//	scanf("%x", &a);
-//	printf("%x", a);
 
 	pid_t pid = fork();
 	if (pid >= 0) {
