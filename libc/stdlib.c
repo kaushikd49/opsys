@@ -46,19 +46,22 @@ size_t strlen(const char *str) {
 	}
 	return current;
 }
-
 int printInteger(int n) {
 	int count = 0, i = 10, neg = 0;
-	char number[11]; // log(2^31-1) + sign char
+	char number[11]="0000000000"; // log(2^31-1) + sign char
 
 	if (n < 0) {
 		neg = 1;
 		n *= -1;
-	}
-	while (n != 0) {
-		char rem = (n % 10) + '0';
-		number[i--] = rem;
-		n /= 10;
+	} else if (n > 0) {
+		while (n != 0) {
+			char rem = (n % 10) + '0';
+			number[i--] = rem;
+			n /= 10;
+			count++;
+		}
+	} else {
+		i -= 2;
 		count++;
 	}
 
