@@ -33,27 +33,30 @@ int main(int argc, char* argv[], char* envp[]) {
 //	int a = 12;
 //	scanf("%d", &a);
 //	printf("%d", a);
-
-//	char s[22];
-//	scanf("%s", s);
-//	printf("%s", s);
+//
+	char s[22]="";
+int x=-2;
+	scanf("%s %d", s,&x);
+	printf("%s", s);
+	printf("%d",x);
 
 //	int a;
 //	scanf("%x", &a);
 //	printf("%d", a);
-
+//
 //	char c ;
 //	scanf("%c", &c);
 //	printf("%c", c);
-
-	int a = 22;
-	scanf("%d", &a);
-	printf("%x", a);
-
+//
+//	int a = 22;
+//	scanf("%d", &a);
+//	printf("%x", a);
+//
 //	int a = 22;
 //	scanf("%x", &a);
 //	printf("%x", a);
 
+exit(0);
 	pid_t pid = fork();
 	if (pid >= 0) {
 		if (pid == 0) {

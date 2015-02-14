@@ -265,19 +265,23 @@ void copy_to_str(char_ptr ptrs[], char *str) {
 	*str = '\0';
 }
 
-void scan_token(int* scanned, char* buffer_ptr, char_ptr ptrs[],
+void scan_token(int* scanned, char_ptr *buffer_ptr, char_ptr ptrs[],
 		int (func)(char), int num_chars) {
 	ptrs[0] = NULL;
 	ptrs[1] = NULL;
 	*scanned = *scanned + 1;
-	char* temp = buffer_ptr;
 	int i = 0;
-	while (buffer_ptr && func(*buffer_ptr)
+
+	while(**buffer_ptr == ' ')
+		*buffer_ptr = *buffer_ptr + 1;
+
+	char* temp = *buffer_ptr;
+	while (*buffer_ptr && func(**buffer_ptr)
 			&& (num_chars == -1 || ++i <= num_chars)) {
-		buffer_ptr++;
+		*buffer_ptr = *buffer_ptr + 1;
 	}
 	ptrs[0] = temp;
-	ptrs[1] = buffer_ptr;
+	ptrs[1] = *buffer_ptr;
 
 }
 //same as printf
@@ -288,18 +292,21 @@ int scanf(const char *format, ...) {
 	static char buffer[1000];
 	static char *buffer_ptr = buffer;
 
+	if(buffer-buffer_ptr==1000)
+		buffer_ptr = buffer;
 	read(0, buffer, limit);
 
 	va_list val;
 	va_start(val, format);
 	char_ptr ptrs[2];
+
 	while (*format) {
 		if (*format == '%') {
 			format++;
 			switch (*format) {
 			case 'd':
 				format++;
-				scan_token(&scanned, buffer_ptr, ptrs, is_int, -1);
+				scan_token(&scanned, &buffer_ptr, ptrs, is_int, -1);
 				int *int_ptr = va_arg(val, int *);
 				*int_ptr = atoi(ptrs);
 				break;
@@ -307,19 +314,19 @@ int scanf(const char *format, ...) {
 				format++;
 				//todo: below working and not giving seg fault
 				// even if str was allocated lesser space.
-				scan_token(&scanned, buffer_ptr, ptrs, isStrChar, -1);
+				scan_token(&scanned, &buffer_ptr, ptrs, isStrChar, -1);
 				char *str = va_arg(val, char *);
 				copy_to_str(ptrs, str);
 				break;
 			case 'x':
 				format++;
-				scan_token(&scanned, buffer_ptr, ptrs, is_hex, -1);
+				scan_token(&scanned, &buffer_ptr, ptrs, is_hex, -1);
 				int *hex_ptr = va_arg(val, int *);
 				*hex_ptr = atox(ptrs);
 				break;
 			case 'c':
 				format++;
-				scan_token(&scanned, buffer_ptr, ptrs, isStrChar, 1);
+				scan_token(&scanned, &buffer_ptr, ptrs, isStrChar, 1);
 				char *chr_ptr = va_arg(val, char *);
 				*chr_ptr = *ptrs[0];
 				break;
@@ -327,7 +334,8 @@ int scanf(const char *format, ...) {
 				break;
 			}
 		} else {
-			return 0;
+			format++;
+			//return 0;
 		}
 	}
 	va_end(val);
