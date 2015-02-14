@@ -204,7 +204,8 @@ char** interactive_case(char input[ARG_LIMIT], char* envpp[]) {
 		}
 		char** tokens = advance_tokenize(input, ' ', '"');
 		envpp = take_action(tokens, envpp);
-		free(tokens);
+		free_char_array(tokens);
+		//free(tokens);
 	}
 	return envpp;
 }

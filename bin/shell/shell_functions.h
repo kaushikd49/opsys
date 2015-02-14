@@ -17,7 +17,7 @@ int num_delims(char *str, char delim) {
 	}
 	return delimCount;
 }
-
+//void free_char_array()
 char **tokenize(char *input, char delim) {
 	int numDelims = num_delims(input, delim);
 	char **tokens = (char**) malloc((numDelims + 2) * sizeof(char*));
@@ -77,9 +77,17 @@ void print_tokens(char ** tokens) {
 	}
 	printf("\n");
 }
-
+void free_char_array(char **tokens){
+	char **current = tokens;
+	while(*current !=NULL){
+		free(*current);
+		current =current+1;
+	}
+	free(tokens);
+}
 char **advance_tokenize(char *input, char delim, char fieldEncloser) {
 	int numDelims = num_delims(input, delim);
+	printf("NUMDELIMS:%d\n",numDelims);
 	char **tokens = (char**) malloc((numDelims + 2) * sizeof(char*));
 	int i = 0, j = 0, startIdx = -1, endIdx = -1, fieldEnclStarted = 0;
 	while (input[i] != '\0') {
@@ -197,6 +205,7 @@ char **setEnv(char *newVar, char *envpp[]) {
 		}
 		dupenvp[j] = (char *) newVar;
 		dupenvp[j + 1] = NULL;
+		free(envpp);
 		return dupenvp;
 	}
 	return envpp;

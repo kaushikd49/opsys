@@ -6,6 +6,7 @@
 #include <errno.h>
 #define ALIGNMENT 16
 #define DEFAULT_MODE 00744
+struct blockHeader **head2 = NULL;
 //typedef uint64_t size_t;
 //typedef int32_t pid_t;
 extern __thread int errno;
@@ -397,18 +398,32 @@ void *findBest(struct blockHeader *head, uint64_t size) {
 	}
 	return ptr;
 }
+struct blockHeader *fragmentBlock( struct blockHeader *loc, size_t prevSize){
+	size_t resetMask = 0xFFFFFFFFFFFFFFFE;
+	struct blockHeader *next = loc->next;
+	if((prevSize - (loc->size & resetMask))>(size_t)(sizeof(struct blockHeader))){
+		struct blockHeader *newNext = (struct blockHeader *)((uint64_t)loc + (uint64_t)(loc->size & resetMask));
+		newNext->size = prevSize - (loc->size & resetMask);
+		newNext->next = next;
+		return newNext;
+	}
+	return next;
+}
 //malloc set errno for EMEM
 void *malloc(uint64_t size) {
 	static struct blockHeader *head = NULL;
 	static struct blockHeader *tail = NULL;
+
 	uint64_t memSize = (size + sizeof(struct blockHeader) + (ALIGNMENT - 1))
 			& ~(ALIGNMENT - 1); //Source:cracking the coding interview: page 247
 //best fit algorithm to use the empty blocks in the middle of the heap
 	void *loc = findBest(head, memSize);
 	if (loc != NULL) {
 		struct blockHeader *metaData = (struct blockHeader *) loc;
+		size_t prevSize= metaData->size;
 		metaData->size = memSize;
 		metaData->size = (metaData->size) | 1;
+		metaData->next = fragmentBlock(loc,prevSize);
 		void *returnAddress = (void *) ((uint64_t) loc
 				+ sizeof(struct blockHeader));
 		printAllocmemory(head);
@@ -424,8 +439,8 @@ void *malloc(uint64_t size) {
 	int retBrk = brk((void *)newBrk);
 	if(retBrk== -1){
 		if(errno == ENOMEM){
-			//errno == ENOMEM;
-			printf("\nmem. Alloc failed. Out of Memory");
+			errno = ENOMEM;
+			//printf("\nmem. Alloc failed. Out of Memory");
 			return NULL;
 		}
 
@@ -444,16 +459,38 @@ void *malloc(uint64_t size) {
 		tail = metaData;
 	}
 	void *returnAddress = (void *) (memoryStart + sizeof(struct blockHeader));
-	printAllocmemory(head);
+	if(head2 == NULL && head!=NULL)
+			head2 = &head;
+	printAllocmemory(*head2);
 	return returnAddress;
 
+}
+void *memset(void *s, int c, size_t n){
+	int *current = (int *)s;
+	//int offset = 0;
+	if(n%4!=0){
+		printf("\nmemset dangerous: programmer care required when assigning to this area");
+		return s;
+	}
+	while((size_t)(current) < (size_t)s+(size_t)n){
+		*(current) = c;
+		current++;
+	}
+	return (void *)s;
 }
 //does not have error value, linux defines illegal pointer access as undefined.
 void free(void *ptr) {
 
 	struct blockHeader *current = (struct blockHeader *) ((uint64_t) (ptr)
 			- sizeof(struct blockHeader));
+
+	//printf("\nfreeing\n");
+	//printf("\n%d",current->size);
 	current->size = (current->size) & 0xFFFFFFFFFFFFFFFE;
+	memset(ptr,0,8);
+	//printf("meset successful");
+	//printf("\n%d",current->size);
+	//printAllocmemory(*head2);
 }
 char *strcpy(char *dst, char *src) {
 	size_t len = 0;
