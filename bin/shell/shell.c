@@ -194,9 +194,10 @@ void remove_trail_nl(char *input){
 }
 char** interactive_case(char input[ARG_LIMIT], char* envpp[]) {
 	char ps1[] = "PS1=prompt>>";
-	envpp = setEnv(ps1, envpp);
+	envpp = setEnvStack(ps1, envpp);
+	int i = -5;
 	while (1) {
-		printf("%s", getEnv("PS1=", envpp));
+		printf("%d %s",i, getEnv("PS1=", envpp));
 		//printEnviron(envpp);
 		read(0,input,1000);
 		remove_trail_nl(input);

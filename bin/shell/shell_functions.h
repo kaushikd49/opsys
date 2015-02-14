@@ -185,6 +185,31 @@ void printEnviron(char *envp[]) { //debug function to show the last few lines of
 		current++;
 	}
 }
+char **setEnvStack(char *newVar, char *envpp[]) {
+	if (isinEnv(newVar, envpp)) {
+		int index = getEnvIndex(newVar, envpp);
+		//printf("update variable %s\n", newVar);
+		if (index != -1)
+			envpp[index] = newVar;
+		return envpp;
+	} else {
+		//printf("Initialize variable %s\n", newVar);
+		int i = 0, j = 0;
+		while (envpp[i] != NULL)
+			i++;
+		size_t newSize = sizeof(char *) * (i + 2);
+		char **dupenvp = (char **) malloc(newSize);
+		while (j != i) {
+			dupenvp[j] = (char *) envpp[j];
+			j++;
+		}
+		dupenvp[j] = (char *) newVar;
+		dupenvp[j + 1] = NULL;
+		//free(envpp);
+		return dupenvp;
+	}
+	return envpp;
+}
 char **setEnv(char *newVar, char *envpp[]) {
 	if (isinEnv(newVar, envpp)) {
 		int index = getEnvIndex(newVar, envpp);

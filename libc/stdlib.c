@@ -487,7 +487,9 @@ void free(void *ptr) {
 	//printf("\nfreeing\n");
 	//printf("\n%d",current->size);
 	current->size = (current->size) & 0xFFFFFFFFFFFFFFFE;
-	memset(ptr,0,8);
+	size_t size = current->size - sizeof(struct blockHeader);
+	//printf("\n%d\t%d", current->size, size);
+	memset(ptr,0,size);
 	//printf("meset successful");
 	//printf("\n%d",current->size);
 	//printAllocmemory(*head2);
