@@ -9,6 +9,7 @@
 //typedef uint64_t size_t;
 //typedef int32_t pid_t;
 extern __thread int errno;
+typedef char * char_ptr;
 
 struct blockHeader {
 	uint64_t size;
@@ -68,78 +69,139 @@ size_t strlen(const char *str) {
 	}
 	return current;
 }
+int printInteger(int n) {
+	int count = 0, i = 10, neg = 0;
+	char number[11]="0000000000"; // log(2^31-1) + sign char
 
-int printInteger(int n, int check) {
-	if (n == 0){
-		if(check == 0){
-			char *zeropointer;
-			char zero = 48;
-			zeropointer = &zero;
-			write(1, zeropointer, 1);
+	if (n < 0) {
+		neg = 1;
+		n *= -1;
+	} else if (n > 0) {
+		while (n != 0) {
+			char rem = (n % 10) + '0';
+			number[i--] = rem;
+			n /= 10;
+			count++;
 		}
-		return 0;
+	} else {
+		i -= 2;
+		count++;
 	}
-	int temp = n;
-	int rem;
-	char *apointer, a;
-	rem = temp % 10;
-	a = 48 + rem;
-	apointer = &a;
-	int prevcount = printInteger(temp / 10, 1);
-	write(1, apointer, 1);
-	return prevcount + 1;
 
+	if (neg) {
+		number[i--] = '-';
+		count++;
+	}
+	char *ptr = number + i + 1;
+	write(1, ptr, count);
+	return count;
 }
 //do a check for errors after complete function
+
+int printHexInt(int n) {
+	char res[] = "00000000", c = '0';
+	int base = 0xf, i = 7, new_n = n, j = 0;
+	while (new_n != 0) {
+		int nibble = (0xf) & (base & new_n) >> (4 * j);
+		if (nibble >= 10) {
+			c = (nibble + 87);
+		} else {
+			c = (nibble + 48);
+		}
+		j++;
+		res[i--] = c;
+		new_n = new_n & ~base;
+		base = base << 4;
+	}
+
+	int count = 7 - i;
+	if (count > 0) {
+		char *ptr = res + i + 1;
+		write(1, ptr, count);
+	}
+	return i;
+}
+
 int printf(const char *format, ...) {
 	va_list val;
 	int printed = 0;
 
-	va_start(val, format);
-
-	while (*format) {
-		if (*format == '%') {
-			++format;
-			if (*format == '%') {
-				write(1, format, 1);
-				++printed;
-				++format;
-			} else if (*format == 'd') {
-				int tempd = va_arg(val, int);
-				int count = printInteger(tempd, 0);
-				printed = printed + count;
-				++format;
-			} else if (*format == 's') {
-				char *temps = va_arg(val, char *);
-				int length = strlen(temps);
-				write(1, temps, length);
-				printed = printed + length;
-				++format;
-			}
-			/*
-			 else if(*format == 'p'){
-			 void *tempp = va_arg(val,void *);
-
-			 }*/
-		} else {
+	if (*format != '%') {
+		while (*format != '\0') {
 			write(1, format, 1);
-			++printed;
-			++format;
+			printed++;
+			format++;
 		}
+		return printed;
 	}
+
+	char character = *(format + 1);
+	va_start(val, format);
+	if (character == '%') {
+		write(1, format, 1);
+		printed++;
+	} else if (character == 'd') {
+		int tempd = va_arg(val, int);
+		int count = printInteger(tempd);
+		printed = printed + count;
+	} else if (character == 'x') {
+		int tempd = va_arg(val, int);
+		int count = printHexInt(tempd);
+		printed = printed + count;
+	} else if (character == 's') {
+		char *temps = va_arg(val, char *);
+		int length = strlen(temps);
+		write(1, temps, length);
+		printed = printed + length;
+	} else if (character == 'c') {
+		// char promoted to int in va_arg
+		char tempc = va_arg(val, int);
+		write(1, &tempc, 1);
+		printed++;
+	}
+
 	va_end(val);
 	return printed;
 }
 
-int is_digit(char c) {
+int is_int(char c) {
 	int ascii = c - '0';
-	return (ascii >= 0 && ascii <= 9);
+	return c == '-' || (ascii >= 0 && ascii <= 9);
 }
 
-int atoi(char buffer[], char* s, char * e) {
+int is_hex(char c) {
+	char *hexs = "0xXabcdefgABCDEF-";
+	int i = 0;
+
+	if (is_int(c))
+		return 1;
+	for (i = 0; hexs[i] != '\0'; i++) {
+		if (c == hexs[i])
+			return 1;
+	}
+	return 0;
+}
+
+int isStrChar(char c) {
+	return c != ' ' && c != '\t' && c != '\n';
+}
+
+int atoi(char_ptr ptrs[]) {
+	char *s = ptrs[0], *e = ptrs[1];
 	char *temp = (e - 1);
-	if (*s == *e)
+	int flag = 1;
+
+	if (*s == *e) {
 		return 0;
+	}
+	if (*s == '-') {
+		flag = -1;
+		s++;
+		if (*s == *e) {
+			return 0;
+		}
+	}
+
 	int sum = 0, pow = 1;
 	while ((temp + 1) != s) {
 		char c = *temp;
@@ -147,7 +209,76 @@ int atoi(char buffer[], char* s, char * e) {
 		pow *= 10;
 		temp--;
 	}
-	return sum;
+	return sum * flag;
+}
+
+int atox(char_ptr ptrs[]) {
+	int sum = 0, pow = 1, flag = 1;
+	;
+	char_ptr first = ptrs[0], second = ptrs[0] + 1, last = ptrs[1];
+
+	if (*first == *last)
+		return 0;
+	if (*first == '-') {
+		flag = -1;
+		first++;
+		if (*first == *last) {
+			return 0;
+		}
+	}
+
+	if (*first == 0 && (*second == 'x' || *second == 'X')) {
+		// 0x2342 or 0X2342
+		first += 2;
+	} else if (*first == 'x' || *first == 'X') {
+		//x123 or X3423
+		first++;
+	} else {
+		char_ptr temp = last - 1;
+		while ((temp + 1) != first) {
+			int val = 0;
+			int ascii = (*temp) - '0';
+			if (ascii >= 49 && ascii <= 54)
+				val = ascii - 39;
+			else if (ascii >= 17 && ascii <= 22)
+				val = ascii - 7;
+			else if (ascii >= 0 && ascii <= 9)
+				val = ascii;
+			else
+				return 0;
+
+			sum += val * pow;
+			pow *= 16;
+			temp--;
+		}
+	}
+	return sum * flag;
+}
+
+void copy_to_str(char_ptr ptrs[], char *str) {
+	char *s = ptrs[0], *e = ptrs[1];
+	while (s != e) {
+		*str = *s;
+		s++;
+		str++;
+	}
+	*str = '\0';
+}
+
+void scan_token(int* scanned, char* buffer_ptr, char_ptr ptrs[],
+		int (func)(char), int num_chars) {
+	ptrs[0] = NULL;
+	ptrs[1] = NULL;
+	*scanned = *scanned + 1;
+	char* temp = buffer_ptr;
+	int i = 0;
+	while (buffer_ptr && func(*buffer_ptr)
+			&& (num_chars == -1 || ++i <= num_chars)) {
+		buffer_ptr++;
+	}
+	ptrs[0] = temp;
+	ptrs[1] = buffer_ptr;
+
 }
 //same as printf
 int scanf(const char *format, ...) {
@@ -161,31 +292,36 @@ int scanf(const char *format, ...) {
 
 	va_list val;
 	va_start(val, format);
+	char_ptr ptrs[2];
 	while (*format) {
 		if (*format == '%') {
 			format++;
 			switch (*format) {
 			case 'd':
 				format++;
-				scanned++;
-				char* temp = buffer_ptr;
-				while (buffer_ptr && is_digit(*buffer_ptr)) {
-					buffer_ptr++;
-				}
+				scan_token(&scanned, buffer_ptr, ptrs, is_int, -1);
 				int *int_ptr = va_arg(val, int *);
-				*int_ptr = atoi(buffer, temp, buffer_ptr);
+				*int_ptr = atoi(ptrs);
 				break;
 			case 's':
 				format++;
-				scanned++;
+				//todo: below working and not giving seg fault
+				// even if str was allocated lesser space.
+				scan_token(&scanned, buffer_ptr, ptrs, isStrChar, -1);
+				char *str = va_arg(val, char *);
+				copy_to_str(ptrs, str);
 				break;
 			case 'x':
 				format++;
-				scanned++;
+				scan_token(&scanned, buffer_ptr, ptrs, is_hex, -1);
+				int *hex_ptr = va_arg(val, int *);
+				*hex_ptr = atox(ptrs);
 				break;
 			case 'c':
 				format++;
-				scanned++;
+				scan_token(&scanned, buffer_ptr, ptrs, isStrChar, 1);
+				char *chr_ptr = va_arg(val, char *);
+				*chr_ptr = *ptrs[0];
 				break;
 			default:
 				break;
@@ -252,15 +388,16 @@ void *malloc(uint64_t size) {
 	if (loc != NULL) {
 		struct blockHeader *metaData = (struct blockHeader *) loc;
 		metaData->size = memSize;
-		metaData->size=(metaData->size)|1;
-		void *returnAddress = (void *)((uint64_t)loc+sizeof(struct blockHeader));
+		metaData->size = (metaData->size) | 1;
+		void *returnAddress = (void *) ((uint64_t) loc
+				+ sizeof(struct blockHeader));
 		printAllocmemory(head);
 		return returnAddress;
 	}
 //end of best fit
 
 	uint64_t memoryStart = get_brk(0);
-	printf("MEMORY START:%d\n",memoryStart);
+	printf("MEMORY START:%d\n", memoryStart);
 	//printf("memsize:%d  %d\n",memSize,memoryStart);
 	uint64_t newBrk = (uint64_t) (memoryStart + memSize);//todo: does get_brk return a value?? adding here: in our shell see if we free all mallocs
 	//heap overflow check.
@@ -300,7 +437,7 @@ void free(void *ptr) {
 }
 char *strcpy(char *dst, char *src) {
 	size_t len = 0;
-	while(src[len] != '\0'){
+	while (src[len] != '\0') {
 		dst[len] = src[len];
 		len++;
 	}
@@ -308,20 +445,19 @@ char *strcpy(char *dst, char *src) {
 	return dst;
 }
 
-
 size_t strncmp(char *string1, char *string2, int n) {
 	size_t len = 0;
-	while(len<n && string1[len] != '\0' && string2[len] != '\0' ){
-		if(string1[len] != string2[len])
+	while (len < n && string1[len] != '\0' && string2[len] != '\0') {
+		if (string1[len] != string2[len])
 			break;
 		len++;
 	}
-	if((len == n) || (string1[len] == string2[len]))
+	if ((len == n) || (string1[len] == string2[len]))
 		return 0;
-	else if(string1[len] >string2[len])
-		return (size_t)string1[len];
+	else if (string1[len] > string2[len])
+		return (size_t) string1[len];
 	else
-		return (size_t)string2[len];
+		return (size_t) string2[len];
 }
 //source:mode values taken from linux man pages. http://man7.org/linux/man-pages/man2/open.2.html
 enum{
@@ -528,11 +664,11 @@ int execve(const char *filename, char * const argv[], char * const envp[]) {
 }
 
 char *strchr(const char *s, int c) {
-	char *current =(char *)s;
-	while(*current != '\0' && *current!= c){
+	char *current = (char *) s;
+	while (*current != '\0' && *current != c) {
 		current++;
 	}
-	if(*current == c)
+	if (*current == c)
 		return current;
 	return NULL;
 }
@@ -540,11 +676,11 @@ char *strchr(const char *s, int c) {
 char *strcat(char *dest, const char *src) {
 	size_t length = strlen(dest);
 	size_t len = 0;
-	while(src[len] != '\0'){
+	while (src[len] != '\0') {
 		dest[length + len] = src[len];
 		len++;
 	}
-	dest[length+len] = '\0';
+	dest[length + len] = '\0';
 	return dest;
 }
 
@@ -638,11 +774,11 @@ int close(int handle) {
 }
 
 int dup2(int oldfd, int newfd) {
-	return 0;
+	return syscall_3_dup2(SYS_dup2, oldfd, newfd);
 }
 
 int pipe(int pipefd[2]) {
-	return 0;
+	return syscall_1_p(SYS_pipe, (uint64_t) pipefd);
 }
 #define NAME_MAX 255
 #define MAX_DIR 200

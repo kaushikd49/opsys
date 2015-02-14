@@ -1,12 +1,8 @@
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
-//#define NULL ((void *)0)
+//#include "../shell/shell.c"
 
-int main(int argc, char *argv[], char *envp[]){
-	char buffer[100];
-scanf("%s",buffer);
-char a[] = "PS1";
-strcat(a,buffer+3);
-printf("%s",a);
+int main(int argc, char *argv[], char *envp[]) {
+//	printf("%d", dup2(newfd, 0));
+//	int newfd = open("/tmp/file.txt", O_WRONLY);
+//	do_execute(tokens, envpp);
+	return 0;
 }
