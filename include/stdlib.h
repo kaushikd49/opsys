@@ -1,21 +1,21 @@
 #ifndef _STDLIB_H
 #define _STDLIB_H
-
+#include<errno.h>
 #include <sys/defs.h>
 
-extern __thread int errno;
+//extern __thread int errno;
 
 int main(int argc, char* argv[], char* envp[]);
 void exit(int status);
 
 // memory
-typedef uint64_t size_t;
+//typedef uint64_t size_t;
 void *malloc(size_t size);
 void free(void *ptr);
 int brk(void *end_data_segment);
 
 // processes
-typedef uint32_t pid_t;
+//typedef uint32_t pid_t;
 pid_t fork(void);
 pid_t getpid(void);
 pid_t getppid(void);
@@ -29,13 +29,15 @@ char *getcwd(char *buf, size_t size);
 int chdir(const char *path);
 
 // files
-typedef int64_t ssize_t;
+
 enum {
 	O_RDONLY = 0,
 	O_WRONLY = 1,
 	O_RDWR = 2,
 	O_CREAT = 0x40,
-	O_DIRECTORY = 0x10000
+	O_EXCL = 0x80,
+	O_DIRECTORY = 0x10000,
+
 };
 int open(const char *pathname, int flags);
 ssize_t read(int fd, void *buf, size_t count);
@@ -54,10 +56,14 @@ int dup2(int oldfd, int newfd);
 #define NAME_MAX 255
 struct dirent {
 	long d_ino;
-	off_t d_off;
+	uint64_t d_off;
 	unsigned short d_reclen;
 	char d_name[NAME_MAX + 1];
 };
+struct dir{
+	struct dirent*current;
+};
+typedef struct dir DIR;
 void *opendir(const char *name);
 struct dirent *readdir(void *dir);
 int closedir(void *dir);

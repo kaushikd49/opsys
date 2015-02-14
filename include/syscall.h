@@ -3,8 +3,8 @@
 
 #include <sys/defs.h>
 #include <sys/syscall.h>
-typedef uint64_t size_t;
-typedef uint64_t ssize_t;
+//typedef uint64_t size_t;
+//typedef uint64_t ssize_t;
 //typedef int32_t pid_t;
 /*
  static __inline uint64_t syscall_n(int formatc,format,...){
@@ -32,7 +32,7 @@ static __inline uint64_t syscall_1_p(uint64_t n, uint64_t size) {
 	__asm__ __volatile(
 			//"xor %%rbx, %%rbx\n\t"
 			"syscall"
-			:"=r"(result)
+			:"=a"(result)
 			:"0"(n),"D"(size));
 	return result;
 }
@@ -66,7 +66,7 @@ static __inline uint64_t syscall_3(uint64_t n, uint64_t a1, uint64_t a2,
 	uint64_t result;
 	__asm__ __volatile__(
 			"syscall"
-			:"=r" (result)
+			:"=a" (result)
 			:"0"(n), "D"(a1), "S"(a2), "d"(a3));
 	return result;
 }

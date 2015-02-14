@@ -1,11 +1,17 @@
 #include<stdio.h>
 #include<syscall.h>
-#include<../libc/stdlib.c>
-
+#include<stdlib.h>
+//#include<errno.h>
+//#include<../libc/stdlib.c>
+//extern __thread int errno;
 void child_sample_exec(char* argv[], char* envp[]) {
 	printf("**child now executing ls with chdir**\n");
 	chdir("/");
-	execve("/bin/ls", argv, envp);
+	errno = 0;
+	int retVal = execve("/bin/ls", argv, envp);
+	if(retVal == -1){
+		printf("hello:%d",errno);
+	}
 }
 
 void parent_sample_exec(char* argv[], char* envp[]) {
@@ -24,48 +30,57 @@ void sample_file_readwrite() {
 }
 
 int main(int argc, char* argv[], char* envp[]) {
-	int a = 12;
-	scanf("%d", &a);
-	printf("%d", a);
-	exit(0);
+	//int a = 12;
+	//scanf("%d", &a);
+	//printf("%d", a);
+	//exit(0);
 	pid_t pid = fork();
 	if (pid >= 0) {
 		if (pid == 0) {
 			char *msg = "inside child bro.\n";
 			size_t length = strlen(msg);
 			write(1, msg, length);
-//			child_sample_exec(argv, envp);
-			printf("parent must be %d\n", getppid());
+			printf("parent must be %d   %d\n", getppid(),getpid());
+			int ret = chdir("./script1.sh");
+			printf("CHDIRRET: %d  %d",ret, errno);
+			child_sample_exec(argv, envp);
+
 
 			exit(0);
 		} else {
 			int status;
 			//uint64_t hello = 12;
-			waitpid(-1, &status, 0);
-			char *str = "hello child";
-			printf("\ninside parent process %d. %s\n", getpid(), str);
+
+			int ret = waitpid(-1, &status, 0);
+			printf("\nwait:%d\n", ret);
+			printf("\nERRNO:%d",errno);
+
+			//char *str = "hello child";
+			//printf("\ninside parent process %d. %s\n", getpid(), str);
 			//void *ptr = NULL;
-			int *ptr = (int *) malloc(sizeof(int) * 10);
-			char *ptr1 = malloc(sizeof(char) * 4);
+			//int *ptr = (int *) malloc(sizeof(int) * 10);
+			//char *ptr1 = malloc(sizeof(char) * 4);
 			//int i = 1024244;
 			//for (i = 0; i < 10; i++)
 			//	ptr[i] = i;
-			*ptr1 = 'a';
-			*(ptr1 + 1) = 'b';
-			*(ptr1 + 2) = 'c';
-			*(ptr1 + 3) = '\0';
+			//*ptr1 = 'a';
+			//*(ptr1 + 1) = 'b';
+			//*(ptr1 + 2) = 'c';
+			//*(ptr1 + 3) = '\0';
 			/*
 			 for(i=0;i<4;i++)
 			 printf("%d\t",ptr[i]);
 			 printf("\n%s", ptr1);
 			 */
-			free(ptr);
-			int *ptr3 = (int *) malloc(sizeof(int) * 5);
+			//free(ptr);
+			int *ptr3 = (int *) malloc(sizeof(int) * 10);
+			if(ptr3 ==NULL)
+				exit(1);
 			ptr3[0] = 33;
-			/*
-			 printf("\nptr3:%d\n",ptr3[0]);
-			 */
-			sample_file_readwrite();
+
+			printf("\nptr3:%d\n",ptr3[0]);
+
+			//sample_file_readwrite();
 
 //			parent_sample_exec(argv, envp);
 			//printf("\n");
@@ -83,6 +98,48 @@ int main(int argc, char* argv[], char* envp[]) {
 			//printf("\nSTRCHR:%s",strchr(ptr6,'A'));//dont try a character not there seg fault but thats supposed to happen
 			//testing strcat
 			//printf("\nSTRCAT:%s", strcat(ptr4,ptr5));
+			//int fd = open("./fdf",0);
+			//printf("fff:%d",(signed long)fd);
+			//int i = -13;
+			//printf("%d",i);
+			//char buffer[50] = "helloada";
+			//write(fd, buffer, 50);
+			/*
+			char fileName[100] = "./";
+			DIR *dirStr = opendir(fileName);
+			struct dirent *temp;
+			while((temp = readdir(dirStr))!=NULL){
+				printf("\nDENTRY:%s  %d",temp->d_name,temp->d_reclen);
+			}
+			closedir(dirStr);*/
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//
+			//1)exit no test done
+			//2)read
+			/*
+			int fd[10000],i = 0;
+			while(i!=1){
+				errno = 0;
+				fd[i] = open("./corrupt.txt",O_WRONLY);
+				printf("\n%d  %d",i,errno);
+				i++;
+				//scanf("%d",ch);
+			}*/
+			/*
+			char buffer[5];
+			errno = 0;
+			int ret = read(fd[0],buffer,50);
+
+			printf("\n%d",ret);
+			*/
+	//		int result
 			exit(0);
 		}
 	} else {
