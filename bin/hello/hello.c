@@ -29,6 +29,7 @@ void sample_file_readwrite() {
 	close(write_fd);
 }
 
+
 int main(int argc, char* argv[], char* envp[]) {
 //	int a = 12;
 //	scanf("%d", &a);
@@ -36,9 +37,14 @@ int main(int argc, char* argv[], char* envp[]) {
 //
 	char s[22]="";
 int x=-2;
-	scanf("%s %d", s,&x);
+int a=0;
+int b;
+// with duplicate type specifiers crap happens : todo
+	scanf("%s %d %x %c", s,&x, &a, &b);
 	printf("%s", s);
 	printf("%d",x);
+	printf("%x",a);
+	printf("%c",b);
 
 //	int a;
 //	scanf("%x", &a);
