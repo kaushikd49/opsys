@@ -46,4 +46,6 @@ int errno;
 //wait pid errors
 #define EINVAL 22
 #define ECHILD 10
+//lseek
+#define LSEEKERROR 129
 #endif

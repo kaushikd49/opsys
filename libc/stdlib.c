@@ -444,7 +444,23 @@ char *strcpy(char *dst, char *src) {
 	dst[len] = '\0';
 	return dst;
 }
+int strcmp(char *string1, char *string2){
+	size_t len = 0;
+	while(string1[len] !='\0' && string2[len]!='\0') {
+		if(string1[len] !=string2[len])
+			break;
+		len++;
+	}
+	if(string1[len] == string2[len])
+		return 0;
+	else if(string1[len]=='\0' ||(string2[len] !='\0' && string1[len]<string2[len])){
+		return (int)string2[len];
+	}
+	else{
+		return (int)string1[len];
+	}
 
+}
 size_t strncmp(char *string1, char *string2, int n) {
 	size_t len = 0;
 	while (len < n && string1[len] != '\0' && string2[len] != '\0') {
@@ -772,7 +788,33 @@ int close(int handle) {
 	}
 	return 0;
 }
-
+off_t lseek(int fildes, off_t offset, int whence){
+	uint64_t result;
+	result = syscall_3(SYS_lseek,(uint64_t)fildes,(uint64_t)offset,(uint64_t)whence);
+	if((int64_t)result <0){
+		if((int64_t)result ==-EBADF){
+			errno = EBADF;
+			return -1;
+		}
+		else if((int64_t)result ==-EBADF){
+			errno = EBADF;
+			return -1;
+		}
+		else if((int64_t)result ==-EINVAL){
+			errno = EINVAL;
+			return -1;
+		}
+		else if((int64_t)result ==-EOVERFLOW){
+			errno = EOVERFLOW;
+			return -1;
+		}
+		else{
+			errno =LSEEKERROR;
+			return -1;
+		}
+	}
+	return (off_t)result;
+}
 int dup2(int oldfd, int newfd) {
 	return syscall_3_dup2(SYS_dup2, oldfd, newfd);
 }

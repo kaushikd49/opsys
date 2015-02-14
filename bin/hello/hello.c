@@ -46,9 +46,9 @@ int main(int argc, char* argv[], char* envp[]) {
 //	scanf("%c", &c);
 //	printf("%c", c);
 
-	int a = 22;
-	scanf("%d", &a);
-	printf("%x", a);
+//	int a = 22;
+//	scanf("%d", &a);
+//	printf("%x", a);
 
 //	int a = 22;
 //	scanf("%x", &a);
@@ -93,12 +93,12 @@ int main(int argc, char* argv[], char* envp[]) {
 			 printf("\n%s", ptr1);
 			 */
 			//free(ptr);
-			int *ptr3 = (int *) malloc(sizeof(int) * 10);
-			if(ptr3 ==NULL)
-				exit(1);
-			ptr3[0] = 33;
+//			int *ptr3 = (int *) malloc(sizeof(int) * 10);
+//			if(ptr3 ==NULL)
+//				exit(1);
+//			ptr3[0] = 33;
 
-			printf("\nptr3:%d\n",ptr3[0]);
+//			printf("\nptr3:%d\n",ptr3[0]);
 
 			//sample_file_readwrite();
 
@@ -160,6 +160,17 @@ int main(int argc, char* argv[], char* envp[]) {
 			printf("\n%d",ret);
 			*/
 	//		int result
+			//lseek
+			int fd = open("test.txt",O_RDONLY);
+			off_t offset = lseek(fd,5,6);
+			if((int64_t)offset==-1)
+			printf("%d",errno);
+			//offset = lseek(fd,-3,SEEK_END);
+			//printf("\n");
+			//printf("%d",offset);
+			//char str[5];
+			//read(fd,str,2);
+			//printf("%s",str);
 			exit(0);
 		}
 	} else {

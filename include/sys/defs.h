@@ -12,4 +12,6 @@ typedef          short  int16_t;
 typedef int32_t pid_t;
 typedef int64_t ssize_t;
 typedef uint64_t size_t;
+typedef uint64_t off_t;
+
 #endif

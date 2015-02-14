@@ -72,7 +72,7 @@ void print_tokens(char ** tokens) {
 	int i = 0;
 	printf("received tokens: ");
 	while (tokens[i] != NULL) {
-		printf("%d) %s ", (i + 1), tokens[i]);
+		printf("%d %s ", (i + 1), tokens[i]);
 		i++;
 	}
 	printf("\n");

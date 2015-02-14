@@ -22,8 +22,7 @@ void do_execute(char** tokens, char** envpp) {
 			current = next + 1;
 		} else {
 			printf("command not found\n");
-
-			break;
+			exit(0);
 		}
 	}
 }
@@ -183,14 +182,24 @@ char** cmd_line_arg_case(char input[ARG_LIMIT], char* argv[], char* envpp[]) {
  * FIXED BUG: setenv without arguments setenv with 1 argument.
  *
  */
+void remove_trail_nl(char *input){
+	size_t len=0;
+	while(input[len]!='\n'){
+		len++;
+	}
+	input[len]='\0';
+	printf("%s",input);
+}
 char** interactive_case(char input[ARG_LIMIT], char* envpp[]) {
 	char ps1[] = "PS1=prompt>>";
 	envpp = setEnv(ps1, envpp);
 	while (1) {
 		printf("%s", getEnv("PS1=", envpp));
-		printEnviron(envpp);
-		scanf(" %1000[^\n]", input);
-		if (strcmp(input, "exit") == 0) {
+		//printEnviron(envpp);
+		read(0,input,1000);
+		remove_trail_nl(input);
+		//scanf(" %1000[^\n]", input);
+		if (strncmp(input, "exit",4) == 0) {
 			break;
 		}
 		char** tokens = advance_tokenize(input, ' ', '"');
@@ -213,7 +222,7 @@ char ** process_main(int argc, char* argv[], char* envpp[]) {
 void pipetest(char *envpp[]) {
 	char* ps = "/bin/ps";
 	char *tokens1[] = { ps, NULL };
-	char* less = "/usr/bin/less";
+	char* less = "/usr/bin/wc";
 	char *tokens2[] = { less, NULL };
 
 	int filedes[2];
@@ -240,10 +249,10 @@ void pipetest(char *envpp[]) {
 
 int main(int argc, char* argv[], char* envpp[]) {
 //	char input[ARG_LIMIT];
-//	envpp = process_main(argc, argv, envpp); //made input inside the process_main
-//	return 0;								//and checking if it is script with 1 script only
+	envpp = process_main(argc, argv, envpp); //made input inside the process_main
+	return 0;								//and checking if it is script with 1 script only
 
-	pipetest(envpp);
-	return 0;
+	//pipetest(envpp);
+	//return 0;
 }
 
