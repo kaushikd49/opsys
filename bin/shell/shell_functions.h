@@ -38,7 +38,7 @@ char **tokenize(char *input, char delim) {
 }
 
 char * escape_aware_copy(char *input, int startIdx, int endIdx, char delim) {
-	char *token = (char*) malloc((endIdx - startIdx) * sizeof(char));
+	char *token = (char*) malloc((endIdx - startIdx + 1) * sizeof(char));
 	int i = startIdx, j = 0;
 	while (i < endIdx) {
 		if (input[i] == '\\') {
@@ -55,6 +55,7 @@ char * escape_aware_copy(char *input, int startIdx, int endIdx, char delim) {
 		}
 		i++;
 	}
+	token[j++] = '\0';
 	return token;
 }
 
@@ -226,4 +227,12 @@ int read_line(char *buffer, int FD) {
 		flag = 0;
 	*(buffer + i) = '\0';
 	return flag;
+}
+
+int contains_pipe(char **tokens) {
+	for (char **p = tokens; *p != NULL; p++) {
+		if (strchr(*p, '|') != NULL)
+			return 1;
+	}
+	return 0;
 }

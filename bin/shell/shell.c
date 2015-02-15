@@ -166,6 +166,83 @@ char ** handleSetenv(char **tokens, char *envpp[]) {
 	return envpp;
 }
 
+
+int* pipefd_offset(int all_filedes[], int pipe_number) {
+	return all_filedes + ((pipe_number - 1) * 2);
+}
+
+void handle_pipe(char **tokens, char * envpp[]) {
+	// partition **tokens based on '|' occurance
+	char **p = tokens;
+	int pipes = 0;
+	int MAX_PIPES = 10;
+	int max_tokens = 0;
+
+	while (*p != NULL) {
+		max_tokens++;
+		if (**p == '|' && **(p + 1) != '\0') {
+			pipes++;
+			if (pipes > MAX_PIPES) {
+				printf("too many pipes passed. Only %d allowed", MAX_PIPES);
+				exit(1);
+			}
+		}
+		p++;
+	}
+
+	p = tokens;
+	char *subset_tokens[max_tokens];
+	int total_pipe_fds = pipes * 2;
+	int all_filedes[total_pipe_fds]; // all filedes arrays as part of single huge array
+
+	for (int i = 0; i < pipes; i++) {
+		int *filedes = pipefd_offset(all_filedes, i + 1);
+		int status = pipe(filedes);
+		if (status != 0) {
+			printf("error opening pipe #%d", i + 1);
+			exit(1);
+		}
+	}
+
+	int i = 0, j = 0;
+	for (i = 0, j = 0; *p != NULL; i++, p++) {
+		if (**p == '|' && **(p + 1) != '\0') { // pipe encountered
+			j++; // pipe count
+			subset_tokens[i++] = NULL; // end of subset of tokens to be passed to execve
+			i = 0; // reset index for reuse
+
+			if (j == 1) {
+				// first cmd
+				int *pipefds = pipefd_offset(all_filedes, j); // filedes ptr offset
+				int readsf[2] = { -1, -1 };
+				int writesf[2] = { pipefds[1], 1 };
+				handleChildPipeExec2(subset_tokens, envpp, all_filedes,
+						total_pipe_fds, readsf, writesf);
+			} else if (j != pipes) {
+				// intermediate cmd
+				int *prevpipefds = pipefd_offset(all_filedes, j - 1); // filedes ptr offset
+				int *nextpipefds = pipefd_offset(all_filedes, j); // filedes ptr offset
+				int readsi[2] = { prevpipefds[0], 0 };
+				int writesi[2] = { nextpipefds[1], 1 };
+				handleChildPipeExec2(subset_tokens, envpp, all_filedes,
+						total_pipe_fds, readsi, writesi);
+			}
+		} else {
+			subset_tokens[i++] = *p;
+		}
+	}
+
+	{
+		// last cmd
+		subset_tokens[i++] = NULL;
+		int *pipefds = pipefd_offset(all_filedes, j); // filedes ptr offset
+		int readsl[2] = { pipefds[0], 0 };
+		int writesl[2] = { -1, -1 };
+		handleChildPipeExec2(subset_tokens, envpp, all_filedes, total_pipe_fds,
+				readsl, writesl);
+	}
+}
+
 char ** take_action(char** tokens, char *envpp[]) {
 	print_tokens(tokens);
 	char *cmd = tokens[0];
@@ -177,6 +254,8 @@ char ** take_action(char** tokens, char *envpp[]) {
 		handleGetenv(tokens, envpp);
 	} else if (strcmp("cd", cmd) == 0) {
 		chdir(tokens[1]); //todo: return status
+	} else if (contains_pipe(tokens)) {
+		handle_pipe(tokens, envpp);
 	} else {
 		handleChildExec(tokens, envpp);
 	}
@@ -251,39 +330,6 @@ char ** process_main(int argc, char* argv[], char* envpp[]) {
 	return envpp;
 }
 
-//void handle_pipe(char **tokens, char * envpp[]) {
-//	// partition **tokens based on '|' occurance 
-//	char *p = *tokens;
-//	int pipes = 0;
-//	int MAX_PIPES = 10;
-//	int max_tokens = 0;
-//	
-//	while(p != NULL) {
-//		max_tokens++;
-//		if(*p == '|' && *(p+1) != '\0') {
-//			pipes++;
-//			if(pipes > MAX_PIPES) {
-//				printf("too many pipes passed. Only %d allowed", MAX_PIPES);
-//				exit(1);
-//			}
-//		}
-//		p++;
-//	}
-//
-//	p = *tokens;
-//	char *q = p;
-//	char *subset_tokens[max_tokens];
-//	int *all_filedes[pipes*2]; // all filedes arrays as part of singe huge array
-//	for(int i = 0; p != NULL; i++, p++) {
-//		subset_tokens[i++] = p;
-//		if(*p == '|' && *(p+1) != '\0') { // pipe enountered
-//			subset_tokens[i++] = NULL; // subset of tokens to be passed to execve
-//			i = 0; // reset index for reuse
-//			int *filedes = all_filedes + (i*2);
-//		}
-//	}
-//}
-//
 void pipetest2(char *envpp[]) {
 	char* ps = "/bin/ls";
 	char *tokens1[] = { ps, NULL };
@@ -368,10 +414,10 @@ void pipetest(char *envpp[]) {
 
 int main(int argc, char* argv[], char* envpp[]) {
 //	char input[ARG_LIMIT];
-//	envpp = process_main(argc, argv, envpp); //made input inside the process_main
-//	return 0;				//and checking if it is script with 1 script only
+	envpp = process_main(argc, argv, envpp); //made input inside the process_main
+	return 0;				//and checking if it is script with 1 script only
 
-	pipetest(envpp);
-	return 0;
+//	pipetest(envpp);
+//	return 0;
 }
 
