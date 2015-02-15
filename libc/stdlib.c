@@ -24,12 +24,11 @@ void exit(int status) {
 //check if we have to do PIPE ERRORS: EAGAIN if O_NONBLOCK is set,2)if interupted by a signal. http://linux.die.net/man/3/read
 //EBADMSG ?? LOT OF ERRNOS did not check
 ssize_t read(int fd, void *buf, size_t count) {
-	size_t size = syscall_4_write(SYS_read, fd, buf, count);//we could change this to use the generic syscall_4 but why break.
-	if(size == 0xFFFFFFFFFFFFFFF7){
+	size_t size = syscall_4_write(SYS_read, fd, buf, count); //we could change this to use the generic syscall_4 but why break.
+	if (size == 0xFFFFFFFFFFFFFFF7) {
 		errno = EBADF;
 		return -1;
-	}
-	else if((signed long)size <0){
+	} else if ((signed long) size < 0) {
 		errno = READERR;
 		return -1;
 	}
@@ -50,11 +49,10 @@ size_t write(int fd, const void *buf, size_t count) {
 	 :"rax", "rdi", "rsi", "rdx", "memory"
 	 );*/
 	size_t size = syscall_4_write(SYS_write, fd, buf, count);
-	if(size == 0xFFFFFFFFFFFFFFF7){
+	if (size == 0xFFFFFFFFFFFFFFF7) {
 		errno = EBADF;
 		return -1;
-		}
-	else if((signed long)size <0){
+	} else if ((signed long) size < 0) {
 		errno = WRITEERR;
 		return -1;
 	}
@@ -72,20 +70,20 @@ size_t strlen(const char *str) {
 }
 int printInteger(int n) {
 	int count = 0, i = 10, neg = 0;
-	char number[11]="0000000000"; // log(2^31-1) + sign char
+	char number[11] = "0000000000"; // log(2^31-1) + sign char
 
 	if (n < 0) {
 		neg = 1;
 		n *= -1;
-	} else if (n > 0) {
-		while (n != 0) {
-			char rem = (n % 10) + '0';
-			number[i--] = rem;
-			n /= 10;
-			count++;
-		}
-	} else {
+	} else if (n == 0) {
 		i -= 2;
+		count++;
+	}
+
+	while (n != 0) {
+		char rem = (n % 10) + '0';
+		number[i--] = rem;
+		n /= 10;
 		count++;
 	}
 
@@ -102,13 +100,12 @@ int printInteger(int n) {
 int printHexInt(int n) {
 	char res[] = "00000000", c = '0';
 	int base = 0xf, i = 7, new_n = n, j = 0;
-	
-	if(n == 0) {
+
+	if (n == 0) {
 		char *zero = "0";
 		write(1, zero, 1);
 		return 1;
 	}
-
 
 	while (new_n != 0) {
 		int nibble = (0xf) & (base & new_n) >> (4 * j);
@@ -137,8 +134,8 @@ int printf(const char *format, ...) {
 
 	va_start(val, format);
 
-	while(*format && *(format+1)) {
-		if(*format == '%') {
+	while (*format && *(format + 1)) {
+		if (*format == '%') {
 			format++;
 			char character = *format;
 
@@ -168,7 +165,7 @@ int printf(const char *format, ...) {
 		format++;
 	}
 
-	while(*format) {
+	while (*format) {
 		write(1, format, 1);
 		printed++;
 		format++;
@@ -285,7 +282,7 @@ void scan_token(int* scanned, char_ptr *buffer_ptr, char_ptr ptrs[],
 	*scanned = *scanned + 1;
 	int i = 0;
 
-	while(**buffer_ptr == ' ')
+	while (**buffer_ptr == ' ')
 		*buffer_ptr = *buffer_ptr + 1;
 
 	char* temp = *buffer_ptr;
@@ -305,7 +302,7 @@ int scanf(const char *format, ...) {
 	static char buffer[1000];
 	static char *buffer_ptr = buffer;
 
-	if(buffer-buffer_ptr==1000)
+	if (buffer - buffer_ptr == 1000)
 		buffer_ptr = buffer;
 	read(0, buffer, limit);
 
@@ -360,12 +357,12 @@ uint64_t get_brk(uint64_t size) {
 
 }
 //brk done returns -1 on failure and sets ENOMEM
-int brk(void *end_data_segment){
+int brk(void *end_data_segment) {
 	uint64_t memoryStart = get_brk(0);
 	uint64_t returnBrk = get_brk((uint64_t) (end_data_segment));//todo: does get_brk return a value?? adding here: in our shell see if we free all mallocs
-		//heap overflow check.
-	if(returnBrk == memoryStart){
-		errno =ENOMEM;
+	//heap overflow check.
+	if (returnBrk == memoryStart) {
+		errno = ENOMEM;
 		return -1;
 	}
 	return 0;
@@ -398,11 +395,13 @@ void *findBest(struct blockHeader *head, uint64_t size) {
 	}
 	return ptr;
 }
-struct blockHeader *fragmentBlock( struct blockHeader *loc, size_t prevSize){
+struct blockHeader *fragmentBlock(struct blockHeader *loc, size_t prevSize) {
 	size_t resetMask = 0xFFFFFFFFFFFFFFFE;
 	struct blockHeader *next = loc->next;
-	if((prevSize - (loc->size & resetMask))>(size_t)(sizeof(struct blockHeader))){
-		struct blockHeader *newNext = (struct blockHeader *)((uint64_t)loc + (uint64_t)(loc->size & resetMask));
+	if ((prevSize - (loc->size & resetMask))
+			> (size_t) (sizeof(struct blockHeader))) {
+		struct blockHeader *newNext = (struct blockHeader *) ((uint64_t) loc
+				+ (uint64_t) (loc->size & resetMask));
 		newNext->size = prevSize - (loc->size & resetMask);
 		newNext->next = next;
 		return newNext;
@@ -420,10 +419,10 @@ void *malloc(uint64_t size) {
 	void *loc = findBest(head, memSize);
 	if (loc != NULL) {
 		struct blockHeader *metaData = (struct blockHeader *) loc;
-		size_t prevSize= metaData->size;
+		size_t prevSize = metaData->size;
 		metaData->size = memSize;
 		metaData->size = (metaData->size) | 1;
-		metaData->next = fragmentBlock(loc,prevSize);
+		metaData->next = fragmentBlock(loc, prevSize);
 		void *returnAddress = (void *) ((uint64_t) loc
 				+ sizeof(struct blockHeader));
 		printAllocmemory(head);
@@ -434,11 +433,11 @@ void *malloc(uint64_t size) {
 	uint64_t memoryStart = get_brk(0);
 	printf("MEMORY START:%d\n", memoryStart);
 	//printf("memsize:%d  %d\n",memSize,memoryStart);
-	uint64_t newBrk = (uint64_t) (memoryStart + memSize);//todo: does get_brk return a value?? adding here: in our shell see if we free all mallocs
+	uint64_t newBrk = (uint64_t) (memoryStart + memSize); //todo: does get_brk return a value?? adding here: in our shell see if we free all mallocs
 	//heap overflow check.
-	int retBrk = brk((void *)newBrk);
-	if(retBrk== -1){
-		if(errno == ENOMEM){
+	int retBrk = brk((void *) newBrk);
+	if (retBrk == -1) {
+		if (errno == ENOMEM) {
 			errno = ENOMEM;
 			//printf("\nmem. Alloc failed. Out of Memory");
 			return NULL;
@@ -459,24 +458,25 @@ void *malloc(uint64_t size) {
 		tail = metaData;
 	}
 	void *returnAddress = (void *) (memoryStart + sizeof(struct blockHeader));
-	if(head2 == NULL && head!=NULL)
-			head2 = &head;
+	if (head2 == NULL && head != NULL)
+		head2 = &head;
 	printAllocmemory(*head2);
 	return returnAddress;
 
 }
-void *memset(void *s, int c, size_t n){
-	int *current = (int *)s;
+void *memset(void *s, int c, size_t n) {
+	int *current = (int *) s;
 	//int offset = 0;
-	if(n%4!=0){
-		printf("\nmemset dangerous: programmer care required when assigning to this area");
+	if (n % 4 != 0) {
+		printf(
+				"\nmemset dangerous: programmer care required when assigning to this area");
 		return s;
 	}
-	while((size_t)(current) < (size_t)s+(size_t)n){
+	while ((size_t) (current) < (size_t) s + (size_t) n) {
 		*(current) = c;
 		current++;
 	}
-	return (void *)s;
+	return (void *) s;
 }
 //does not have error value, linux defines illegal pointer access as undefined.
 void free(void *ptr) {
@@ -487,7 +487,7 @@ void free(void *ptr) {
 	//printf("\nfreeing\n");
 	//printf("\n%d",current->size);
 	current->size = (current->size) & 0xFFFFFFFFFFFFFFFE;
-	memset(ptr,0,8);
+	memset(ptr, 0, 8);
 	//printf("meset successful");
 	//printf("\n%d",current->size);
 	//printAllocmemory(*head2);
@@ -501,20 +501,20 @@ char *strcpy(char *dst, char *src) {
 	dst[len] = '\0';
 	return dst;
 }
-int strcmp(char *string1, char *string2){
+int strcmp(char *string1, char *string2) {
 	size_t len = 0;
-	while(string1[len] !='\0' && string2[len]!='\0') {
-		if(string1[len] !=string2[len])
+	while (string1[len] != '\0' && string2[len] != '\0') {
+		if (string1[len] != string2[len])
 			break;
 		len++;
 	}
-	if(string1[len] == string2[len])
+	if (string1[len] == string2[len])
 		return 0;
-	else if(string1[len]=='\0' ||(string2[len] !='\0' && string1[len]<string2[len])){
-		return (int)string2[len];
-	}
-	else{
-		return (int)string1[len];
+	else if (string1[len] == '\0'
+			|| (string2[len] != '\0' && string1[len] < string2[len])) {
+		return (int) string2[len];
+	} else {
+		return (int) string1[len];
 	}
 
 }
@@ -533,7 +533,7 @@ size_t strncmp(char *string1, char *string2, int n) {
 		return (size_t) string2[len];
 }
 //source:mode values taken from linux man pages. http://man7.org/linux/man-pages/man2/open.2.html
-enum{
+enum {
 	S_IRWXU = 00700,
 	S_IRUSR = 00400,
 	S_IWUSR = 00200,
@@ -550,104 +550,82 @@ enum{
 //
 size_t open(const char *filename, int permission) {
 	unsigned short mode;
-	if((permission & 0x40)!=0)
-		 mode = DEFAULT_MODE; //todo:verify the mode. default rwx
-	uint64_t result =  syscall_3(SYS_open, (uint64_t)filename, (uint64_t)permission,(uint64_t)mode);
-	if((signed long)result == -EACCES){//checked
-		errno =EACCES;//premission denied to access the file
+	if ((permission & 0x40) != 0)
+		mode = DEFAULT_MODE; //todo:verify the mode. default rwx
+	uint64_t result = syscall_3(SYS_open, (uint64_t) filename,
+			(uint64_t) permission, (uint64_t) mode);
+	if ((signed long) result == -EACCES) { //checked
+		errno = EACCES; //premission denied to access the file
 		return -1;
-	}
-	else if((signed long)result == -ENOENT){//checked
-		errno = ENOENT;//file or directory does not exist
+	} else if ((signed long) result == -ENOENT) { //checked
+		errno = ENOENT; //file or directory does not exist
 		printf("file or directory not present");
 		return -1;
-	}
-	else if((signed long)result == -EEXIST){//checked
-		errno = EEXIST;//file already exists returns when using O_CREATE
+	} else if ((signed long) result == -EEXIST) { //checked
+		errno = EEXIST; //file already exists returns when using O_CREATE
 		printf("file exists");
 		return -1;
-	}
-	else if((signed long)result == -EDQUOT){
-		errno = EDQUOT;//quota of open files exceeded by user.
+	} else if ((signed long) result == -EDQUOT) {
+		errno = EDQUOT; //quota of open files exceeded by user.
 		return -1;
-		}
-	else if((signed long)result == -EFAULT){
-		errno = EFAULT;//bad address (Accessing illegal memory).
+	} else if ((signed long) result == -EFAULT) {
+		errno = EFAULT; //bad address (Accessing illegal memory).
 		return -1;
-	}
-	else if((signed long)result == -EFBIG){
-		errno = EFBIG;//file we are reading is too large
+	} else if ((signed long) result == -EFBIG) {
+		errno = EFBIG; //file we are reading is too large
 		return -1;
-	}
-	else if((signed long)result == -EINTR){
-		errno = EINTR;//if a signal handler interrupts an open
+	} else if ((signed long) result == -EINTR) {
+		errno = EINTR; //if a signal handler interrupts an open
 		return -1;
-	}
-	else if((signed long)result == -EISDIR){
-			errno = EISDIR;//happens if the program wanted to read or write a directory.
-			return -1;
-			}
-	else if((signed long)result == -ELOOP){
-		errno = ELOOP;//too many sybolic links to follow.
+	} else if ((signed long) result == -EISDIR) {
+		errno = EISDIR; //happens if the program wanted to read or write a directory.
 		return -1;
-	}
-	else if((signed long)result == -EMFILE){//checked
-		errno = EMFILE;//too many files open by process
+	} else if ((signed long) result == -ELOOP) {
+		errno = ELOOP; //too many sybolic links to follow.
 		return -1;
-	}
-	else if((signed long)result == -ENAMETOOLONG){
-			errno = ENAMETOOLONG;//too many files open by process
-			return -1;
-		}
-	else if((signed long)result == -ENFILE){
-		errno = ENFILE;//the device address does not exist
+	} else if ((signed long) result == -EMFILE) { //checked
+		errno = EMFILE; //too many files open by process
 		return -1;
-	}
-	else if((signed long)result == -ENODEV){
-			errno = ENODEV;//too many files open by process
-			return -1;
-		}
-	else if((signed long)result == -ENOENT){
-			errno = ENOENT;//too many files open by process
-			return -1;
-		}
-	else if((signed long)result == -ENOMEM){
-		errno = ENOMEM;//insufficient kernel are available
+	} else if ((signed long) result == -ENAMETOOLONG) {
+		errno = ENAMETOOLONG; //too many files open by process
 		return -1;
-	}
-	else if((signed long)result == -ENOSPC){
-		errno = ENOSPC;//no way to create pathname as no space for file
+	} else if ((signed long) result == -ENFILE) {
+		errno = ENFILE; //the device address does not exist
 		return -1;
-	}
-	else if((signed long)result == -ENOTDIR){//checked
-		errno = ENOTDIR;//pathname not a dir, but O_DIR specified
+	} else if ((signed long) result == -ENODEV) {
+		errno = ENODEV; //too many files open by process
 		return -1;
-	}
-	else if((signed long)result == -ENXIO){
-		errno = ENXIO;// no file is open for reading
+	} else if ((signed long) result == -ENOENT) {
+		errno = ENOENT; //too many files open by process
 		return -1;
-	}
-	else if((signed long)result == -EOVERFLOW){
-		errno = EOVERFLOW;//file is too large to open
+	} else if ((signed long) result == -ENOMEM) {
+		errno = ENOMEM; //insufficient kernel are available
 		return -1;
-	}
-	else if((signed long)result == -EPERM){
+	} else if ((signed long) result == -ENOSPC) {
+		errno = ENOSPC; //no way to create pathname as no space for file
+		return -1;
+	} else if ((signed long) result == -ENOTDIR) { //checked
+		errno = ENOTDIR; //pathname not a dir, but O_DIR specified
+		return -1;
+	} else if ((signed long) result == -ENXIO) {
+		errno = ENXIO; // no file is open for reading
+		return -1;
+	} else if ((signed long) result == -EOVERFLOW) {
+		errno = EOVERFLOW; //file is too large to open
+		return -1;
+	} else if ((signed long) result == -EPERM) {
 		errno = EPERM;
 		return -1;
-	}
-	else if((signed long)result == -EROFS){
-		errno = EROFS;//pathname refers to a file read-only, write access requested
+	} else if ((signed long) result == -EROFS) {
+		errno = EROFS; //pathname refers to a file read-only, write access requested
 		return -1;
-	}
-	else if((signed long)result == -ETXTBSY){
-		errno = ETXTBSY;//an executable is being executed and write access req
+	} else if ((signed long) result == -ETXTBSY) {
+		errno = ETXTBSY; //an executable is being executed and write access req
 		return -1;
-	}
-	else if((signed long)result == -EWOULDBLOCK){
-		errno = EWOULDBLOCK;//too many files open by process
+	} else if ((signed long) result == -EWOULDBLOCK) {
+		errno = EWOULDBLOCK; //too many files open by process
 		return -1;
-	}
-	else if((signed long)result <0 ){
+	} else if ((signed long) result < 0) {
 		errno = OPENERROR;
 		printf("\nopen error");
 		return -1;
@@ -658,15 +636,13 @@ size_t open(const char *filename, int permission) {
 pid_t fork(void) {
 	pid_t result;
 	result = syscall_0(SYS_fork);
-	if((pid_t)result == -EAGAIN){
+	if ((pid_t) result == -EAGAIN) {
 		errno = EAGAIN;
 		return -1;
-	}
-	else if((pid_t)result == -EAGAIN){
+	} else if ((pid_t) result == -EAGAIN) {
 		errno = EAGAIN;
 		return -1;
-	}
-	else if((pid_t)result == -ENOMEM){
+	} else if ((pid_t) result == -ENOMEM) {
 		errno = ENOMEM;
 		return -1;
 	}
@@ -676,63 +652,50 @@ int execve(const char *filename, char * const argv[], char * const envp[]) {
 	int64_t result;
 	result = syscall_3(SYS_execve, (uint64_t) filename, (uint64_t) argv,
 			(uint64_t) envp);
-	if(result == -E2BIG){
+	if (result == -E2BIG) {
 		errno = E2BIG;
 		return -1;
-	}
-	else if(result == -EACCES){
+	} else if (result == -EACCES) {
 		errno = EACCES;
 		return -1;
-	}
-	else if(result == -EFAULT){
+	} else if (result == -EFAULT) {
 		errno = EFAULT;
 		return -1;
-	}
-	else if(result == -EIO){
+	} else if (result == -EIO) {
 		errno = EIO;
 		return -1;
-	}
-	else if(result == -ELOOP){
+	} else if (result == -ELOOP) {
 		errno = ELOOP;
 		return -1;
-	}
-	else if(result == -EMFILE){
+	} else if (result == -EMFILE) {
 		errno = EMFILE;
 		return -1;
-	}
-	else if(result == -ENAMETOOLONG){
+	} else if (result == -ENAMETOOLONG) {
 		errno = ENAMETOOLONG;
 		return -1;
-	}
-	else if(result == -ENFILE){
+	} else if (result == -ENFILE) {
 		errno = ENFILE;
 		return -1;
-	}
-	else if(result == -ENOENT){
+	} else if (result == -ENOENT) {
 		errno = ENOENT;
 		return -1;
-	}
-	else if(result == -ENOMEM){
+	} else if (result == -ENOMEM) {
 		errno = ENOMEM;
 		return -1;
-	}
-	else if(result == -ENOEXEC){
+	} else if (result == -ENOEXEC) {
 		errno = ENOEXEC;
 		return -1;
-	}
-	else if(result == -ENOTDIR){
+	} else if (result == -ENOTDIR) {
 		errno = ENOTDIR;
 		return -1;
-	}
-	else if(result == -EPERM){
+	} else if (result == -EPERM) {
 		errno = EPERM;
 		return -1;
-	}
-	else if(result == -ETXTBSY){
+	} else if (result == -ETXTBSY) {
 		errno = ETXTBSY;
 		return -1;
 	}
-	errno =EXECVEERROR;
+	errno = EXECVEERROR;
 	return -1;
 }
 
@@ -760,17 +723,17 @@ char *strcat(char *dest, const char *src) {
 pid_t waitpid(pid_t pid, int *stat_loc, int options) {
 //struct ruseage info;
 	int result;
-	result =  syscall_4_wait(SYS_wait4, pid, stat_loc, options);
-	if(result <0){
-		if(result == -ECHILD){
+	result = syscall_4_wait(SYS_wait4, pid, stat_loc, options);
+	if (result < 0) {
+		if (result == -ECHILD) {
 			errno = ECHILD;
 			return -1;
 		}
-		if(result == -EINTR){
+		if (result == -EINTR) {
 			errno = EINTR;
 			return -1;
 		}
-		if(result == -EINVAL){
+		if (result == -EINVAL) {
 			errno = EINVAL;
 			return -1;
 		}
@@ -788,37 +751,30 @@ pid_t getpid(void) {
 
 int chdir(const char* path) {
 	int64_t result;
-	result =  syscall_1(SYS_chdir, (uint64_t) path);
-	if(result <0){
-		if(result == -EACCES){
+	result = syscall_1(SYS_chdir, (uint64_t) path);
+	if (result < 0) {
+		if (result == -EACCES) {
 			errno = EACCES;
 			return -1;
-		}
-		else if(result == -EFAULT){
+		} else if (result == -EFAULT) {
 			errno = EFAULT;
 			return -1;
-		}
-		else if(result == -EIO){
+		} else if (result == -EIO) {
 			errno = EIO;
 			return -1;
-		}
-		else if(result == -ELOOP){
+		} else if (result == -ELOOP) {
 			errno = ELOOP;
 			return -1;
-		}
-		else if(result == -ENAMETOOLONG){
+		} else if (result == -ENAMETOOLONG) {
 			errno = ENAMETOOLONG;
 			return -1;
-		}
-		else if(result == -ENOENT){
+		} else if (result == -ENOENT) {
 			errno = ENOENT;
 			return -1;
-		}
-		else if(result == -ENOMEM){
+		} else if (result == -ENOMEM) {
 			errno = ENOMEM;
 			return -1;
-		}
-		else if(result == -ENOTDIR){
+		} else if (result == -ENOTDIR) {
 			errno = ENOTDIR;
 			return -1;
 		}
@@ -829,48 +785,43 @@ int chdir(const char* path) {
 int close(int handle) {
 	int64_t result;
 	result = syscall_1(SYS_close, (uint64_t) handle);
-	if(result <0){
-		if(result == -EBADF){
+	if (result < 0) {
+		if (result == -EBADF) {
 			errno = EBADF;
 			return -1;
-		}
-		else if(result == -EINTR){
+		} else if (result == -EINTR) {
 			errno = EINTR;
 			return -1;
-		}
-		else if(result == -EIO){
+		} else if (result == -EIO) {
 			errno = EIO;
 			return -1;
 		}
 	}
 	return 0;
 }
-off_t lseek(int fildes, off_t offset, int whence){
+off_t lseek(int fildes, off_t offset, int whence) {
 	uint64_t result;
-	result = syscall_3(SYS_lseek,(uint64_t)fildes,(uint64_t)offset,(uint64_t)whence);
-	if((int64_t)result <0){
-		if((int64_t)result ==-EBADF){
+	result = syscall_3(SYS_lseek, (uint64_t) fildes, (uint64_t) offset,
+			(uint64_t) whence);
+	if ((int64_t) result < 0) {
+		if ((int64_t) result == -EBADF) {
 			errno = EBADF;
 			return -1;
-		}
-		else if((int64_t)result ==-EBADF){
+		} else if ((int64_t) result == -EBADF) {
 			errno = EBADF;
 			return -1;
-		}
-		else if((int64_t)result ==-EINVAL){
+		} else if ((int64_t) result == -EINVAL) {
 			errno = EINVAL;
 			return -1;
-		}
-		else if((int64_t)result ==-EOVERFLOW){
+		} else if ((int64_t) result == -EOVERFLOW) {
 			errno = EOVERFLOW;
 			return -1;
-		}
-		else{
-			errno =LSEEKERROR;
+		} else {
+			errno = LSEEKERROR;
 			return -1;
 		}
 	}
-	return (off_t)result;
+	return (off_t) result;
 }
 int dup2(int oldfd, int newfd) {
 	return syscall_3_dup2(SYS_dup2, oldfd, newfd);
@@ -887,55 +838,58 @@ struct dirent {
 	unsigned short d_reclen;
 	char d_name[NAME_MAX + 1];
 };
-struct dir{
+struct dir {
 	struct dirent *current;
 	int fd;
 };
 typedef struct dir DIR;
-void *opendir(const char *name){
+void *opendir(const char *name) {
 
-	struct dir *returnVal = (struct dir *)malloc(sizeof(struct dir));
-	int fd = open(name,0|0x10000);
-	if((signed long)fd < 0){
-		returnVal = NULL;//errno has been set by open
+	struct dir *returnVal = (struct dir *) malloc(sizeof(struct dir));
+	int fd = open(name, 0 | 0x10000);
+	if ((signed long) fd < 0) {
+		returnVal = NULL; //errno has been set by open
 		return returnVal;
 	}
-	struct dirent *direntries = (struct dirent *)malloc(MAX_DIR*sizeof(struct dirent));
-	syscall_3((uint64_t)SYS_getdents,(uint64_t)fd,(uint64_t)direntries, MAX_DIR*sizeof(struct dirent));
+	struct dirent *direntries = (struct dirent *) malloc(
+			MAX_DIR * sizeof(struct dirent));
+	syscall_3((uint64_t) SYS_getdents, (uint64_t) fd, (uint64_t) direntries,
+			MAX_DIR * sizeof(struct dirent));
 	//struct dirent *temp = (struct dirent *)(direntries);
 	//printf("2STR1:%s \n",temp->d_name);
 	//printf("2STR1:%d \n",temp->d_off);
 	//printf("2STR1:%d \n",temp->d_reclen);
 
 	//struct dirent *temp1 = (struct dirent *)((uint64_t)temp + (uint64_t)temp->d_reclen); //check if you want to use offset
-		//printf("2STR1:%s\n",temp1->d_name);
+	//printf("2STR1:%s\n",temp1->d_name);
 
 	returnVal->current = direntries;
 	returnVal->fd = fd;
 	return returnVal;
 }
-struct dirent *readdir(void *dir){
-	DIR *dentry = (DIR *)dir;
-	if(dentry == NULL){
+struct dirent *readdir(void *dir) {
+	DIR *dentry = (DIR *) dir;
+	if (dentry == NULL) {
 		errno = EBADF;
 		return NULL;
 	}
 	struct dirent *returnDirent = dentry->current;
-	if(dentry->current->d_reclen == 0)
+	if (dentry->current->d_reclen == 0)
 		return NULL;
-	dentry->current = (struct dirent *)((uint64_t)dentry->current+ (uint64_t)dentry->current->d_reclen);
+	dentry->current = (struct dirent *) ((uint64_t) dentry->current
+			+ (uint64_t) dentry->current->d_reclen);
 	return returnDirent;
 }
-int closedir(void *dir){
+int closedir(void *dir) {
 
-	DIR *dentry = (DIR *)dir;
-	if(dentry == NULL){
+	DIR *dentry = (DIR *) dir;
+	if (dentry == NULL) {
 		errno = EBADF;
 		return -1;
 	}
 	free(dentry->current);
-	int check =  close(dentry->fd);
-	if(check <0){
+	int check = close(dentry->fd);
+	if (check < 0) {
 		errno = EBADF;
 		return -1;
 	}
