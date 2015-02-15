@@ -561,12 +561,12 @@ size_t open(const char *filename, int permission) {
 	}
 	else if((signed long)result == -ENOENT){//checked
 		errno = ENOENT;//file or directory does not exist
-		printf("file or directory not present");
+		//printf("file or directory not present");
 		return -1;
 	}
 	else if((signed long)result == -EEXIST){//checked
 		errno = EEXIST;//file already exists returns when using O_CREATE
-		printf("file exists");
+		//printf("file exists");
 		return -1;
 	}
 	else if((signed long)result == -EDQUOT){
@@ -651,7 +651,7 @@ size_t open(const char *filename, int permission) {
 	}
 	else if((signed long)result <0 ){
 		errno = OPENERROR;
-		printf("\nopen error");
+		//printf("\nopen error");
 		return -1;
 	}
 	return result;
@@ -661,10 +661,6 @@ pid_t fork(void) {
 	pid_t result;
 	result = syscall_0(SYS_fork);
 	if((pid_t)result == -EAGAIN){
-		errno = EAGAIN;
-		return -1;
-	}
-	else if((pid_t)result == -EAGAIN){
 		errno = EAGAIN;
 		return -1;
 	}
@@ -824,10 +820,40 @@ int chdir(const char* path) {
 			errno = ENOTDIR;
 			return -1;
 		}
+		else{
+			errno = CHDIRERROR;
+			return -1;
+		}
 	}
 	return 0;
 }
-
+char *getcwd(char *buf, size_t size){
+	int64_t result;
+	result = syscall_2_test(SYS_getcwd, (uint64_t)buf, (uint64_t)size);
+	if(result <0){
+		if(result == -EACCES){
+			errno = EACCES;
+			return NULL;
+		}
+		else if(result == -EFAULT){
+			errno = EFAULT;
+			return NULL;
+		}
+		else if(result == -EINVAL){
+			errno = EINVAL;
+			return NULL;
+		}
+		else if(result == -ERANGE){
+			errno = ERANGE;
+			return NULL;
+		}
+		else {
+			errno = GETCWDERROR;
+			return NULL;
+		}
+	}
+	return buf;
+}
 int close(int handle) {
 	int64_t result;
 	result = syscall_1(SYS_close, (uint64_t) handle);
@@ -942,5 +968,44 @@ int closedir(void *dir){
 		return -1;
 	}
 	return 0;
+}
+//sleep
+struct timespec{
+	time_t tv_sec;
+	long tv_nsec;
+
+};
+int nanosleep(const struct timespec *rqtp, struct timespec *rmtp){
+	long result;
+	result = syscall_2_test(SYS_nanosleep, (uint64_t)rqtp, (uint64_t)rmtp);
+	//printf("hello");
+	if(result<0){
+		if(result == -EINTR){
+			printf("EINTR");
+			errno = EINTR;
+			return -1;
+		}
+		else{
+			printf("ERROR");
+			errno = NANOSLEEPERROR;
+			return -1;
+		}
+	}
+	return 0;
+
+}
+unsigned int sleep(unsigned int seconds){
+	struct timespec rqtp;
+	struct timespec tmqp;
+	rqtp.tv_sec = seconds;
+	rqtp.tv_nsec = 0;
+	nanosleep(&rqtp,&tmqp);
+	return tmqp.tv_sec;
+}
+unsigned int alarm(unsigned int seconds){
+	uint64_t result;
+	//printf("hello");
+	result = syscall_1(SYS_alarm, seconds);
+	return (unsigned int)result;
 }
 #endif

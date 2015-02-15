@@ -26,7 +26,7 @@ void do_execute(char** tokens, char** envpp) {
 		}
 	}
 }
-
+//added error handling:hard to test.
 void handleChildExec(char **tokens, char** envpp) {
 	int status;
 	pid_t child = fork();
@@ -34,11 +34,13 @@ void handleChildExec(char **tokens, char** envpp) {
 		if (child == 0) {
 			do_execute(tokens, envpp);
 		} else {
-			waitpid(-1, &status, 0);
+			waitpid(-1, &status, 0);//i did a lot of testing for sleep with waitpid seems to be working. I would suggest test again
 		}
 	} else {
-		printf("internal error unsuccessful fork");
-		exit(0);
+		printf("fork unsuccessful:\n");
+		int backupErrno = errno;
+		errorHandler(backupErrno);
+		return;
 	}
 }
 
@@ -77,8 +79,10 @@ void handleChildPipeExec(char **tokens, char** envpp, int fds[], int fd_to) {
 //			waitpid(-1, &status, 0);
 		}
 	} else {
-		printf("internal error unsuccessful fork");
-		exit(0);
+		printf("fork unsuccessful:\n");
+		int backupErrno = errno;
+		errorHandler(backupErrno);
+		return;
 	}
 }
 
@@ -93,14 +97,16 @@ void handleGetenv(char **tokens, char *envpp[]) {
 		return;
 	}
 	char* getenvOutput = getEnv(cmd, envpp);
-	if (getenvOutput[0] != '=') {
+	if(getenvOutput == NULL){
 		printf("\n");
 		return;
 	}
-	if (getenvOutput != NULL)
-		printf("%s\n", getenvOutput + 1);
-	else
+	else if (getenvOutput[0] != '=') {
 		printf("\n");
+		return;
+	}
+	else
+		printf("%s\n", getenvOutput + 1);
 }
 /*
  * setenv: TESTED
@@ -129,6 +135,11 @@ char ** handleSetenv(char **tokens, char *envpp[]) {
 	}
 	int size = cmdlen + envStrlen + 2;
 	char* newStr = (char*) malloc(size * sizeof(char));
+	if(newStr == NULL){
+		int backupErrno = errno;
+		errorHandler(backupErrno);
+		return envpp;
+	}
 	strcpy(newStr, cmd);
 	strcat(newStr, "=");
 	if (envStr != NULL)
@@ -142,17 +153,29 @@ char ** take_action(char** tokens, char *envpp[]) {
 	char *cmd = tokens[0];
 	if (tokens[0] == NULL)
 		return envpp;
-	if (strcmp("setenv", cmd) == 0) {
+	if(strcmp("exit",cmd) == 0 && tokens[1] == NULL){
+		exit(0);
+	}
+	else if (strcmp("setenv", cmd) == 0) {//tested
 		envpp = handleSetenv(tokens, envpp);
-	} else if (strcmp("getenv", cmd) == 0) {
+	}
+	else if (strcmp("getenv", cmd) == 0) {//tested
 		handleGetenv(tokens, envpp);
-	} else if (strcmp("cd", cmd) == 0) {
-		chdir(tokens[1]); //todo: return status
-	} else {
+	}
+	else if (strcmp("cd", cmd) == 0) {//tested and added error checks
+		int returnVal = chdir(tokens[1]);
+		if(returnVal == -1){
+		int backupErrno = errno;
+		errorHandler(backupErrno);
+		return envpp;
+		}
+	}
+	else {
 		handleChildExec(tokens, envpp);
 	}
 	return envpp;
 }
+
 /*
  * tested file handling when no file as such
  * when I pass multiple files, only first script is run
@@ -166,15 +189,19 @@ char** cmd_line_arg_case(char input[ARG_LIMIT], char* argv[], char* envpp[]) {
 	//todo: check for size greater than ARG_LIMIT
 	int fileHandle = open(argv[1], O_RDONLY);
 	if (fileHandle < 0) {
-		printf("Opening Script: Failed, No such Script exists\n");
+		int backupErrno = errno;
+		errorHandler(backupErrno);
 		return envpp;
 	}
-	do {
+	do {//does not handle comments at the end of the line.
 		flag = read_line(input, fileHandle);
 		char** tokens = advance_tokenize(input, ' ', '"');
-		if (tokens[0] == NULL || strncmp(tokens[0], "#", 1) == 0)
+		if (tokens[0] == NULL || strncmp(tokens[0], "#", 1) == 0){
+			free_char_array(tokens);
 			continue;
+		}
 		envpp = take_action(tokens, envpp);
+		free_char_array(tokens);
 	} while (flag == 1);
 	close(fileHandle);
 
@@ -195,17 +222,23 @@ void remove_trail_nl(char *input){
 char** interactive_case(char input[ARG_LIMIT], char* envpp[]) {
 	char ps1[] = "PS1=prompt>>";
 	envpp = setEnvStack(ps1, envpp);
-	int i = -5;
+	size_t readLen;
 	while (1) {
-		printf("%d %s",i, getEnv("PS1=", envpp));
+		printf("%s", getEnv("PS1=", envpp));
 		//printEnviron(envpp);
-		read(0,input,1000);
-		remove_trail_nl(input);
+		readLen = read(0,input,1000);
+		if(readLen<0){
+			int backupErrno = errno;
+			errorHandler(backupErrno);
+			return envpp;
+		}
+
 		//scanf(" %1000[^\n]", input);
-		if (strncmp(input, "exit",4) == 0) {
+		if (strncmp(input, "exit\n",5) == 0) {//exit only works if it is exit with nothing else following it. other cases of exit can be handled in take action. you can remove this too scared.
 			break;
 		}
-		char** tokens = advance_tokenize(input, ' ', '"');
+		remove_trail_nl(input);
+		char** tokens = advance_tokenize(input, ' ', '"');//did not check
 		envpp = take_action(tokens, envpp);
 		free_char_array(tokens);
 		//free(tokens);
@@ -215,8 +248,8 @@ char** interactive_case(char input[ARG_LIMIT], char* envpp[]) {
 
 char ** process_main(int argc, char* argv[], char* envpp[]) {
 	char input[ARG_LIMIT];
-	if (argc >= 2) { //note it will run only the first script if it has more than one script as parameter. like normal shell
-		envpp = cmd_line_arg_case(input, argv, envpp);
+	if (argc >= 2) { //note: Like normal shell, runs the first script only, if multiple given.
+		envpp = cmd_line_arg_case(input, argv, envpp);//this branch completely checked for errors also.
 	} else {
 		envpp = interactive_case(input, envpp);
 	}

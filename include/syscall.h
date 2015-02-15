@@ -46,7 +46,7 @@ static __inline uint64_t syscall_1(uint64_t n, uint64_t a1) {
 			:"0"(n),"D"(a1));
 	return result;
 }
-
+/*
 //todo:check if works
 static __inline uint64_t syscall_2(uint64_t n, const void *a1, int a2) {
 	uint64_t result;
@@ -58,7 +58,17 @@ static __inline uint64_t syscall_2(uint64_t n, const void *a1, int a2) {
 	return result;
 
 }
+*/
+static __inline uint64_t syscall_2_test(uint64_t n, uint64_t a1, uint64_t a2) {
+	uint64_t result;
+	__asm__ __volatile__(
+			"movq $0,%%rcx\n\t"
+			"syscall"
+			:"=a" (result)
+			:"0"(n), "D"(a1), "S"(a2));
+	return result;
 
+}
 // changed constraint to 'r' to make this method generic
 // todo: need to check if this supports return of addresses too.
 static __inline uint64_t syscall_3(uint64_t n, uint64_t a1, uint64_t a2,

@@ -16,6 +16,11 @@ int brk(void *end_data_segment);
 
 // processes
 //typedef uint32_t pid_t;
+struct timespec{
+	time_t tv_sec;
+	long tv_nsec;
+
+};
 pid_t fork(void);
 pid_t getpid(void);
 pid_t getppid(void);
@@ -23,7 +28,7 @@ int execve(const char *filename, char * const argv[], char * const envp[]);
 pid_t waitpid(pid_t pid, int *status, int options);
 unsigned int sleep(unsigned int seconds);
 unsigned int alarm(unsigned int seconds);
-
+int nanosleep(const struct timespec *rqtp, struct timespec *rmtp);
 // paths
 char *getcwd(char *buf, size_t size);
 int chdir(const char *path);
@@ -68,4 +73,5 @@ struct dirent *readdir(void *dir);
 int closedir(void *dir);
 //string functions
 size_t strlen(char *str);
+void errorHandler(int errorCode);
 #endif

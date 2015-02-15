@@ -78,6 +78,9 @@ void print_tokens(char ** tokens) {
 	printf("\n");
 }
 void free_char_array(char **tokens){
+	if(tokens == NULL){
+		return;
+	}
 	char **current = tokens;
 	while(*current !=NULL){
 		free(*current);
@@ -205,7 +208,7 @@ char **setEnvStack(char *newVar, char *envpp[]) {
 		}
 		dupenvp[j] = (char *) newVar;
 		dupenvp[j + 1] = NULL;
-		//free(envpp);
+		//free(envpp);  //since it is on stack we can't free it.
 		return dupenvp;
 	}
 	return envpp;
@@ -224,6 +227,11 @@ char **setEnv(char *newVar, char *envpp[]) {
 			i++;
 		size_t newSize = sizeof(char *) * (i + 2);
 		char **dupenvp = (char **) malloc(newSize);
+		if(dupenvp == NULL){
+			int backupErrno = errno;
+			errorHandler(backupErrno);
+			return envpp;
+		}
 		while (j != i) {
 			dupenvp[j] = (char *) envpp[j];
 			j++;
@@ -251,4 +259,122 @@ int read_line(char *buffer, int FD) {
 		flag = 0;
 	*(buffer + i) = '\0';
 	return flag;
+}
+void errorHandler(int errorCode){
+
+	switch(errorCode){
+		case EBADF:
+			printf("%d: Bad file  \n",EBADF);
+			break;
+		case READERR:
+			printf("%d:General Read Error\n", READERR);
+			break;
+		case WRITEERR:
+			printf("%d:General Write Error\n", WRITEERR);
+			break;
+		//open errors
+		case ENOMEM:
+			printf("\n%d: Out of memory or can't allocate memory of that size \n", ENOMEM);
+			break;
+		case EACCES:
+			printf("\n%d: Not enough Permissions\n", EACCES);
+			break;
+		case OPENERROR:
+			printf("\n%d: General Open Error \n", OPENERROR);
+			break;
+		case ENOENT:
+			printf("\n%d: This file or directory does not exist \n", ENOENT);
+			break;
+		case EEXIST:
+			printf("\n%d: File Exists\n", EEXIST);
+			break;
+		case EDQUOT:
+			printf("\n%d: Maximum number of files opened by process \n", EDQUOT);
+			break;
+		case EFAULT:
+			printf("\n%d: Illegal memory access \n", EACCES);
+			break;
+		case EFBIG:
+			printf("\n%d: File too big\n", EFBIG);
+			break;
+		case EINTR:
+			printf("\n%d: Interrupt occur \n", EINTR);
+			break;
+		case EISDIR:
+			printf("\n%d: the path is an address \n", EISDIR);
+			break;
+		case ELOOP:
+			printf("\n%d: too many symbolic jumps \n", ELOOP);
+			break;
+		case EMFILE:
+		printf("\n%d: Too many files open\n", EMFILE);
+			break;
+		case ENAMETOOLONG:
+			printf("\n%d: The name of argument is too long\n", ENAMETOOLONG);
+			break;
+		case ENFILE:
+			printf("%d: Too many files \n", ENFILE);
+			break;
+		case ENODEV:
+			printf("%d: Device does not exist\n", ENODEV);
+			break;
+		case ENOSPC:
+			printf("%d: No memory left \n", ENOSPC);
+			break;
+		case ENOTDIR:
+			printf("%d: path not a directory\n", ENOTDIR);
+			break;
+		case ENXIO:
+			printf("\n%d: The device or memory address does not exist\n", ENXIO);
+			break;
+		case EOVERFLOW:
+			printf("%d: overflow error \n",EOVERFLOW);
+			break;
+		case EPERM:
+			printf("\n%d: Operation does not have the required permission\n",EPERM);
+			break;
+		case EROFS:
+			printf("%d: no write/execute permission \n", EROFS);
+			break;
+		case ETXTBSY:
+			printf("%d: operation being performed on file \n", ETXTBSY);
+			break;
+		//end open errors
+		//fork errors
+		case EAGAIN:
+			printf("\n%d: Try Again, currently blocked \n", EAGAIN);
+			break;
+		//execve errors
+		case E2BIG:
+			printf("\n%d: Too many Args \n", E2BIG);
+			break;
+		case ENOEXEC:
+			printf("\n%d: Not an Executable\n", ENOEXEC);
+			break;
+		case EIO:
+			printf("\n%d: I/O error\n", EIO);
+			break;
+		case EXECVEERROR:
+		//wait pid errors
+		case EINVAL:
+			printf("%d: Invalid descriptor/id \n", EINVAL);
+			break;
+		case ECHILD:
+			printf("\n%d: Child process does not exist \n",ECHILD );
+			break;
+		//lseek
+		case LSEEKERROR:
+			printf("%d: General error in LSEEK  \n", LSEEKERROR);
+			break;
+		//sleep
+		case NANOSLEEPERROR:
+			printf("%d: General error in NANOSLEEPERROR\n", NANOSLEEPERROR);
+			break;
+		case CHDIRERROR:
+			printf("%d: Error with change directory\n", CHDIRERROR);
+			break;
+		default:
+			printf("Error occured with error code:%d\n",errorCode);
+			break;
+	}
 }

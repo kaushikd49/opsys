@@ -48,4 +48,10 @@ int errno;
 #define ECHILD 10
 //lseek
 #define LSEEKERROR 129
+//sleep
+#define NANOSLEEPERROR 130
+#define CHDIRERROR 131
+//getcwd
+#define GETCWDERROR 132
+#define ERANGE 34
 #endif
