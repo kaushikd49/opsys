@@ -57,22 +57,51 @@ void add_terminating_char(int fd_to) {
 void handleChildPipeExec(char **tokens, char** envpp, int fds[], int fd_to) {
 	int fd_from = fds[fd_to];
 	pid_t child = fork();
-//	int newfd = open("/tmp/file.txt", O_WRONLY);
 	if (child >= 0) {
 		if (child == 0) {
-//			printf("copying fd from %d to %d", fd_from, fd_to);
-			// fd_from: fd that needs to be dup2'ed to fd_to
 			dup2(fd_from, fd_to);
-//			dup2(newfd, 1);
-//			dup2(newfd, 0);
-			// close both file descriptors
 //			close_fds(fds);
 			close(fds[1 ^ fd_to]);
 			do_execute(tokens, envpp);
 			add_terminating_char(fd_to);
 			exit(0);
 		} else {
-			// todo: check why no wait has t be done in this case
+// todo: check why no wait has t be done in this case
+//			int status;
+//			waitpid(-1, &status, 0);
+		}
+	} else {
+		printf("internal error unsuccessful fork");
+		exit(0);
+	}
+}
+
+int is_safe_to_dup(int fds_tobe_dupd[]) {
+	return (fds_tobe_dupd[0] != -1 && fds_tobe_dupd[1] != -1);
+}
+
+void safe_dup2(int fds_tobe_dupd[]) {
+	if (is_safe_to_dup(fds_tobe_dupd)) {
+		dup2(fds_tobe_dupd[0], fds_tobe_dupd[1]);
+	}
+}
+
+void handleChildPipeExec2(char **tokens, char** envpp, int pipe_fd_to_close[],
+		int n, int read_fds_tobe_dupd[], int write_fds_tobe_dupd[]) {
+	pid_t child = fork();
+	if (child >= 0) {
+		if (child == 0) {
+			safe_dup2(read_fds_tobe_dupd);
+			safe_dup2(write_fds_tobe_dupd);
+			for (int i = 0; i < n; i++)
+				if (pipe_fd_to_close[i] != -1)
+					close(pipe_fd_to_close[i]);
+			do_execute(tokens, envpp);
+			if (is_safe_to_dup(write_fds_tobe_dupd))
+//				add_terminating_char(write_fds_tobe_dupd[1]);
+				exit(0);
+		} else {
+// todo: check why no wait has t be done in this case
 //			int status;
 //			waitpid(-1, &status, 0);
 		}
@@ -163,7 +192,7 @@ char ** take_action(char** tokens, char *envpp[]) {
  */
 char** cmd_line_arg_case(char input[ARG_LIMIT], char* argv[], char* envpp[]) {
 	int flag = 1;
-	//todo: check for size greater than ARG_LIMIT
+//todo: check for size greater than ARG_LIMIT
 	int fileHandle = open(argv[1], O_RDONLY);
 	if (fileHandle < 0) {
 		printf("Opening Script: Failed, No such Script exists\n");
@@ -184,13 +213,13 @@ char** cmd_line_arg_case(char input[ARG_LIMIT], char* argv[], char* envpp[]) {
  * FIXED BUG: setenv without arguments setenv with 1 argument.
  *
  */
-void remove_trail_nl(char *input){
-	size_t len=0;
-	while(input[len]!='\n'){
+void remove_trail_nl(char *input) {
+	size_t len = 0;
+	while (input[len] != '\n') {
 		len++;
 	}
-	input[len]='\0';
-	printf("%s",input);
+	input[len] = '\0';
+	printf("%s", input);
 }
 char** interactive_case(char input[ARG_LIMIT], char* envpp[]) {
 	char ps1[] = "PS1=prompt>>";
@@ -198,10 +227,10 @@ char** interactive_case(char input[ARG_LIMIT], char* envpp[]) {
 	while (1) {
 		printf("%s", getEnv("PS1=", envpp));
 		//printEnviron(envpp);
-		read(0,input,1000);
+		read(0, input, 1000);
 		remove_trail_nl(input);
 		//scanf(" %1000[^\n]", input);
-		if (strncmp(input, "exit",4) == 0) {
+		if (strncmp(input, "exit", 4) == 0) {
 			break;
 		}
 		char** tokens = advance_tokenize(input, ' ', '"');
@@ -222,19 +251,65 @@ char ** process_main(int argc, char* argv[], char* envpp[]) {
 	return envpp;
 }
 
-void pipetest(char *envpp[]) {
-	char* ps = "/bin/ps";
+//void handle_pipe(char **tokens, char * envpp[]) {
+//	// partition **tokens based on '|' occurance 
+//	char *p = *tokens;
+//	int pipes = 0;
+//	int MAX_PIPES = 10;
+//	int max_tokens = 0;
+//	
+//	while(p != NULL) {
+//		max_tokens++;
+//		if(*p == '|' && *(p+1) != '\0') {
+//			pipes++;
+//			if(pipes > MAX_PIPES) {
+//				printf("too many pipes passed. Only %d allowed", MAX_PIPES);
+//				exit(1);
+//			}
+//		}
+//		p++;
+//	}
+//
+//	p = *tokens;
+//	char *q = p;
+//	char *subset_tokens[max_tokens];
+//	int *all_filedes[pipes*2]; // all filedes arrays as part of singe huge array
+//	for(int i = 0; p != NULL; i++, p++) {
+//		subset_tokens[i++] = p;
+//		if(*p == '|' && *(p+1) != '\0') { // pipe enountered
+//			subset_tokens[i++] = NULL; // subset of tokens to be passed to execve
+//			i = 0; // reset index for reuse
+//			int *filedes = all_filedes + (i*2);
+//		}
+//	}
+//}
+//
+void pipetest2(char *envpp[]) {
+	char* ps = "/bin/ls";
 	char *tokens1[] = { ps, NULL };
 	char* less = "/usr/bin/wc";
 	char *tokens2[] = { less, NULL };
 
 	int filedes[2];
 	int status = pipe(filedes);
+//	int filedes2[2];
+//	int status2 = pipe(filedes2);
+//	printf("%d %d", status, status2);
 	if (status == 0) {
 		// write channel of filedes pointed to stdout of 1st child.
-		handleChildPipeExec(tokens1, envpp, filedes, 1);
+		int arr1[2] = { filedes[1], 1 };
+		int arr1dash[2] = { -1, -1 };
+		handleChildPipeExec2(tokens1, envpp, filedes, 2, arr1dash, arr1);
 		// read channel of filedes pointed to stdin of 2nd child.
-		handleChildPipeExec(tokens2, envpp, filedes, 0);
+		int arr2[2] = { filedes[0], 0 };
+		int arr2dash[2] = { -1, -1 };
+		handleChildPipeExec2(tokens2, envpp, filedes, 2, arr2, arr2dash);
+
+//		char *tokens3[] = { less, NULL };
+//		int arr3[2] = { filedes[0], 0 };
+//		int arr3dash[2] = { -1, -1 };
+//		handleChildPipeExec2(tokens3, envpp, -1, arr3, arr3dash);
+
 		int child_status;
 		waitpid(-1, &child_status, 0);
 //		printf("status was %d", child_status);
@@ -242,6 +317,47 @@ void pipetest(char *envpp[]) {
 		printf("error while piping");
 	}
 	close_fds(filedes);
+}
+
+void pipetest(char *envpp[]) {
+	char* ps = "/bin/ls";
+	char *tokens1[] = { ps, NULL };
+	char* wc = "/usr/bin/wc";
+	char *tokens2[] = { wc, NULL };
+	char* wc1 = "/usr/bin/wc";
+	char *tokens3[] = { wc1, NULL };
+
+	int pipe1[2];
+	int status = pipe(pipe1);
+
+	int pipe2[2];
+	pipe(pipe2);
+	int newpipe[4] = { pipe1[0], pipe1[1], pipe2[0], pipe2[1] };
+
+//	printf("%d %d", status, status2);
+	if (status == 0) {
+		// write channel of filedes pointed to stdout of 1st child.
+		int reads1[2] = { -1, -1 };
+		int writes1[2] = { pipe1[1], 1 };
+		handleChildPipeExec2(tokens1, envpp, newpipe, 4, reads1, writes1);
+		// read channel of filedes pointed to stdin of 2nd child.
+		int reads2[2] = { pipe1[0], 0 };
+		int writes2[2] = { pipe2[1], 1 };
+		handleChildPipeExec2(tokens2, envpp, newpipe, 4, reads2, writes2);
+
+		int reads3[2] = { pipe2[0], 0 };
+		int writes3[2] = { -1, -1 };
+		handleChildPipeExec2(tokens3, envpp, newpipe, 4, reads3, writes3);
+
+		int child_status;
+		waitpid(-1, &child_status, 0);
+
+//		printf("status was %d", child_status);
+	} else {
+		printf("error while piping");
+	}
+	close_fds(pipe1);
+	close_fds(pipe2);
 }
 
 //Support changing current directory ( cd ) -
@@ -252,10 +368,10 @@ void pipetest(char *envpp[]) {
 
 int main(int argc, char* argv[], char* envpp[]) {
 //	char input[ARG_LIMIT];
-	envpp = process_main(argc, argv, envpp); //made input inside the process_main
-	return 0;								//and checking if it is script with 1 script only
+//	envpp = process_main(argc, argv, envpp); //made input inside the process_main
+//	return 0;				//and checking if it is script with 1 script only
 
-	//pipetest(envpp);
-	//return 0;
+	pipetest(envpp);
+	return 0;
 }
 
