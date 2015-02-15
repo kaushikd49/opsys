@@ -1,2 +1,2 @@
-gcc ./AllTests.c ./CuTest.c ./ShellTest.c
+gcc -std=c99 ./AllTests.c ./CuTest.c ./ShellTest.c
 ./a.out

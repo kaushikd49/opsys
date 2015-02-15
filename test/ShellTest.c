@@ -19,6 +19,14 @@ void TestParse(CuTest* tc) {
 	CuAssert(tc, "match", strcmp(tokens[1], "johnny") == 0);
 }
 
+
+void TestParse2(CuTest* tc) {
+	char input[] = "ls";
+	char **tokens = advance_tokenize(input, ' ', '"');
+	contains_pipe(tokens);
+}
+
+
 void TestScriptRead(CuTest* tc) {
 	char str[1000];
 	int flag = 1;
@@ -33,8 +41,8 @@ void TestScriptRead(CuTest* tc) {
 
 CuSuite* CuGetSuite(void) {
 	CuSuite* suite = CuSuiteNew();
-	SUITE_ADD_TEST(suite, TestParse);
-	SUITE_ADD_TEST(suite, TestScriptRead);
+	SUITE_ADD_TEST(suite, TestParse2);
+//	SUITE_ADD_TEST(suite, TestScriptRead);
 
 	return suite;
 }

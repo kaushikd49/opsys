@@ -38,7 +38,7 @@ char **tokenize(char *input, char delim) {
 }
 
 char * escape_aware_copy(char *input, int startIdx, int endIdx, char delim) {
-	char *token = (char*) malloc((endIdx - startIdx) * sizeof(char));
+	char *token = (char*) malloc((endIdx - startIdx + 1) * sizeof(char));
 	int i = startIdx, j = 0;
 	while (i < endIdx) {
 		if (input[i] == '\\') {
@@ -55,6 +55,7 @@ char * escape_aware_copy(char *input, int startIdx, int endIdx, char delim) {
 		}
 		i++;
 	}
+	token[j++] = '\0';
 	return token;
 }
 
@@ -72,7 +73,7 @@ void print_tokens(char ** tokens) {
 	int i = 0;
 	printf("received tokens: ");
 	while (tokens[i] != NULL) {
-		printf("%d %s ", (i + 1), tokens[i]);
+		printf("%d) %s ", (i + 1), tokens[i]);
 		i++;
 	}
 	printf("\n");
@@ -260,6 +261,7 @@ int read_line(char *buffer, int FD) {
 	*(buffer + i) = '\0';
 	return flag;
 }
+<<<<<<< HEAD
 void errorHandler(int errorCode){
 
 	switch(errorCode){
@@ -377,4 +379,13 @@ void errorHandler(int errorCode){
 			printf("Error occured with error code:%d\n",errorCode);
 			break;
 	}
+=======
+
+int contains_pipe(char **tokens) {
+	for (char **p = tokens; *p != NULL; p++) {
+		if (strchr(*p, '|') != NULL)
+			return 1;
+	}
+	return 0;
+>>>>>>> 3f3769bd3c07d5fd7ba912701a75334c796d9ab6
 }
