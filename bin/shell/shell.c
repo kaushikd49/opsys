@@ -166,9 +166,13 @@ char ** handleSetenv(char **tokens, char *envpp[]) {
 	return envpp;
 }
 
-
 int* pipefd_offset(int all_filedes[], int pipe_number) {
 	return all_filedes + ((pipe_number - 1) * 2);
+}
+
+void initialize_dblcharptr(char **subset_tokens, int max_tokens, char * val) {
+	for (int i = 0; i < max_tokens; i++)
+		subset_tokens[i++] = val;
 }
 
 void handle_pipe(char **tokens, char * envpp[]) {
@@ -190,8 +194,8 @@ void handle_pipe(char **tokens, char * envpp[]) {
 		p++;
 	}
 
-	p = tokens;
 	char *subset_tokens[max_tokens];
+	initialize_dblcharptr(subset_tokens, max_tokens, NULL);
 	int total_pipe_fds = pipes * 2;
 	int all_filedes[total_pipe_fds]; // all filedes arrays as part of single huge array
 
@@ -205,7 +209,8 @@ void handle_pipe(char **tokens, char * envpp[]) {
 	}
 
 	int i = 0, j = 0;
-	for (i = 0, j = 0; *p != NULL; i++, p++) {
+	p = tokens;
+	for (i = 0, j = 0; *p != NULL; p++) {
 		if (**p == '|' && **(p + 1) != '\0') { // pipe encountered
 			j++; // pipe count
 			subset_tokens[i++] = NULL; // end of subset of tokens to be passed to execve
@@ -228,6 +233,8 @@ void handle_pipe(char **tokens, char * envpp[]) {
 						total_pipe_fds, readsi, writesi);
 			}
 		} else {
+			if (i == 0)
+				initialize_dblcharptr(subset_tokens, max_tokens, NULL);
 			subset_tokens[i++] = *p;
 		}
 	}
