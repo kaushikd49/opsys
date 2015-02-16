@@ -552,7 +552,6 @@ enum {
 //
 size_t open(const char *filename, int permission) {
 	unsigned short mode;
-<<<<<<< HEAD
 	if((permission & 0x40)!=0)
 		 mode = DEFAULT_MODE; //todo:verify the mode. default rwx
 	uint64_t result =  syscall_3(SYS_open, (uint64_t)filename, (uint64_t)permission,(uint64_t)mode);
@@ -568,22 +567,6 @@ size_t open(const char *filename, int permission) {
 	else if((signed long)result == -EEXIST){//checked
 		errno = EEXIST;//file already exists returns when using O_CREATE
 		//printf("file exists");
-=======
-	if ((permission & 0x40) != 0)
-		mode = DEFAULT_MODE; //todo:verify the mode. default rwx
-	uint64_t result = syscall_3(SYS_open, (uint64_t) filename,
-			(uint64_t) permission, (uint64_t) mode);
-	if ((signed long) result == -EACCES) { //checked
-		errno = EACCES; //premission denied to access the file
-		return -1;
-	} else if ((signed long) result == -ENOENT) { //checked
-		errno = ENOENT; //file or directory does not exist
-		printf("file or directory not present");
-		return -1;
-	} else if ((signed long) result == -EEXIST) { //checked
-		errno = EEXIST; //file already exists returns when using O_CREATE
-		printf("file exists");
->>>>>>> 3f3769bd3c07d5fd7ba912701a75334c796d9ab6
 		return -1;
 	} else if ((signed long) result == -EDQUOT) {
 		errno = EDQUOT; //quota of open files exceeded by user.
@@ -659,15 +642,8 @@ pid_t fork(void) {
 	if ((pid_t) result == -EAGAIN) {
 		errno = EAGAIN;
 		return -1;
-<<<<<<< HEAD
 	}
 	else if((pid_t)result == -ENOMEM){
-=======
-	} else if ((pid_t) result == -EAGAIN) {
-		errno = EAGAIN;
-		return -1;
-	} else if ((pid_t) result == -ENOMEM) {
->>>>>>> 3f3769bd3c07d5fd7ba912701a75334c796d9ab6
 		errno = ENOMEM;
 		return -1;
 	}

@@ -88,6 +88,12 @@ void safe_dup2(int fds_tobe_dupd[]) {
 	}
 }
 
+void close_all_pipefds(int n, int pipe_fd_to_close[]) {
+	for (int i = 0; i < n; i++)
+		if (pipe_fd_to_close[i] != -1)
+			close(pipe_fd_to_close[i]);
+}
+
 void handleChildPipeExec2(char **tokens, char** envpp, int pipe_fd_to_close[],
 		int n, int read_fds_tobe_dupd[], int write_fds_tobe_dupd[]) {
 	pid_t child = fork();
@@ -95,17 +101,15 @@ void handleChildPipeExec2(char **tokens, char** envpp, int pipe_fd_to_close[],
 		if (child == 0) {
 			safe_dup2(read_fds_tobe_dupd);
 			safe_dup2(write_fds_tobe_dupd);
-			for (int i = 0; i < n; i++)
-				if (pipe_fd_to_close[i] != -1)
-					close(pipe_fd_to_close[i]);
+			close_all_pipefds(n, pipe_fd_to_close);
 			do_execute(tokens, envpp);
 			if (is_safe_to_dup(write_fds_tobe_dupd))
-//				add_terminating_char(write_fds_tobe_dupd[1]);
-				exit(0);
+				add_terminating_char(write_fds_tobe_dupd[1]);
+			exit(0);
 		} else {
 // todo: check why no wait has t be done in this case
-//			int status;
-//			waitpid(-1, &status, 0);
+			int status;
+			waitpid(child, &status, 0);
 		}
 	} else {
 		printf("fork unsuccessful:\n");
@@ -232,6 +236,7 @@ void handle_pipe(char **tokens, char * envpp[]) {
 				int *pipefds = pipefd_offset(all_filedes, j); // filedes ptr offset
 				int readsf[2] = { -1, -1 };
 				int writesf[2] = { pipefds[1], 1 };
+				//todo : close only relevant ones
 				handleChildPipeExec2(subset_tokens, envpp, all_filedes,
 						total_pipe_fds, readsf, writesf);
 			} else if (j != pipes) {
@@ -259,6 +264,10 @@ void handle_pipe(char **tokens, char * envpp[]) {
 		handleChildPipeExec2(subset_tokens, envpp, all_filedes, total_pipe_fds,
 				readsl, writesl);
 	}
+
+	int child_status;
+	waitpid(-1, &child_status, 0);
+	close_all_pipefds(total_pipe_fds, all_filedes);
 }
 
 char ** take_action(char** tokens, char *envpp[]) {
@@ -328,6 +337,7 @@ char** cmd_line_arg_case(char input[ARG_LIMIT], char* argv[], char* envpp[]) {
  */
 void remove_trail_nl(char *input) {
 	size_t len = 0;
+	printf("\ninput before chomping %s\n", input);
 	while (input[len] != '\n') {
 		len++;
 	}
@@ -454,7 +464,6 @@ void pipetest(char *envpp[]) {
 //Set and use PATH and PS1 variables
 
 int main(int argc, char* argv[], char* envpp[]) {
-//	char input[ARG_LIMIT];
 	envpp = process_main(argc, argv, envpp); //made input inside the process_main
 	return 0;				//and checking if it is script with 1 script only
 
