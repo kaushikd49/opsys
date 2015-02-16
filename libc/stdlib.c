@@ -95,6 +95,19 @@ int printInteger(int n) {
 	write(1, ptr, count);
 	return count;
 }
+
+void write_hex(int count, char* ptr) {
+	int newcount = count + 2;
+	char newchar[newcount];
+
+	newchar[0] = '0';
+	newchar[1] = 'x';
+	for (int i = 2; i < newcount; i++, ptr++) {
+		newchar[i] = *ptr;
+	}
+	write(1, newchar, newcount);
+}
+
 //do a check for errors after complete function
 
 int printHexInt(int n) {
@@ -102,8 +115,8 @@ int printHexInt(int n) {
 	int base = 0xf, i = 7, new_n = n, j = 0;
 
 	if (n == 0) {
-		char *zero = "0";
-		write(1, zero, 1);
+		char *zero = "0x0";
+		write_hex(1, zero);
 		return 1;
 	}
 
@@ -123,7 +136,7 @@ int printHexInt(int n) {
 	int count = 7 - i;
 	if (count > 0) {
 		char *ptr = res + i + 1;
-		write(1, ptr, count);
+		write_hex(count, ptr);
 	}
 	return count;
 }
@@ -294,17 +307,30 @@ void scan_token(int* scanned, char_ptr *buffer_ptr, char_ptr ptrs[],
 	ptrs[1] = *buffer_ptr;
 
 }
+
+int has_only_white_space(char *buffer) {
+	for (; *buffer != '\n'; buffer++) {
+		if (isStrChar(*buffer)) {
+			return 0;
+		}
+	}
+	return 1;
+}
+
 //same as printf
 int scanf(const char *format, ...) {
 	int scanned = 0;
 	int limit = 1000;
 // static since scanf unread input across calls
-	static char buffer[1000];
-	static char *buffer_ptr = buffer;
+	char buffer[1000];
+// removing static for now for buffer and ptr
+	char *buffer_ptr = buffer;
 
-	if (buffer - buffer_ptr == 1000)
-		buffer_ptr = buffer;
+//	if (buffer - buffer_ptr == 1000)
+//		buffer_ptr = buffer;
 	read(0, buffer, limit);
+	while (has_only_white_space(buffer))
+		read(0, buffer, limit);
 
 	va_list val;
 	va_start(val, format);
@@ -399,7 +425,7 @@ struct blockHeader *fragmentBlock(struct blockHeader *loc, size_t prevSize) {
 	size_t resetMask = 0xFFFFFFFFFFFFFFFE;
 	struct blockHeader *next = loc->next;
 	if ((prevSize - (loc->size & resetMask))
-			> (size_t) (sizeof(struct blockHeader))) {
+			> (size_t)(sizeof(struct blockHeader))) {
 		struct blockHeader *newNext = (struct blockHeader *) ((uint64_t) loc
 				+ (uint64_t) (loc->size & resetMask));
 		newNext->size = prevSize - (loc->size & resetMask);
@@ -472,7 +498,7 @@ void *memset(void *s, int c, size_t n) {
 				"\nmemset dangerous: programmer care required when assigning to this area");
 		return s;
 	}
-	while ((size_t) (current) < (size_t) s + (size_t) n) {
+	while ((size_t)(current) < (size_t) s + (size_t) n) {
 		*(current) = c;
 		current++;
 	}
@@ -489,7 +515,7 @@ void free(void *ptr) {
 	current->size = (current->size) & 0xFFFFFFFFFFFFFFFE;
 	size_t size = current->size - sizeof(struct blockHeader);
 	//printf("\n%d\t%d", current->size, size);
-	memset(ptr,0,size);
+	memset(ptr, 0, size);
 	//printf("meset successful");
 	//printf("\n%d",current->size);
 	//printAllocmemory(*head2);
@@ -552,20 +578,19 @@ enum {
 //
 size_t open(const char *filename, int permission) {
 	unsigned short mode;
-	if((permission & 0x40)!=0)
-		 mode = DEFAULT_MODE; //todo:verify the mode. default rwx
-	uint64_t result =  syscall_3(SYS_open, (uint64_t)filename, (uint64_t)permission,(uint64_t)mode);
-	if((signed long)result == -EACCES){//checked
-		errno =EACCES;//premission denied to access the file
+	if ((permission & 0x40) != 0)
+		mode = DEFAULT_MODE; //todo:verify the mode. default rwx
+	uint64_t result = syscall_3(SYS_open, (uint64_t) filename,
+			(uint64_t) permission, (uint64_t) mode);
+	if ((signed long) result == -EACCES) { //checked
+		errno = EACCES; //premission denied to access the file
 		return -1;
-	}
-	else if((signed long)result == -ENOENT){//checked
-		errno = ENOENT;//file or directory does not exist
+	} else if ((signed long) result == -ENOENT) { //checked
+		errno = ENOENT; //file or directory does not exist
 		//printf("file or directory not present");
 		return -1;
-	}
-	else if((signed long)result == -EEXIST){//checked
-		errno = EEXIST;//file already exists returns when using O_CREATE
+	} else if ((signed long) result == -EEXIST) {		//checked
+		errno = EEXIST;		//file already exists returns when using O_CREATE
 		//printf("file exists");
 		return -1;
 	} else if ((signed long) result == -EDQUOT) {
@@ -642,8 +667,7 @@ pid_t fork(void) {
 	if ((pid_t) result == -EAGAIN) {
 		errno = EAGAIN;
 		return -1;
-	}
-	else if((pid_t)result == -ENOMEM){
+	} else if ((pid_t) result == -ENOMEM) {
 		errno = ENOMEM;
 		return -1;
 	}
@@ -724,7 +748,8 @@ char *strcat(char *dest, const char *src) {
 pid_t waitpid(pid_t pid, int *stat_loc, int options) {
 //struct ruseage info;
 	uint64_t result;
-	result = syscall_4(SYS_wait4, (uint64_t)pid, (uint64_t)stat_loc, (uint64_t)options);
+	result = syscall_4(SYS_wait4, (uint64_t) pid, (uint64_t) stat_loc,
+			(uint64_t) options);
 	if (result < 0) {
 		if (result == -ECHILD) {
 			errno = ECHILD;
@@ -739,7 +764,7 @@ pid_t waitpid(pid_t pid, int *stat_loc, int options) {
 			return -1;
 		}
 	}
-	return (pid_t)result;
+	return (pid_t) result;
 }
 pid_t getppid(void) {
 	return syscall_0(SYS_getppid);
@@ -777,35 +802,30 @@ int chdir(const char* path) {
 		} else if (result == -ENOTDIR) {
 			errno = ENOTDIR;
 			return -1;
-		}
-		else{
+		} else {
 			errno = CHDIRERROR;
 			return -1;
 		}
 	}
 	return 0;
 }
-char *getcwd(char *buf, size_t size){
+char *getcwd(char *buf, size_t size) {
 	int64_t result;
-	result = syscall_2_test(SYS_getcwd, (uint64_t)buf, (uint64_t)size);
-	if(result <0){
-		if(result == -EACCES){
+	result = syscall_2_test(SYS_getcwd, (uint64_t) buf, (uint64_t) size);
+	if (result < 0) {
+		if (result == -EACCES) {
 			errno = EACCES;
 			return NULL;
-		}
-		else if(result == -EFAULT){
+		} else if (result == -EFAULT) {
 			errno = EFAULT;
 			return NULL;
-		}
-		else if(result == -EINVAL){
+		} else if (result == -EINVAL) {
 			errno = EINVAL;
 			return NULL;
-		}
-		else if(result == -ERANGE){
+		} else if (result == -ERANGE) {
 			errno = ERANGE;
 			return NULL;
-		}
-		else {
+		} else {
 			errno = GETCWDERROR;
 			return NULL;
 		}
@@ -882,9 +902,9 @@ void *opendir(const char *name) {
 		return returnVal;
 	}
 	struct dirent *direntries = (struct dirent *) malloc(
-			MAX_DIR * sizeof(struct dirent));
+	MAX_DIR * sizeof(struct dirent));
 	syscall_3((uint64_t) SYS_getdents, (uint64_t) fd, (uint64_t) direntries,
-			MAX_DIR * sizeof(struct dirent));
+	MAX_DIR * sizeof(struct dirent));
 	//struct dirent *temp = (struct dirent *)(direntries);
 	//printf("2STR1:%s \n",temp->d_name);
 	//printf("2STR1:%d \n",temp->d_off);
@@ -926,22 +946,21 @@ int closedir(void *dir) {
 	return 0;
 }
 //sleep
-struct timespec{
+struct timespec {
 	time_t tv_sec;
 	long tv_nsec;
 
 };
-int nanosleep(const struct timespec *rqtp, struct timespec *rmtp){
+int nanosleep(const struct timespec *rqtp, struct timespec *rmtp) {
 	long result;
-	result = syscall_2_test(SYS_nanosleep, (uint64_t)rqtp, (uint64_t)rmtp);
+	result = syscall_2_test(SYS_nanosleep, (uint64_t) rqtp, (uint64_t) rmtp);
 	//printf("hello");
-	if(result<0){
-		if(result == -EINTR){
+	if (result < 0) {
+		if (result == -EINTR) {
 			printf("EINTR");
 			errno = EINTR;
 			return -1;
-		}
-		else{
+		} else {
 			printf("ERROR");
 			errno = NANOSLEEPERROR;
 			return -1;
@@ -950,18 +969,23 @@ int nanosleep(const struct timespec *rqtp, struct timespec *rmtp){
 	return 0;
 
 }
-unsigned int sleep(unsigned int seconds){
+unsigned int sleep(unsigned int seconds) {
 	struct timespec rqtp;
 	struct timespec tmqp;
 	rqtp.tv_sec = seconds;
 	rqtp.tv_nsec = 0;
-	nanosleep(&rqtp,&tmqp);
+	nanosleep(&rqtp, &tmqp);
 	return tmqp.tv_sec;
 }
-unsigned int alarm(unsigned int seconds){
+unsigned int alarm(unsigned int seconds) {
 	uint64_t result;
 	//printf("hello");
 	result = syscall_1(SYS_alarm, seconds);
-	return (unsigned int)result;
+	return (unsigned int) result;
 }
+
+int dup(int oldfd) {
+	return (int) syscall_1(SYS_dup, oldfd);
+}
+
 #endif
