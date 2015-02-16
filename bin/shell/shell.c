@@ -108,8 +108,8 @@ void handleChildPipeExec2(char **tokens, char** envpp, int pipe_fd_to_close[],
 			exit(0);
 		} else {
 // todo: check why no wait has t be done in this case
-			int status;
-			waitpid(child, &status, 0);
+//			int status;
+//			waitpid(child, &status, 0);
 		}
 	} else {
 		printf("fork unsuccessful:\n");
