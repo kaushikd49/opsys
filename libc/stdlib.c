@@ -723,8 +723,8 @@ char *strcat(char *dest, const char *src) {
 
 pid_t waitpid(pid_t pid, int *stat_loc, int options) {
 //struct ruseage info;
-	int result;
-	result = syscall_4_wait(SYS_wait4, pid, stat_loc, options);
+	uint64_t result;
+	result = syscall_4(SYS_wait4, (uint64_t)pid, (uint64_t)stat_loc, (uint64_t)options);
 	if (result < 0) {
 		if (result == -ECHILD) {
 			errno = ECHILD;
@@ -739,9 +739,8 @@ pid_t waitpid(pid_t pid, int *stat_loc, int options) {
 			return -1;
 		}
 	}
-	return result;
+	return (pid_t)result;
 }
-
 pid_t getppid(void) {
 	return syscall_0(SYS_getppid);
 }

@@ -224,7 +224,7 @@ void handle_pipe(char **tokens, char * envpp[]) {
 	int i = 0, j = 0;
 	p = tokens;
 	for (i = 0, j = 0; *p != NULL; p++) {
-		if (**p == '|' && **(p + 1) != '\0') { // pipe encountered
+		if (**p == '|' && (p + 1) != NULL) { // pipe encountered
 			j++; // pipe count
 			subset_tokens[i++] = NULL; // end of subset of tokens to be passed to execve
 			i = 0; // reset index for reuse
@@ -262,10 +262,12 @@ void handle_pipe(char **tokens, char * envpp[]) {
 		handleChildPipeExec2(subset_tokens, envpp, all_filedes, total_pipe_fds,
 				readsl, writesl);
 	}
-
 	int child_status;
-	waitpid(-1, &child_status, 0);
 	close_all_pipefds(total_pipe_fds, all_filedes);
+	//sleep(10);
+	for (i = 0; i < pipes + 1; i++)
+		waitpid(-1, &child_status, 0);
+
 }
 
 char ** take_action(char** tokens, char *envpp[]) {
@@ -459,9 +461,8 @@ void pipetest(char *envpp[]) {
 
 int main(int argc, char* argv[], char* envpp[]) {
 	envpp = process_main(argc, argv, envpp); //made input inside the process_main
-	return 0;				//and checking if it is script with 1 script only
 
 //	pipetest(envpp);
-//	return 0;
+	return 0;
 }
 
