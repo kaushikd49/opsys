@@ -34,7 +34,7 @@ void handleChildExec(char **tokens, char** envpp) {
 		if (child == 0) {
 			do_execute(tokens, envpp);
 		} else {
-			waitpid(-1, &status, 0);//i did a lot of testing for sleep with waitpid seems to be working. I would suggest test again
+			waitpid(-1, &status, 0); //i did a lot of testing for sleep with waitpid seems to be working. I would suggest test again
 		}
 	} else {
 		printf("fork unsuccessful:\n");
@@ -130,15 +130,13 @@ void handleGetenv(char **tokens, char *envpp[]) {
 		return;
 	}
 	char* getenvOutput = getEnv(cmd, envpp);
-	if(getenvOutput == NULL){
+	if (getenvOutput == NULL) {
 		printf("\n");
 		return;
-	}
-	else if (getenvOutput[0] != '=') {
+	} else if (getenvOutput[0] != '=') {
 		printf("\n");
 		return;
-	}
-	else
+	} else
 		printf("%s\n", getenvOutput + 1);
 }
 /*
@@ -168,7 +166,7 @@ char ** handleSetenv(char **tokens, char *envpp[]) {
 	}
 	int size = cmdlen + envStrlen + 2;
 	char* newStr = (char*) malloc(size * sizeof(char));
-	if(newStr == NULL){
+	if (newStr == NULL) {
 		int backupErrno = errno;
 		errorHandler(backupErrno);
 		return envpp;
@@ -239,7 +237,7 @@ void handle_pipe(char **tokens, char * envpp[]) {
 				//todo : close only relevant ones
 				handleChildPipeExec2(subset_tokens, envpp, all_filedes,
 						total_pipe_fds, readsf, writesf);
-			} else if (j != pipes) {
+			} else if (pipes != 1) {
 				// intermediate cmd
 				int *prevpipefds = pipefd_offset(all_filedes, j - 1); // filedes ptr offset
 				int *nextpipefds = pipefd_offset(all_filedes, j); // filedes ptr offset
@@ -275,24 +273,20 @@ char ** take_action(char** tokens, char *envpp[]) {
 	char *cmd = tokens[0];
 	if (tokens[0] == NULL)
 		return envpp;
-	if(strcmp("exit",cmd) == 0 && tokens[1] == NULL){
+	if (strcmp("exit", cmd) == 0 && tokens[1] == NULL) {
 		exit(0);
-	}
-	else if (strcmp("setenv", cmd) == 0) {//tested
+	} else if (strcmp("setenv", cmd) == 0) { //tested
 		envpp = handleSetenv(tokens, envpp);
-	}
-	else if (strcmp("getenv", cmd) == 0) {//tested
+	} else if (strcmp("getenv", cmd) == 0) { //tested
 		handleGetenv(tokens, envpp);
-	}
-	else if (strcmp("cd", cmd) == 0) {//tested and added error checks
+	} else if (strcmp("cd", cmd) == 0) { //tested and added error checks
 		int returnVal = chdir(tokens[1]);
-		if(returnVal == -1){
-		int backupErrno = errno;
-		errorHandler(backupErrno);
-		return envpp;
+		if (returnVal == -1) {
+			int backupErrno = errno;
+			errorHandler(backupErrno);
+			return envpp;
 		}
-	}
-	else if (contains_pipe(tokens)) {
+	} else if (contains_pipe(tokens)) {
 		handle_pipe(tokens, envpp);
 	} else {
 		handleChildExec(tokens, envpp);
@@ -317,10 +311,10 @@ char** cmd_line_arg_case(char input[ARG_LIMIT], char* argv[], char* envpp[]) {
 		errorHandler(backupErrno);
 		return envpp;
 	}
-	do {//does not handle comments at the end of the line.
+	do { //does not handle comments at the end of the line.
 		flag = read_line(input, fileHandle);
 		char** tokens = advance_tokenize(input, ' ', '"');
-		if (tokens[0] == NULL || strncmp(tokens[0], "#", 1) == 0){
+		if (tokens[0] == NULL || strncmp(tokens[0], "#", 1) == 0) {
 			free_char_array(tokens);
 			continue;
 		}
@@ -351,19 +345,19 @@ char** interactive_case(char input[ARG_LIMIT], char* envpp[]) {
 	while (1) {
 		printf("%s", getEnv("PS1=", envpp));
 		//printEnviron(envpp);
-		readLen = read(0,input,1000);
-		if(readLen<0){
+		readLen = read(0, input, 1000);
+		if (readLen < 0) {
 			int backupErrno = errno;
 			errorHandler(backupErrno);
 			return envpp;
 		}
 
 		//scanf(" %1000[^\n]", input);
-		if (strncmp(input, "exit\n",5) == 0) {//exit only works if it is exit with nothing else following it. other cases of exit can be handled in take action. you can remove this too scared.
+		if (strncmp(input, "exit\n", 5) == 0) { //exit only works if it is exit with nothing else following it. other cases of exit can be handled in take action. you can remove this too scared.
 			break;
 		}
 		remove_trail_nl(input);
-		char** tokens = advance_tokenize(input, ' ', '"');//did not check
+		char** tokens = advance_tokenize(input, ' ', '"'); //did not check
 		envpp = take_action(tokens, envpp);
 		free_char_array(tokens);
 		//free(tokens);
@@ -374,7 +368,7 @@ char** interactive_case(char input[ARG_LIMIT], char* envpp[]) {
 char ** process_main(int argc, char* argv[], char* envpp[]) {
 	char input[ARG_LIMIT];
 	if (argc >= 2) { //note: Like normal shell, runs the first script only, if multiple given.
-		envpp = cmd_line_arg_case(input, argv, envpp);//this branch completely checked for errors also.
+		envpp = cmd_line_arg_case(input, argv, envpp); //this branch completely checked for errors also.
 	} else {
 		envpp = interactive_case(input, envpp);
 	}
