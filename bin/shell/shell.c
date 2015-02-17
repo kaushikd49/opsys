@@ -11,7 +11,7 @@ void do_execute(char** tokens, char** envpp) {
 	// this is what Input has to change.execve(newargs[0], newargs, NULL);
 	errno = 0;
 	result = execve(tokens[0], tokens, envpp);
-	if( result == -1 && errno != ENOENT){
+	if (result == -1 && errno != ENOENT) {
 		int backupErrno = errno;
 		errorHandler(backupErrno);
 		exit(0);
@@ -26,7 +26,7 @@ void do_execute(char** tokens, char** envpp) {
 			strcat(pathPrefix, tokens[0]);
 			errno = 0;
 			result = execve(pathPrefix, tokens, envpp);
-			if( result == -1 && errno != ENOENT){
+			if (result == -1 && errno != ENOENT) {
 				int backupErrno = errno;
 				errorHandler(backupErrno);
 				exit(0);
@@ -73,7 +73,7 @@ void handleChildPipeExec(char **tokens, char** envpp, int fds[], int fd_to) {
 	pid_t child = fork();
 	if (child >= 0) {
 		if (child == 0) {
-			if(dup2(fd_from, fd_to) < 0){
+			if (dup2(fd_from, fd_to) < 0) {
 				printf("error in dup2");
 				exit(0);
 			}
@@ -203,12 +203,37 @@ void initialize_dblcharptr(char **subset_tokens, int max_tokens, char * val) {
 		subset_tokens[i++] = val;
 }
 
+int are_tokens_invalid(char **tokens) {
+	char **p = tokens;
+	int pipe_stack = 0;
+	int flag = 0;
+	while (*p != NULL) {
+		if (**p == '|') {
+			if (flag == 1) {
+				return 1;
+			}
+			pipe_stack++;
+			flag = 1;
+		} else {
+			pipe_stack--;
+			flag = 0;
+		}
+		p++;
+	}
+	return (**tokens == '|' || **(p - 1) == '|' || pipe_stack >= 0);
+}
+
 void handle_pipe(char **tokens, char * envpp[]) {
 	// partition **tokens based on '|' occurance
 	char **p = tokens;
 	int pipes = 0;
 	int MAX_PIPES = 10;
 	int max_tokens = 0;
+
+	if (are_tokens_invalid(tokens)) {
+		printf("invalid input. Pipe usage: cmd1 | cmd2 | cmd2 | cm3 ..\n");
+		return;
+	}
 
 	while (*p != NULL) {
 		max_tokens++;
@@ -239,7 +264,7 @@ void handle_pipe(char **tokens, char * envpp[]) {
 	int i = 0, j = 0;
 	p = tokens;
 	for (i = 0, j = 0; *p != NULL; p++) {
-		if (**p == '|' && (p + 1) != NULL) { // pipe encountered
+		if (**p == '|' && *(p + 1) != NULL) { // pipe encountered
 			j++; // pipe count
 			subset_tokens[i++] = NULL; // end of subset of tokens to be passed to execve
 			i = 0; // reset index for reuse
@@ -280,7 +305,7 @@ void handle_pipe(char **tokens, char * envpp[]) {
 
 	int child_status;
 	close_all_pipefds(total_pipe_fds, all_filedes);
-	for( i = 0 ; i < pipes + 1; i++)
+	for (i = 0; i < pipes + 1; i++)
 		waitpid(-1, &child_status, 0);
 
 }
