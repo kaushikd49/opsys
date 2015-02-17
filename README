@@ -22,7 +22,7 @@ Example it will not replace /bin:${PATH} to the full value.
 8.) To set PS1 use - setenv PS1 my_favorite_prompt>>
 9.) To run an sbush script from outside, use sbush <script_name>
 10.) To run an sbush script within the shell, just use <path of the script>.
-
+11.) Limit on shell input commands' total length is 1000 characters.
 
 
 
