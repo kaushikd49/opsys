@@ -17,7 +17,8 @@ ls | sort | less | grep a --color=auto
 4.) Handling scripts - comments in scripts can only appear at the start of a line.
 5.) Format to set environment variables - setenv VAR_NAME VAR_VALUE
 6.) Format to get environment variables - getenv VAR_NAME
-7.) setenv does not support variable substitution, only text values are alloved. 
+7.) setenv does not support variable substitution, only text values are allowed. 
+Example it will not replace /bin:${PATH} to the full value.
 8.) To set PS1 use - setenv PS1 my_favorite_prompt>>
 9.) To run an sbush script from outside, use sbush <script_name>
 10.) To run an sbush script within the shell, just use <path of the script>.
