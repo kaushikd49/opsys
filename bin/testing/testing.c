@@ -146,7 +146,7 @@ int main(int argc, char *argv[], char *envp[]){
 //	if(result1 == NULL){
 //		errorHandler(errno);
 //	}
-	void *returnval = opendir("./script1.sh");
+	void *returnval = opendir("./bin/");
 	if(returnval ==NULL){
 		errorHandler(errno);
 		exit(0);

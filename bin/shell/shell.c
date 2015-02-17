@@ -240,7 +240,7 @@ void handle_pipe(char **tokens, char * envpp[]) {
 	int i = 0, j = 0;
 	p = tokens;
 	for (i = 0, j = 0; *p != NULL; p++) {
-		if (**p == '|' && **(p + 1) != '\0') { // pipe encountered
+		if (**p == '|' && (p + 1) != NULL) { // pipe encountered
 			j++; // pipe count
 			subset_tokens[i++] = NULL; // end of subset of tokens to be passed to execve
 			i = 0; // reset index for reuse
@@ -280,8 +280,10 @@ void handle_pipe(char **tokens, char * envpp[]) {
 	}
 
 	int child_status;
-	waitpid(-1, &child_status, 0);
 	close_all_pipefds(total_pipe_fds, all_filedes);
+	for( i = 0 ; i < pipes + 1; i++)
+		waitpid(-1, &child_status, 0);
+
 }
 
 char ** take_action(char** tokens, char *envpp[]) {

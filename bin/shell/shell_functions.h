@@ -219,7 +219,7 @@ char **setEnvStack(char *newVar, char *envpp[]) {
 			i++;
 		size_t newSize = sizeof(char *) * (i + 2);
 		char **dupenvp = (char **) malloc(newSize);
-		if (dupenv == NULL) {
+		if (dupenvp == NULL) {
 			int backupErrno = errno;
 			errorHandler(backupErrno);
 			return envpp;
