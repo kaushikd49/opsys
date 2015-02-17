@@ -38,6 +38,7 @@ int errno;
 //end open errors
 //fork errors
 #define EAGAIN 11
+#define FORKERROR 133
 //execve errors
 #define E2BIG 7
 #define ENOEXEC 8

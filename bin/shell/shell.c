@@ -7,8 +7,15 @@
 void do_execute(char** tokens, char** envpp) {
 	char pathPrefix[250];
 	char *current, *next;
+	int result;
 	// this is what Input has to change.execve(newargs[0], newargs, NULL);
-	execve(tokens[0], tokens, envpp);
+	errno = 0;
+	result = execve(tokens[0], tokens, envpp);
+	if( result == -1 && errno != ENOENT){
+		int backupErrno = errno;
+		errorHandler(backupErrno);
+		exit(0);
+	}
 	char* path = getEnv("PATH=", envpp);
 	current = path;
 	//printf("%s",path);
@@ -18,15 +25,21 @@ void do_execute(char** tokens, char** envpp) {
 			strcpybtwptrs(current, next, pathPrefix);
 			strcat(pathPrefix, "/");
 			strcat(pathPrefix, tokens[0]);
-			execve(pathPrefix, tokens, envpp);
+			errno = 0;
+			result = execve(pathPrefix, tokens, envpp);
+			if( result == -1 && errno != ENOENT){
+				int backupErrno = errno;
+				errorHandler(backupErrno);
+				exit(0);
+			}
 			current = next + 1;
+			result = 0;
 		} else {
 			printf("command not found\n");
 			exit(0);
 		}
 	}
 }
-//added error handling:hard to test.
 void handleChildExec(char **tokens, char** envpp) {
 	int status;
 	pid_t child = fork();
@@ -34,7 +47,7 @@ void handleChildExec(char **tokens, char** envpp) {
 		if (child == 0) {
 			do_execute(tokens, envpp);
 		} else {
-			waitpid(-1, &status, 0); //i did a lot of testing for sleep with waitpid seems to be working. I would suggest test again
+			waitpid(-1, &status, 0);
 		}
 	} else {
 		printf("fork unsuccessful:\n");
@@ -224,7 +237,7 @@ void handle_pipe(char **tokens, char * envpp[]) {
 	int i = 0, j = 0;
 	p = tokens;
 	for (i = 0, j = 0; *p != NULL; p++) {
-		if (**p == '|' && (p + 1) != NULL) { // pipe encountered
+		if (**p == '|' && **(p + 1) != '\0') { // pipe encountered
 			j++; // pipe count
 			subset_tokens[i++] = NULL; // end of subset of tokens to be passed to execve
 			i = 0; // reset index for reuse
@@ -262,12 +275,10 @@ void handle_pipe(char **tokens, char * envpp[]) {
 		handleChildPipeExec2(subset_tokens, envpp, all_filedes, total_pipe_fds,
 				readsl, writesl);
 	}
-	int child_status;
-	close_all_pipefds(total_pipe_fds, all_filedes);
-	//sleep(10);
-	for (i = 0; i < pipes + 1; i++)
-		waitpid(-1, &child_status, 0);
 
+	int child_status;
+	waitpid(-1, &child_status, 0);
+	close_all_pipefds(total_pipe_fds, all_filedes);
 }
 
 char ** take_action(char** tokens, char *envpp[]) {
@@ -461,8 +472,9 @@ void pipetest(char *envpp[]) {
 
 int main(int argc, char* argv[], char* envpp[]) {
 	envpp = process_main(argc, argv, envpp); //made input inside the process_main
+	return 0;				//and checking if it is script with 1 script only
 
 //	pipetest(envpp);
-	return 0;
+//	return 0;
 }
 

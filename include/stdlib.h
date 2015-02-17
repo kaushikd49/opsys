@@ -64,8 +64,10 @@ struct dirent {
 	unsigned short d_reclen;
 	char d_name[NAME_MAX + 1];
 };
-struct dir{
-	struct dirent*current;
+struct dir {
+	struct dirent *start;
+	struct dirent *current;
+	int fd;
 };
 typedef struct dir DIR;
 void *opendir(const char *name);

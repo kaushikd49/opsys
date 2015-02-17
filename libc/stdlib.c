@@ -21,8 +21,7 @@ struct blockHeader {
 void exit(int status) {
 	syscall_1(SYS_exit, status);
 }
-//check if we have to do PIPE ERRORS: EAGAIN if O_NONBLOCK is set,2)if interupted by a signal. http://linux.die.net/man/3/read
-//EBADMSG ?? LOT OF ERRNOS did not check
+
 ssize_t read(int fd, void *buf, size_t count) {
 	size_t size = syscall_4_write(SYS_read, fd, buf, count); //we could change this to use the generic syscall_4 but why break.
 	if (size == 0xFFFFFFFFFFFFFFF7) {
@@ -35,19 +34,9 @@ ssize_t read(int fd, void *buf, size_t count) {
 	//if(size == 0x)
 	return size;
 }
-//write same issues as read
+
 size_t write(int fd, const void *buf, size_t count) {
-	/*
-	 __asm__ __volatile__ (
-	 "movq $1, %%rax\n\t"
-	 "movq $1, %%rdi\n\t"
-	 "movq %0, %%rsi\n\t"
-	 "movq $1, %%rdx\n\t"
-	 "syscall"
-	 :
-	 :"r"(hello)
-	 :"rax", "rdi", "rsi", "rdx", "memory"
-	 );*/
+
 	size_t size = syscall_4_write(SYS_write, fd, buf, count);
 	if (size == 0xFFFFFFFFFFFFFFF7) {
 		errno = EBADF;
@@ -359,7 +348,7 @@ uint64_t get_brk(uint64_t size) {
 //brk done returns -1 on failure and sets ENOMEM
 int brk(void *end_data_segment) {
 	uint64_t memoryStart = get_brk(0);
-	uint64_t returnBrk = get_brk((uint64_t) (end_data_segment));//todo: does get_brk return a value?? adding here: in our shell see if we free all mallocs
+	uint64_t returnBrk = get_brk((uint64_t) (end_data_segment));
 	//heap overflow check.
 	if (returnBrk == memoryStart) {
 		errno = ENOMEM;
@@ -468,8 +457,7 @@ void *memset(void *s, int c, size_t n) {
 	int *current = (int *) s;
 	//int offset = 0;
 	if (n % 4 != 0) {
-		printf(
-				"\nmemset dangerous: programmer care required when assigning to this area");
+		printf("\nmemset dangerous: programmer care required when assigning to this area");
 		return s;
 	}
 	while ((size_t) (current) < (size_t) s + (size_t) n) {
@@ -556,11 +544,11 @@ size_t open(const char *filename, int permission) {
 		 mode = DEFAULT_MODE; //todo:verify the mode. default rwx
 	uint64_t result =  syscall_3(SYS_open, (uint64_t)filename, (uint64_t)permission,(uint64_t)mode);
 	if((signed long)result == -EACCES){//checked
-		errno =EACCES;//premission denied to access the file
+		errno =EACCES;//premission denied to access the file checked--
 		return -1;
 	}
 	else if((signed long)result == -ENOENT){//checked
-		errno = ENOENT;//file or directory does not exist
+		errno = ENOENT;//file or directory does not exist checked--
 		//printf("file or directory not present");
 		return -1;
 	}
@@ -568,7 +556,7 @@ size_t open(const char *filename, int permission) {
 		errno = EEXIST;//file already exists returns when using O_CREATE
 		//printf("file exists");
 		return -1;
-	} else if ((signed long) result == -EDQUOT) {
+	} else if ((signed long) result == -EDQUOT) {//checked
 		errno = EDQUOT; //quota of open files exceeded by user.
 		return -1;
 	} else if ((signed long) result == -EFAULT) {
@@ -590,16 +578,13 @@ size_t open(const char *filename, int permission) {
 		errno = EMFILE; //too many files open by process
 		return -1;
 	} else if ((signed long) result == -ENAMETOOLONG) {
-		errno = ENAMETOOLONG; //too many files open by process
+		errno = ENAMETOOLONG;
 		return -1;
 	} else if ((signed long) result == -ENFILE) {
 		errno = ENFILE; //the device address does not exist
 		return -1;
 	} else if ((signed long) result == -ENODEV) {
 		errno = ENODEV; //too many files open by process
-		return -1;
-	} else if ((signed long) result == -ENOENT) {
-		errno = ENOENT; //too many files open by process
 		return -1;
 	} else if ((signed long) result == -ENOMEM) {
 		errno = ENOMEM; //insufficient kernel are available
@@ -630,7 +615,6 @@ size_t open(const char *filename, int permission) {
 		return -1;
 	} else if ((signed long) result < 0) {
 		errno = OPENERROR;
-		//printf("\nopen error");
 		return -1;
 	}
 	return result;
@@ -645,6 +629,10 @@ pid_t fork(void) {
 	}
 	else if((pid_t)result == -ENOMEM){
 		errno = ENOMEM;
+		return -1;
+	}
+	else if((pid_t)result<0){
+		errno = FORKERROR;
 		return -1;
 	}
 	return result;
@@ -869,6 +857,7 @@ struct dirent {
 	char d_name[NAME_MAX + 1];
 };
 struct dir {
+	struct dirent *start;
 	struct dirent *current;
 	int fd;
 };
@@ -883,16 +872,13 @@ void *opendir(const char *name) {
 	}
 	struct dirent *direntries = (struct dirent *) malloc(
 			MAX_DIR * sizeof(struct dirent));
+	if(direntries == NULL){
+		returnVal = NULL;//errno set by malloc
+		return returnVal;
+	}
 	syscall_3((uint64_t) SYS_getdents, (uint64_t) fd, (uint64_t) direntries,
 			MAX_DIR * sizeof(struct dirent));
-	//struct dirent *temp = (struct dirent *)(direntries);
-	//printf("2STR1:%s \n",temp->d_name);
-	//printf("2STR1:%d \n",temp->d_off);
-	//printf("2STR1:%d \n",temp->d_reclen);
-
-	//struct dirent *temp1 = (struct dirent *)((uint64_t)temp + (uint64_t)temp->d_reclen); //check if you want to use offset
-	//printf("2STR1:%s\n",temp1->d_name);
-
+	returnVal->start = direntries;
 	returnVal->current = direntries;
 	returnVal->fd = fd;
 	return returnVal;
@@ -917,7 +903,7 @@ int closedir(void *dir) {
 		errno = EBADF;
 		return -1;
 	}
-	free(dentry->current);
+	free(dentry->start);
 	int check = close(dentry->fd);
 	if (check < 0) {
 		errno = EBADF;

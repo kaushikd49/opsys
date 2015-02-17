@@ -2,7 +2,8 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<syscall.h>
-
+#include<string.h>
+#include<../bin/shell/shell_functions.h>
 //#include<signal.h>
 #include<errno.h>
 /*
@@ -99,32 +100,60 @@ int main(int argc, char *argv[], char *envp[]) {
 }
 */
 
-int main(int argc,char *argv[], char *envp[] )
-{/*
-	int pid = fork();
-	if(pid>0){
-		if(pid == 0){
-			sleep(10);
-			exit(0);
-		}
-		else{
-
-			alarm(5);
-		}
-	}*/
-	alarm(5);
-	//printf("%d",sleep(10));
+//int main(int argc,char *argv[], char *envp[] )
+//{
+//	int pid = fork();
+//	if(pid>0){
+//		if(pid == 0){
+//			sleep(10);
+//			exit(0);
+//		}
+//		else{
+//
+//			alarm(5);
+//		}
+//	}*/
+//	alarm(5);
+//	printf("%d",sleep(10));
 //	sleep(6);
-	//while(1);
-	char *str = (char *)423423;
-	int size = 1000;
-	//char *buf = str;
-	char *ptr = getcwd(str,size);
-	if(ptr !=NULL)
-		printf("%s", ptr);
-	else{
-		printf("%d",errno);
-	}
-	return 0;
-}
+//	while(1);
+//
+//	char *str = (char *)423423;
+//	int size = 1000;
+//	//char *buf = str;
+//	char *ptr = getcwd(str,size);
+//	if(ptr !=NULL)
+//		printf("%s", ptr);
+//	else{
+//		printf("%d",errno);
+//	}
+//	return 0;
+//}
 
+int main(int argc, char *argv[], char *envp[]){
+//	char str[10] = "fasf";
+//	//int size = 1000;
+//	int readans = open(str , O_RDONLY);
+//	if(readans == -1){
+//	errorHandler(errno);
+//	}
+//	printf("asdasd:%d\n", readans);
+//	int result = brk((void *)54);
+//	if(result == -1){
+//		errorHandler(errno);
+//	}
+//	int *result1 = (int *)malloc(1000000000*sizeof(int));
+//	if(result1 == NULL){
+//		errorHandler(errno);
+//	}
+	void *returnval = opendir("./script1.sh");
+	if(returnval ==NULL){
+		errorHandler(errno);
+		exit(0);
+	}
+	struct dirent *ans =NULL;
+	while((ans = readdir(returnval))!=NULL ){
+		printf("%s\n",ans->d_name);
+	}
+	printf("%d", closedir(returnval));
+}

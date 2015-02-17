@@ -8,6 +8,7 @@
 // is used only to find the size of char ** tokens[] and the
 // value returned will always be >= num of tokens actually
 // generated.
+void errorHandler(int errorCode);
 int num_delims(char *str, char delim) {
 	int i = 0, delimCount = 0;
 	while (str[i] != '\0') {
@@ -21,6 +22,11 @@ int num_delims(char *str, char delim) {
 char **tokenize(char *input, char delim) {
 	int numDelims = num_delims(input, delim);
 	char **tokens = (char**) malloc((numDelims + 2) * sizeof(char*));
+	if (tokens == NULL) {
+			int backupErrno = errno;
+			errorHandler(backupErrno);
+			printf("\nshell exiting: dangerous");
+	}
 	int i = 0, j = 0;
 	while (input[i] != '\0') {
 		// First char itself is a possible token's start location
@@ -39,6 +45,11 @@ char **tokenize(char *input, char delim) {
 
 char * escape_aware_copy(char *input, int startIdx, int endIdx, char delim) {
 	char *token = (char*) malloc((endIdx - startIdx + 1) * sizeof(char));
+	if (token == NULL) {
+		int backupErrno = errno;
+		errorHandler(backupErrno);
+		printf("\nshell exiting: dangerous");
+	}
 	int i = startIdx, j = 0;
 	while (i < endIdx) {
 		if (input[i] == '\\') {
@@ -93,6 +104,11 @@ char **advance_tokenize(char *input, char delim, char fieldEncloser) {
 	int numDelims = num_delims(input, delim);
 	printf("NUMDELIMS:%d\n",numDelims);
 	char **tokens = (char**) malloc((numDelims + 2) * sizeof(char*));
+	if (tokens == NULL) {
+		int backupErrno = errno;
+		errorHandler(backupErrno);
+		printf("\nshell exiting");
+	}
 	int i = 0, j = 0, startIdx = -1, endIdx = -1, fieldEnclStarted = 0;
 	while (input[i] != '\0') {
 		if (input[i] != delim) {
@@ -203,6 +219,11 @@ char **setEnvStack(char *newVar, char *envpp[]) {
 			i++;
 		size_t newSize = sizeof(char *) * (i + 2);
 		char **dupenvp = (char **) malloc(newSize);
+		if (dupenv == NULL) {
+			int backupErrno = errno;
+			errorHandler(backupErrno);
+			return envpp;
+		}
 		while (j != i) {
 			dupenvp[j] = (char *) envpp[j];
 			j++;
@@ -275,7 +296,7 @@ void errorHandler(int errorCode){
 			break;
 		//open errors
 		case ENOMEM:
-			printf("\n%d: Out of memory or can't allocate memory of that size \n", ENOMEM);
+			printf("\n%d: Cant allocate memory or illegal memory access \n", ENOMEM);
 			break;
 		case EACCES:
 			printf("\n%d: Not enough Permissions\n", EACCES);
@@ -358,7 +379,7 @@ void errorHandler(int errorCode){
 		case EXECVEERROR:
 		//wait pid errors
 		case EINVAL:
-			printf("%d: Invalid descriptor/id \n", EINVAL);
+			printf("%d: Invalid descriptor id \n", EINVAL);
 			break;
 		case ECHILD:
 			printf("\n%d: Child process does not exist \n",ECHILD );
@@ -374,8 +395,11 @@ void errorHandler(int errorCode){
 		case CHDIRERROR:
 			printf("%d: Error with change directory\n", CHDIRERROR);
 			break;
+		case FORKERROR:
+			printf("%d: fork error\n", FORKERROR);
+			break;
 		default:
-			printf("Error occured with error code:%d\n",errorCode);
+			printf("Error occurred with error code:%d\n",errorCode);
 			break;
 	}
 }
