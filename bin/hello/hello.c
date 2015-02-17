@@ -45,12 +45,14 @@ int main(int argc, char* argv[], char* envp[]) {
 
 	while (1) {
 		char s[22] = "";
+
 		int x = -2;
 		int a = 0;
 		int b;
 // with duplicate type specifiers crap happens : todo
-		scanf("%s %x %x %c", s, &x, &a, &b);
-		printf("1) %s 2) %d 3) %x 4) %c", s, x, a, b);
+		int sc = scanf("%s %d %x %c", s, &x, &a, &b);
+		int pf = printf("1) %s 2) %d 3) %x 4) %c", s, x, a, b);
+		printf("\n%d %d\n", sc, pf);
 	}
 
 //	printf("%s", s);

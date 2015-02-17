@@ -138,7 +138,7 @@ int printHexInt(int n) {
 		char *ptr = res + i + 1;
 		write_hex(count, ptr);
 	}
-	return count;
+	return count + 2;
 }
 
 int printf(const char *format, ...) {
