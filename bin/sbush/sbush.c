@@ -485,6 +485,10 @@ void pipetest(char *envpp[]) {
 //Set and use PATH and PS1 variables
 
 int main(int argc, char* argv[], char* envpp[]) {
+	printf("Sbush-MSKD version 1.0, Copyright (C) 2015 Muthukumar Suresh and\n \
+Kaushik Devarajaiah. This comes with ABSOLUTELY NO WARRANTY.\n \
+This is free software, and you are welcome to redistribute it\n \
+under certain conditions.\n");
 	envpp = process_main(argc, argv, envpp); //made input inside the process_main
 	return 0;				//and checking if it is script with 1 script only
 
