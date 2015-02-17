@@ -74,7 +74,10 @@ void handleChildPipeExec(char **tokens, char** envpp, int fds[], int fd_to) {
 	pid_t child = fork();
 	if (child >= 0) {
 		if (child == 0) {
-			dup2(fd_from, fd_to);
+			if(dup2(fd_from, fd_to) < 0){
+				printf("error in dup2");
+				exit(0);
+			}
 //			close_fds(fds);
 			close(fds[1 ^ fd_to]);
 			do_execute(tokens, envpp);
@@ -230,7 +233,7 @@ void handle_pipe(char **tokens, char * envpp[]) {
 		int status = pipe(filedes);
 		if (status != 0) {
 			printf("error opening pipe #%d", i + 1);
-			exit(1);
+			return;
 		}
 	}
 
@@ -344,7 +347,7 @@ char** cmd_line_arg_case(char input[ARG_LIMIT], char* argv[], char* envpp[]) {
  */
 void remove_trail_nl(char *input) {
 	size_t len = 0;
-	printf("\ninput before chomping %s\n", input);
+//	printf("\ninput before chomping %s\n", input);
 	while (input[len] != '\n') {
 		len++;
 	}

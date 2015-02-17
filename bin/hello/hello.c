@@ -9,8 +9,8 @@ void child_sample_exec(char* argv[], char* envp[]) {
 	chdir("/");
 	errno = 0;
 	int retVal = execve("/bin/ls", argv, envp);
-	if(retVal == -1){
-		printf("hello:%d",errno);
+	if (retVal == -1) {
+		printf("hello:%d", errno);
 	}
 }
 
@@ -29,19 +29,31 @@ void sample_file_readwrite() {
 	close(write_fd);
 }
 
-
 int main(int argc, char* argv[], char* envp[]) {
+
+//	int newfd = dup(0);
+//	printf("%d", newfd);
+//	char buf[10]="abcdefg\n";
+//	write(newfd, buf, 6);
+//	close(newfd);
+//	exit(0);
+
 //	int a = 12;
 //	scanf("%d", &a);
 //	printf("%d", a);
 //
-	char s[22]="";
-int x=-2;
-int a=0;
-int b;
+
+	while (1) {
+		char s[22] = "";
+
+		int x = -2;
+		int a = 0;
+		int b;
 // with duplicate type specifiers crap happens : todo
-	scanf("%s %d %x %c", s,&x, &a, &b);
-	printf("hello maga ..see this %s %d %x %c", s,x, a, b);
+		int sc = scanf("%s %d %x %c", s, &x, &a, &b);
+		int pf = printf("1) %s 2) %d 3) %x 4) %c", s, x, a, b);
+		printf("\n%d %d\n", sc, pf);
+	}
 
 //	printf("%s", s);
 //	printf("%d",x);
@@ -60,18 +72,16 @@ int b;
 //	scanf("%d", &a);
 //	printf("%x", a);
 
-
 	pid_t pid = fork();
 	if (pid >= 0) {
 		if (pid == 0) {
 			char *msg = "inside child bro.\n";
 			size_t length = strlen(msg);
 			write(1, msg, length);
-			printf("parent must be %d   %d\n", getppid(),getpid());
+			printf("parent must be %d   %d\n", getppid(), getpid());
 			int ret = chdir("./script1.sh");
-			printf("CHDIRRET: %d  %d",ret, errno);
+			printf("CHDIRRET: %d  %d", ret, errno);
 			child_sample_exec(argv, envp);
-
 
 			exit(0);
 		} else {
@@ -80,7 +90,7 @@ int b;
 
 			int ret = waitpid(-1, &status, 0);
 			printf("\nwait:%d\n", ret);
-			printf("\nERRNO:%d",errno);
+			printf("\nERRNO:%d", errno);
 
 			//char *str = "hello child";
 			//printf("\ninside parent process %d. %s\n", getpid(), str);
@@ -104,11 +114,8 @@ int b;
 //			if(ptr3 ==NULL)
 //				exit(1);
 //			ptr3[0] = 33;
-
 //			printf("\nptr3:%d\n",ptr3[0]);
-
 			//sample_file_readwrite();
-
 //			parent_sample_exec(argv, envp);
 			//printf("\n");
 			//testing strcpy
@@ -132,13 +139,13 @@ int b;
 			//char buffer[50] = "helloada";
 			//write(fd, buffer, 50);
 			/*
-			char fileName[100] = "./";
-			DIR *dirStr = opendir(fileName);
-			struct dirent *temp;
-			while((temp = readdir(dirStr))!=NULL){
-				printf("\nDENTRY:%s  %d",temp->d_name,temp->d_reclen);
-			}
-			closedir(dirStr);*/
+			 char fileName[100] = "./";
+			 DIR *dirStr = opendir(fileName);
+			 struct dirent *temp;
+			 while((temp = readdir(dirStr))!=NULL){
+			 printf("\nDENTRY:%s  %d",temp->d_name,temp->d_reclen);
+			 }
+			 closedir(dirStr);*/
 			//
 			//
 			//
@@ -151,27 +158,27 @@ int b;
 			//1)exit no test done
 			//2)read
 			/*
-			int fd[10000],i = 0;
-			while(i!=1){
-				errno = 0;
-				fd[i] = open("./corrupt.txt",O_WRONLY);
-				printf("\n%d  %d",i,errno);
-				i++;
-				//scanf("%d",ch);
-			}*/
+			 int fd[10000],i = 0;
+			 while(i!=1){
+			 errno = 0;
+			 fd[i] = open("./corrupt.txt",O_WRONLY);
+			 printf("\n%d  %d",i,errno);
+			 i++;
+			 //scanf("%d",ch);
+			 }*/
 			/*
-			char buffer[5];
-			errno = 0;
-			int ret = read(fd[0],buffer,50);
+			 char buffer[5];
+			 errno = 0;
+			 int ret = read(fd[0],buffer,50);
 
-			printf("\n%d",ret);
-			*/
-	//		int result
+			 printf("\n%d",ret);
+			 */
+			//		int result
 			//lseek
-			int fd = open("test.txt",O_RDONLY);
-			off_t offset = lseek(fd,5,6);
-			if((int64_t)offset==-1)
-			printf("%d",errno);
+			int fd = open("test.txt", O_RDONLY);
+			off_t offset = lseek(fd, 5, 6);
+			if ((int64_t) offset == -1)
+				printf("%d", errno);
 			//offset = lseek(fd,-3,SEEK_END);
 			//printf("\n");
 			//printf("%d",offset);
