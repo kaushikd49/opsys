@@ -23,7 +23,7 @@ void exit(int status) {
 }
 
 ssize_t read(int fd, void *buf, size_t count) {
-	size_t size = syscall_4_write(SYS_read, fd, buf, count); //we could change this to use the generic syscall_4 but why break.
+	size_t size = syscall_4_write(SYS_read, fd, buf, count); //we could change this to use the generic syscall_4 but why break the code.
 	if (size == 0xFFFFFFFFFFFFFFF7) {
 		errno = EBADF;
 		return -1;
@@ -31,7 +31,6 @@ ssize_t read(int fd, void *buf, size_t count) {
 		errno = READERR;
 		return -1;
 	}
-	//if(size == 0x)
 	return size;
 }
 
@@ -440,13 +439,13 @@ void *malloc(uint64_t size) {
 		metaData->next = fragmentBlock(loc, prevSize);
 		void *returnAddress = (void *) ((uint64_t) loc
 				+ sizeof(struct blockHeader));
-		printAllocmemory(head);
+//		printAllocmemory(head);
 		return returnAddress;
 	}
 //end of best fit
 
 	uint64_t memoryStart = get_brk(0);
-	printf("MEMORY START:%d\n", memoryStart);
+//	printf("MEMORY START:%d\n", memoryStart);
 	//printf("memsize:%d  %d\n",memSize,memoryStart);
 	uint64_t newBrk = (uint64_t) (memoryStart + memSize); //todo: does get_brk return a value?? adding here: in our shell see if we free all mallocs
 	//heap overflow check.
@@ -475,7 +474,7 @@ void *malloc(uint64_t size) {
 	void *returnAddress = (void *) (memoryStart + sizeof(struct blockHeader));
 	if (head2 == NULL && head != NULL)
 		head2 = &head;
-	printAllocmemory(*head2);
+//	printAllocmemory(*head2);
 	return returnAddress;
 
 }
@@ -497,16 +496,9 @@ void free(void *ptr) {
 
 	struct blockHeader *current = (struct blockHeader *) ((uint64_t) (ptr)
 			- sizeof(struct blockHeader));
-
-	//printf("\nfreeing\n");
-	//printf("\n%d",current->size);
 	current->size = (current->size) & 0xFFFFFFFFFFFFFFFE;
 	size_t size = current->size - sizeof(struct blockHeader);
-	//printf("\n%d\t%d", current->size, size);
 	memset(ptr, 0, size);
-	//printf("meset successful");
-	//printf("\n%d",current->size);
-	//printAllocmemory(*head2);
 }
 char *strcpy(char *dst, char *src) {
 	size_t len = 0;
@@ -575,11 +567,9 @@ size_t open(const char *filename, int permission) {
 	}
 	else if((signed long)result == -ENOENT){//checked
 		errno = ENOENT;//file or directory does not exist checked--
-		//printf("file or directory not present");
 		return -1;
 	} else if ((signed long) result == -EEXIST) {		//checked
 		errno = EEXIST;		//file already exists returns when using O_CREATE
-		//printf("file exists");
 		return -1;
 	} else if ((signed long) result == -EDQUOT) {//checked
 		errno = EDQUOT; //quota of open files exceeded by user.

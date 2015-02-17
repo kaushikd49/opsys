@@ -102,7 +102,7 @@ void free_char_array(char **tokens){
 }
 char **advance_tokenize(char *input, char delim, char fieldEncloser) {
 	int numDelims = num_delims(input, delim);
-	printf("NUMDELIMS:%d\n",numDelims);
+//	printf("NUMDELIMS:%d\n",numDelims);
 	char **tokens = (char**) malloc((numDelims + 2) * sizeof(char*));
 	if (tokens == NULL) {
 		int backupErrno = errno;

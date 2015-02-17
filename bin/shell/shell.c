@@ -18,7 +18,6 @@ void do_execute(char** tokens, char** envpp) {
 	}
 	char* path = getEnv("PATH=", envpp);
 	current = path;
-	//printf("%s",path);
 	while (1) {
 		next = strchr(current, ':');
 		if (next != NULL) {
@@ -287,7 +286,7 @@ void handle_pipe(char **tokens, char * envpp[]) {
 }
 
 char ** take_action(char** tokens, char *envpp[]) {
-	print_tokens(tokens);
+	//print_tokens(tokens);
 	char *cmd = tokens[0];
 	if (tokens[0] == NULL)
 		return envpp;
@@ -349,12 +348,11 @@ char** cmd_line_arg_case(char input[ARG_LIMIT], char* argv[], char* envpp[]) {
  */
 void remove_trail_nl(char *input) {
 	size_t len = 0;
-//	printf("\ninput before chomping %s\n", input);
 	while (input[len] != '\n') {
 		len++;
 	}
 	input[len] = '\0';
-	printf("%s", input);
+	//printf("%s", input);
 }
 char** interactive_case(char input[ARG_LIMIT], char* envpp[]) {
 	char ps1[] = "PS1=prompt>>";
@@ -401,9 +399,6 @@ void pipetest2(char *envpp[]) {
 
 	int filedes[2];
 	int status = pipe(filedes);
-//	int filedes2[2];
-//	int status2 = pipe(filedes2);
-//	printf("%d %d", status, status2);
 	if (status == 0) {
 		// write channel of filedes pointed to stdout of 1st child.
 		int arr1[2] = { filedes[1], 1 };
@@ -413,15 +408,8 @@ void pipetest2(char *envpp[]) {
 		int arr2[2] = { filedes[0], 0 };
 		int arr2dash[2] = { -1, -1 };
 		handleChildPipeExec2(tokens2, envpp, filedes, 2, arr2, arr2dash);
-
-//		char *tokens3[] = { less, NULL };
-//		int arr3[2] = { filedes[0], 0 };
-//		int arr3dash[2] = { -1, -1 };
-//		handleChildPipeExec2(tokens3, envpp, -1, arr3, arr3dash);
-
 		int child_status;
 		waitpid(-1, &child_status, 0);
-//		printf("status was %d", child_status);
 	} else {
 		printf("error while piping");
 	}
@@ -442,8 +430,6 @@ void pipetest(char *envpp[]) {
 	int pipe2[2];
 	pipe(pipe2);
 	int newpipe[4] = { pipe1[0], pipe1[1], pipe2[0], pipe2[1] };
-
-//	printf("%d %d", status, status2);
 	if (status == 0) {
 		// write channel of filedes pointed to stdout of 1st child.
 		int reads1[2] = { -1, -1 };
@@ -460,8 +446,6 @@ void pipetest(char *envpp[]) {
 
 		int child_status;
 		waitpid(-1, &child_status, 0);
-
-//		printf("status was %d", child_status);
 	} else {
 		printf("error while piping");
 	}
