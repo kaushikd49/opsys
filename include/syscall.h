@@ -57,6 +57,12 @@ static __inline uint64_t syscall_2(uint64_t n, const void *a1, int a2) {
 			:"0"(n), "D"(a1), "S"(a2));
 	return result;
 
+static __inline int64_t syscall_0(uint64_t n) {
+	return 0;
+}
+
+static __inline int64_t syscall_1(uint64_t n, uint64_t a1) {
+	return 0;
 }
 */
 static __inline uint64_t syscall_2_test(uint64_t n, uint64_t a1, uint64_t a2) {
@@ -116,6 +122,13 @@ static __inline uint64_t syscall_3_dup2(uint64_t n, int a1, int a2) {
 			:"=a" (result)
 			:"0"(n), "D"(a1), "S"(a2));
 	return result;
-}
-
+// below came from remote
+//static __inline int64_t syscall_2(uint64_t n, uint64_t a1, uint64_t a2) {
+//	return 0;
+//}
+//
+//static __inline int64_t syscall_3(uint64_t n, uint64_t a1, uint64_t a2, uint64_t a3) {
+//	return 0;
+//}
+//
 #endif

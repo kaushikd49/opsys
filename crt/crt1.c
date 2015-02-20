@@ -1,5 +1,7 @@
 #include <stdlib.h>
 
+int main(int argc, char* argv[], char* envp[]);
+
 void _start(void) {
 	uint64_t addr;
 	__asm__ __volatile__(
