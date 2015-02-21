@@ -1,6 +1,10 @@
 #include <sys/sbunix.h>
 #include <sys/gdt.h>
 #include <sys/tarfs.h>
+
+void printf(const char *format, ...) {
+}
+
 void start(uint32_t* modulep, void* physbase, void* physfree)
 {
 	struct smap_t {
