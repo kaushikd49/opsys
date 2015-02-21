@@ -1,7 +1,6 @@
 #include <sys/sbunix.h>
 #include <sys/gdt.h>
 #include <sys/tarfs.h>
-
 void start(uint32_t* modulep, void* physbase, void* physfree)
 {
 	struct smap_t {
@@ -41,7 +40,11 @@ void boot(void)
 		&physbase,
 		(void*)(uint64_t)loader_stack[4]
 	);
-	s = "!!!!! start() returned !!!!!";
-	for(v = (char*)0xb8000; *s; ++s, v += 2) *v = *s;
+	//uint64_t terminal_color = (uint64_t)(15<<4|0);
+	//uint64_t color16 = terminal_color;
+	//register char *terminal_buffer = (char )0xB8000;
+	//*terminal_buffer = ((uint64_t)('a')|(uint64_t)color16);
+	s = "!!!!! start() returned !!!!!fzxffzxfzf";
+	for(v = (char*)0xb8016; *s; ++s, v += 2) *v = *s;
 	while(1);
 }
