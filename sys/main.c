@@ -2,15 +2,9 @@
 #include <sys/gdt.h>
 #include <sys/tarfs.h>
 #include <stdarg.h> // todo: check if importing this here is allowed
+//#include "isrhandler_timer.c"
 uint64_t cursor_pos = 0xb8000;
-void isrhandler_timer(){
-	__asm__ __volatile__(
-	"movq $0xb8000, %rax\n\t"
-	"movb $69, (%rax)\n\t"
-	"movq $0xb8004, %rax\n\t"
-	"movb $71, (%rax)\n\t"
-	);
-}
+
 void write_to_video_memory(const char* str) {
 	// todo : register char will end up being used
 	// lot of times. Not advisable to make it register.
@@ -260,10 +254,8 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 							:"=g"(flags));
 	flags = flags & (1<<9);
 	//printf("hello: %d",flags);
-	__asm__ __volatile__ ("movb $0xFE, %al\n\t"
+	__asm__ __volatile__ ("movb $0xFD, %al\n\t"
 						  "outb  %al, $0x21\n\t");
-//	__asm__ __volatile__ ("int $0x52\n\t"
-//						  "cli");
 
 	printf("done");
 	//__asm__ __volatile__(

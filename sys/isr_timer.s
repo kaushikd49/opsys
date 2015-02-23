@@ -13,10 +13,7 @@ isr_timer:
 	pushq %r9
 	pushq %r10
 	pushq %r11
-	movq $0xb8000, %rax
-	movb $69, (%rax)
-	movq $0xb8004, %rax
-	movb $71, (%rax)
+	call isrhandler_timer
 	popq %r11
 	popq %r10
 	popq %r9
