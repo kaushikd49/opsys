@@ -3,14 +3,23 @@
 #include <sys/tarfs.h>
 #include <stdarg.h> // todo: check if importing this here is allowed
 uint64_t cursor_pos = 0xb8000;
-
+void isrhandler_timer(){
+	__asm__ __volatile__(
+	"movq $0xb8000, %rax\n\t"
+	"movb $69, (%rax)\n\t"
+	"movq $0xb8004, %rax\n\t"
+	"movb $71, (%rax)\n\t"
+	);
+}
 void write_to_video_memory(const char* str) {
 	// todo : register char will end up being used
 	// lot of times. Not advisable to make it register.
 	register char *s, *v;
 	s = (char*) str;
-	for (v = (char*) cursor_pos; *s; ++s, v += 2)
-		*v = *s;
+	for (v = (char*) cursor_pos; *s; ++s, v += 2){
+		*v = (*s);
+		*(v+1) = 0x21;
+	}
 	cursor_pos = (uint64_t) v;
 }
 
@@ -150,7 +159,81 @@ void printf(const char *format, ...) {
 
 //void printf(const char *format, ...) {
 //	write_to_video_memory(format);
-//}
+//
+//-------------------------------------------------------------ISR-----------------------------------------------------------------
+
+struct lidtr_t {//initializing ldtr register
+	uint16_t size;
+	uint64_t base;
+}__attribute__((packed));
+struct idtD{
+	uint16_t offset_1;
+	uint16_t segment_selector;
+	char zero;
+	char type;
+	uint16_t offset2;
+	uint32_t offset3;
+	uint32_t zero2;
+}__attribute__((packed));
+void add_int_handler(uint64_t isr_base, uint64_t isr_number, uint64_t handler_name, char type, uint16_t segment_selector){
+	uint16_t offset1 = (uint16_t)(handler_name & 0x000000000000FFFF);
+	uint16_t offset2 = (uint16_t)(handler_name>>16 & 0x000000000000FFFF);
+	uint32_t offset3 = (uint32_t)(handler_name>>32 & 0x00000000FFFFFFFF);
+	struct idtD *isr_base1 = (struct idtD *)isr_base;
+	isr_base1[isr_number].offset_1 = offset1;
+	isr_base1[isr_number].segment_selector = segment_selector;
+	isr_base1[isr_number].zero = 0;
+	isr_base1[isr_number].type = type;
+	isr_base1[isr_number].offset2 = offset2;
+	isr_base1[isr_number].offset3 = offset3;
+	isr_base1[isr_number].zero2 = 0;
+}
+
+
+//offset 1 at 32 and offset 2 at 40 because first 31 used by exceptions Hardcoding them for now
+void config_PIC(){
+	unsigned char PIC1data, PIC2data;
+
+	__asm__ __volatile__(
+					"inb $0x21,%0\n\t"
+					:"=a"(PIC1data));
+	//printf("sdasd: %x",PIC1data);
+	__asm__ __volatile__(
+						"inb $0xA1,%0\n\t"
+						:"=a"(PIC2data));
+	//printf("pic2: %x", PIC2data);
+	__asm__ __volatile__("movb $0x11, %al\n\t"
+						"outb %al, $0x20 \n\t"
+						"movb $0x11, %al\n\t"
+						"outb %al, $0xA0 \n\t"
+						"movb $0x20, %al\n\t"
+						"outb %al, $0x21 \n\t"//32
+						"movb $0x28, %al\n\t"
+						"outb %al, $0xA1 \n\t"//32+8
+						"movb $4, %al\n\t"
+						"outb %al, $0x21 \n\t"  //set bit for the cascade
+						"movb $2, %al\n\t"
+						"outb %al, $0xA1\n\t"  //this is just the the position where it is cascaded for the pic to know
+						"movb $0x01, %al\n\t"
+						"outb %al, $0x21\n\t"
+						"movb $0x01, %al\n\t"
+						"outb %al, $0xA1\n\t"
+						);
+	__asm__ __volatile__("outb %0,$0x21\n\t"
+					     :: "a"(PIC1data));
+	__asm__ __volatile__("outb %0,$0xA1\n\t"
+						 ::"a"(PIC2data));
+
+
+}
+extern void isr_timer();
+void init_IDT(struct lidtr_t IDT){
+	uint32_t i = 0;
+	for( i = 0;i<256;i++){
+		add_int_handler((uint64_t)IDT.base,i,(uint64_t)isr_timer,0xEF,0x08);
+		//__asm__ __volatile__("INT $0");
+	}
+}
 
 void start(uint32_t* modulep, void* physbase, void* physfree) {
 //	printf("Welcome to your own OS \n");
@@ -168,8 +251,42 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 					smap->base + smap->length);
 		}
 	}
-	printf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
+	printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 	// kernel starts here
+	unsigned long flags;
+	__asm__ __volatile__ (
+							"pushf\n\t"
+							"pop %0"
+							:"=g"(flags));
+	flags = flags & (1<<9);
+	//printf("hello: %d",flags);
+	__asm__ __volatile__ ("movb $0xFE, %al\n\t"
+						  "outb  %al, $0x21\n\t");
+//	__asm__ __volatile__ ("int $0x52\n\t"
+//						  "cli");
+
+	printf("done");
+	//__asm__ __volatile__(
+		//				"int $55\n\t"
+		//				 "cli");
+	//int i = 0;
+	//int j = 5/i;
+	// printf("%d", j);
+	//add_int_handler((uint64_t)&_binary_tarfs_end, 31, (uint64_t)isr_timer, 0x8E, 0x08);
+//	int j = 0;
+//	//int i = 2/j;
+//	printf("%d", i);
+	//__asm__ __volatile__("INT $52");
+	//int n = 34;
+	/*
+	uint64_t result;
+	__asm__ __volatile__("xor %%rbx, %%rbx\n\t"
+						"syscall"
+						:"=a"(result)
+						:"0"(n)
+						:"rbx");*/
+	/*
+	*/
 }
 
 #define INITIAL_STACK_SIZE 4096
@@ -177,7 +294,16 @@ char stack[INITIAL_STACK_SIZE];
 uint32_t* loader_stack;
 extern char kernmem, physbase;
 struct tss_t tss;
-
+struct idtD idt_tab[255];
+struct lidtr_t IDT;
+void init_init_IDT(){
+	IDT.size = 0x1000;//hex(256*16)
+	IDT.base = (uint64_t)(idt_tab);
+	__asm__ __volatile("lidt (%0)"
+						:
+						:"a"(&IDT));
+	init_IDT(IDT);
+}
 void boot(void) {
 	// note: function changes rsp, local stack variables can't be practically used
 	register char *s;
@@ -189,6 +315,12 @@ void boot(void) {
 	);
 	reload_gdt();
 	setup_tss();
+	init_init_IDT();
+	config_PIC();
+	__asm__ __volatile__ (	"movb $0xFF, %al\n\t"
+								"outb  %al, $0x21\n\t"
+								);
+	__asm__ ("sti");
 	start(
 			(uint32_t*) ((char*) (uint64_t) loader_stack[3] + (uint64_t)
 					& kernmem - (uint64_t) & physbase), &physbase,
