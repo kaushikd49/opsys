@@ -2,7 +2,7 @@
 #include <sys/gdt.h>
 #include <sys/tarfs.h>
 #include <stdarg.h> // todo: check if importing this here is allowed
-//#include "isrhandler_timer.c"
+//#include "isrhandler_default.c"
 uint64_t cursor_pos = 0xb8000;
 
 void write_to_video_memory(const char* str) {
@@ -220,11 +220,11 @@ void config_PIC(){
 
 
 }
-extern void isr_timer();
+extern void isr_default();
 void init_IDT(struct lidtr_t IDT){
 	uint32_t i = 0;
 	for( i = 0;i<256;i++){
-		add_int_handler((uint64_t)IDT.base,i,(uint64_t)isr_timer,0xEF,0x08);
+		add_int_handler((uint64_t)IDT.base,i,(uint64_t)isr_default,0xEF,0x08);
 		//__asm__ __volatile__("INT $0");
 	}
 }
@@ -256,15 +256,17 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	//printf("hello: %d",flags);
 	__asm__ __volatile__ ("movb $0xFD, %al\n\t"
 						  "outb  %al, $0x21\n\t");
+	//while
 
 	printf("done");
+	while(1);
 	//__asm__ __volatile__(
 		//				"int $55\n\t"
 		//				 "cli");
 	//int i = 0;
 	//int j = 5/i;
 	// printf("%d", j);
-	//add_int_handler((uint64_t)&_binary_tarfs_end, 31, (uint64_t)isr_timer, 0x8E, 0x08);
+	//add_int_handler((uint64_t)&_binary_tarfs_end, 31, (uint64_t)isr_default, 0x8E, 0x08);
 //	int j = 0;
 //	//int i = 2/j;
 //	printf("%d", i);
@@ -295,6 +297,9 @@ void init_init_IDT(){
 						:
 						:"a"(&IDT));
 	init_IDT(IDT);
+}
+void add_custom_interrupt(){
+	//modify_IDT(32, )
 }
 void boot(void) {
 	// note: function changes rsp, local stack variables can't be practically used
