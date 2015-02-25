@@ -1,5 +1,5 @@
-#ifndef ISRHANDLER_DEFAULT_H
-#define ISRHANDLER_DEFAULT_H
+#ifndef ISRHANDLER_DEFAULT_C
+#define ISRHANDLER_DEFAULT_C
 #include <sys/sbunix.h>
 #include <sys/gdt.h>
 #include <sys/tarfs.h>
