@@ -2,6 +2,7 @@
 .text
 .global isr_default
 .global isr_timer
+.global isr_keyboard
 .align 4
 
 isr_default:

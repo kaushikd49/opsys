@@ -235,7 +235,7 @@ int printHexIntTime(int n) {
 }
 //try optimizing this function. see if we need to use a more refined way.
 void print_time(){
-	//with a frequency of 18.2065 Hz, a interrupt is sent every .0549254 seconds so a second happens every 8.2 calls.
+	//with a frequency of 18.2065 Hz, a interrupt is sent every .0549254 seconds so a second happens every 18.2 calls.
 	static int seconds_boot=0;
 	static int ms_boot=0;
 	static int lost_precision = 0; //for the .2 so every 10 increment increment ms_boot once more
@@ -325,6 +325,7 @@ void config_PIC(){
 }
 extern void isr_default();
 extern void isr_timer();
+extern void isr_keyboard();
 void init_IDT(struct lidtr_t IDT){
 	uint32_t i = 0;
 	for( i = 0;i<256;i++){
