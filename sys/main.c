@@ -258,7 +258,7 @@ void print_time(){
 //	write_to_video_memory(format);
 //
 //-------------------------------------------------------------ISR-----------------------------------------------------------------
-
+//exactly like the GDTR. todo: change the intitialization to the way it is done for gdt
 struct lidtr_t {//initializing ldtr register
 	uint16_t size;
 	uint64_t base;
@@ -328,7 +328,7 @@ extern void isr_timer();
 void init_IDT(struct lidtr_t IDT){
 	uint32_t i = 0;
 	for( i = 0;i<256;i++){
-		add_int_handler((uint64_t)IDT.base,i,(uint64_t)isr_default,0xEF,0x08);
+		add_int_handler((uint64_t)IDT.base,i,(uint64_t)isr_default,0xEF,0x08);//everything set as trap.
 		//__asm__ __volatile__("INT $0");
 	}
 }
@@ -404,6 +404,7 @@ void init_init_IDT(){
 }
 void add_custom_interrupt(){
 	add_int_handler((uint64_t)IDT.base, 32, (uint64_t)isr_timer, 0xEE,0x08); //mode set to present|Ring 3|Interrupt   - Segment usual kernel segments
+	add_int_handler((uint64_t)IDT.base, 33, (uint64_t)isr_keyboard, 0xEE, 0x08);
 }
 void boot(void) {
 	// note: function changes rsp, local stack variables can't be practically used
