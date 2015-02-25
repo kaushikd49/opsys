@@ -30,7 +30,8 @@ void sample_file_readwrite() {
 }
 
 int main(int argc, char* argv[], char* envp[]) {
-
+printf("%d",2147483647);
+exit(0);
 //	int newfd = dup(0);
 //	printf("%d", newfd);
 //	char buf[10]="abcdefg\n";
