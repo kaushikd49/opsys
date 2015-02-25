@@ -12,7 +12,7 @@ void write_to_video_memory(const char* str) {
 	s = (char*) str;
 	for (v = (char*) cursor_pos; *s; ++s, v += 2){
 		*v = (*s);
-		*(v+1) = 0x21;
+	//	*(v+1) = 0x21;
 	}
 	cursor_pos = (uint64_t) v;
 }
@@ -22,24 +22,25 @@ void write_to_video_memory_time(const char* str) {
 		uint64_t cursor_pos = 0xb8ef0;
 		for (v = (char*) cursor_pos; *s; ++s, v += 2){
 			*v = (*s);
-			*(v+1) = 0x21;
 		}
 		cursor_pos = (uint64_t) v;
 }
 int printInteger(int n) {
 	int count = 0, i = 10, neg = 0;
-	char number[11] = "0000000000"; // log(2^31-1) + sign char
+	char number[] = "00000000000"; 
 
 	if (n < 0) {
 		neg = 1;
-		n *= -1;
 	} else if (n == 0) {
 		i -= 2;
 		count++;
 	}
 
 	while (n != 0) {
-		char rem = (n % 10) + '0';
+        int digit = (n % 10); 
+        if(digit<0)
+                digit *= -1;
+        char rem = digit + '0';
 		number[i--] = rem;
 		n /= 10;
 		count++;
@@ -238,12 +239,12 @@ void print_time(){
 	//with a frequency of 18.2065 Hz, a interrupt is sent every .0549254 seconds so a second happens every 18.2 calls.
 	static int seconds_boot=0;
 	static int ms_boot=0;
-	static int lost_precision = 0; //for the .2 so every 10 increment increment ms_boot once more
+//	static int lost_precision = 0; //for the .2 so every 10 increment increment ms_boot once more
 	//printf("%x", time);
-	lost_precision++;
+//	lost_precision++;
 	ms_boot = ms_boot + 1;
-	if(lost_precision == 9) //can optimize
-		ms_boot++;
+//	if(lost_precision == 9) //can optimize
+//		ms_boot++;
 
 	if(ms_boot < 18){
 		return;
@@ -335,7 +336,7 @@ void init_IDT(struct lidtr_t IDT){
 }
 
 void start(uint32_t* modulep, void* physbase, void* physfree) {
-//	printf("Welcome to your own OS \n");
+	printf("Welcome to your own OS %x\n", -2147483647);
 	struct smap_t {
 		uint64_t base, length;
 		uint32_t type;
@@ -346,8 +347,8 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 			smap < (struct smap_t*) ((char*) modulep + modulep[1] + 2 * 4);
 			++smap) {
 		if (smap->type == 1 /* memory */&& smap->length != 0) {
-			//printf("Available Physical Memory [%x-%x]\n", smap->base,
-			//		smap->base + smap->length);
+			printf("Available Physical Memory [%x-%x]\n", smap->base,
+					smap->base + smap->length);
 		}
 	}
 	//printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
