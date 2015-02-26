@@ -66,9 +66,11 @@ void write_hex(int count, char* ptr, uint64_t pos) {
 	write_to_video_memory(newchar, pos);
 }
 
-int printHexa(int last_index, int n, char res[], uint64_t pos) {
+int printHexa(int last_index, uint64_t n, char res[], uint64_t pos) {
 	char c = '0';
-	int base = 0xf, i = last_index, new_n = n, j = 0;
+	int i = last_index, j = 0;
+	uint64_t new_n = n;
+	uint64_t base = 0xf;
 	int count = 0;
 	if (n == 0) {
 		char* zero = "0x0";
@@ -293,7 +295,8 @@ void init_IDT(struct lidtr_t IDT){
 }
 
 void start(uint32_t* modulep, void* physbase, void* physfree) {
-	printf("Welcome to your own OS %d\n", -2147483647);
+	char str[] = "abcde";
+	printf("Welcome to your own OS %d %c %x %s %p\n", -2147483647, 'e', 0xa35d, str, &modulep);
 	struct smap_t {
 		uint64_t base, length;
 		uint32_t type;
