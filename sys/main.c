@@ -4,28 +4,27 @@
 #include <stdarg.h> // todo: check if importing this here is allowed
 //#include "isrhandler_default.c"
 uint64_t cursor_pos = 0xb8000;
+uint64_t PRINT_CONTINIOUS = 0;
 
-void write_to_video_memory(const char* str) {
+void write_to_video_memory(const char* str, uint64_t position) {
 	// todo : register char will end up being used
 	// lot of times. Not advisable to make it register.
 	register char *s, *v;
+
+	if(position == PRINT_CONTINIOUS)
+		v = (char*) cursor_pos;
+	else
+		v = (char*) position;
+
 	s = (char*) str;
-	for (v = (char*) cursor_pos; *s; ++s, v += 2){
+	for (; *s; ++s, v += 2){
 		*v = (*s);
 	//	*(v+1) = 0x21;
 	}
 	cursor_pos = (uint64_t) v;
 }
-void write_to_video_memory_time(const char* str) {
-	register char *s, *v;
-		s = (char*) str;
-		uint64_t cursor_pos = 0xb8ef0;
-		for (v = (char*) cursor_pos; *s; ++s, v += 2){
-			*v = (*s);
-		}
-		cursor_pos = (uint64_t) v;
-}
-int printInteger(int n) {
+
+int printInteger(int n, uint64_t pos) {
 	int count = 0, i = 10, neg = 0;
 	char number[] = "00000000000"; 
 
@@ -51,11 +50,11 @@ int printInteger(int n) {
 		count++;
 	}
 	char *ptr = number + i + 1;
-	write_to_video_memory(ptr);
+	write_to_video_memory(ptr, pos);
 	return count;
 }
 
-void write_hex(int count, char* ptr) {
+void write_hex(int count, char* ptr, uint64_t pos) {
 	int newcount = count + 2;
 	char newchar[newcount];
 
@@ -64,16 +63,16 @@ void write_hex(int count, char* ptr) {
 	for (int i = 2; i < newcount; i++, ptr++) {
 		newchar[i] = *ptr;
 	}
-	write_to_video_memory(newchar);
+	write_to_video_memory(newchar, pos);
 }
 
-int printHexa(int last_index, int n, char res[]) {
+int printHexa(int last_index, int n, char res[], uint64_t pos) {
 	char c = '0';
 	int base = 0xf, i = last_index, new_n = n, j = 0;
 	int count = 0;
 	if (n == 0) {
 		char* zero = "0x0";
-		write_hex(1, zero);
+		write_hex(1, zero, pos);
 		count = 1;
 	} else {
 		while (new_n != 0) {
@@ -91,7 +90,7 @@ int printHexa(int last_index, int n, char res[]) {
 		count = last_index - i;
 		if (count > 0) {
 			char* ptr = res + i + 1;
-			write_hex(count, ptr);
+			write_hex(count, ptr, pos);
 		}
 	}
 	return count;
@@ -99,24 +98,24 @@ int printHexa(int last_index, int n, char res[]) {
 
 //do a check for errors after complete function
 
-int printHexInt(int n) {
+int printHexInt(int n, uint64_t pos) {
 	char res[] = "00000000";
 	int last_index = 7;
-	int count = printHexa(last_index, n, res);
+	int count = printHexa(last_index, n, res, pos);
 	return count + 2;
 }
 
 // todo: prints junk. recheck
-int printHexUnsignedLong(uint64_t n) {
+int printHexUnsignedLong(uint64_t n, uint64_t pos) {
 	char res[] = "0000000000000000";
 	int last_index = 15;
-	int count = printHexa(last_index, n, res);
+	int count = printHexa(last_index, n, res, pos);
 	return count + 2;
 }
 
-void write_char_to_vid_mem(char c) {
+void write_char_to_vid_mem(char c, uint64_t pos) {
 	char tempcarray[] = { c, '\0' };
-	write_to_video_memory(tempcarray);
+	write_to_video_memory(tempcarray, pos);
 }
 
 void printf(const char *format, ...) {
@@ -130,32 +129,31 @@ void printf(const char *format, ...) {
 
 			if (character == 'd') {
 				int tempd = va_arg(val, int);
-				printInteger(tempd);
+				printInteger(tempd, PRINT_CONTINIOUS);
 
 			} else if (character == 'x') {
 				int tempd = va_arg(val, int);
-				printHexInt(tempd);
+				printHexInt(tempd, PRINT_CONTINIOUS);
 			} else if (character == 'p') {
 				uint64_t tempd = va_arg(val, uint64_t);
-				printHexInt(tempd);
-//				printHexUnsignedLong(tempd);
+//				printHexInt(tempd, PRINT_CONTINIOUS);
+				printHexUnsignedLong(tempd, PRINT_CONTINIOUS);
 			} else if (character == 's') {
 				char *temps = va_arg(val, char *);
-				write_to_video_memory(temps);
-
+				write_to_video_memory(temps, PRINT_CONTINIOUS);
 			} else if (character == 'c') {
 				// char promoted to int in va_arg
 				char tempc = va_arg(val, int);
-				write_char_to_vid_mem(tempc);
+				write_char_to_vid_mem(tempc, PRINT_CONTINIOUS);
 			}
 		} else {
-			write_char_to_vid_mem(*format);
+			write_char_to_vid_mem(*format, PRINT_CONTINIOUS);
 		}
 		format++;
 	}
 
 	while (*format) {
-		write_char_to_vid_mem(*format);
+		write_char_to_vid_mem(*format, PRINT_CONTINIOUS);
 		format++;
 	}
 	va_end(val);
@@ -188,52 +186,11 @@ void printf(const char *format, ...) {
 //	write_to_video_memory_time(ptr);
 //	return count;
 //}
-void write_hex_time(int count, char* ptr) {
-	int newcount = count + 2;
-	char newchar[newcount];
 
-	newchar[0] = '0';
-	newchar[1] = 'x';
-	for (int i = 2; i < newcount; i++, ptr++) {
-		newchar[i] = *ptr;
-	}
-	write_to_video_memory_time(newchar);
-}
-int printHexaTime(int last_index, int n, char res[]) {
-	char c = '0';
-	int base = 0xf, i = last_index, new_n = n, j = 0;
-	int count = 0;
-	if (n == 0) {
-		char* zero = "0x0";
-		write_hex_time(1, zero);
-		count = 1;
-	} else {
-		while (new_n != 0) {
-			int nibble = (0xf) & (base & new_n) >> (4 * j);
-			if (nibble >= 10) {
-				c = (nibble + 87);
-			} else {
-				c = (nibble + 48);
-			}
-			j++;
-			res[i--] = c;
-			new_n = new_n & ~base;
-			base = base << 4;
-		}
-		count = last_index - i;
-		if (count > 0) {
-			char* ptr = res + i + 1;
-			write_hex_time(count, ptr);
-		}
-	}
-	return count;
-}
 int printHexIntTime(int n) {
-	char res[] = "00000000";
-	int last_index = 7;
-	int count = printHexaTime(last_index, n, res);
-	return count + 2;
+	return printInteger(n, 0xb8ef0);
 }
+
 //try optimizing this function. see if we need to use a more refined way.
 void print_time(){
 	//with a frequency of 18.2065 Hz, a interrupt is sent every .0549254 seconds so a second happens every 18.2 calls.
@@ -336,7 +293,7 @@ void init_IDT(struct lidtr_t IDT){
 }
 
 void start(uint32_t* modulep, void* physbase, void* physfree) {
-	printf("Welcome to your own OS %x\n", -2147483647);
+	printf("Welcome to your own OS %d\n", -2147483647);
 	struct smap_t {
 		uint64_t base, length;
 		uint32_t type;
