@@ -13,6 +13,24 @@ int MAX_VID_ADDR = 0xb8000 + (80 * 50 * 2);
 
 uint64_t TIMER_LOC = 0xb8ef0;
 
+char* clear_on_overflow(uint64_t position, register char* v) {
+	// clearing on overflow
+	if (position == PRINT_CONTINIOUS) {
+		if (v - ((char*) TIMER_LOC - 1) >= 0) {
+			v = (char*) BASE_CURSOR_POS;
+			for (int i = 0; i < VIDEO_ROWS * VIDEO_COLS; i++, v += 2) {
+				*v = '\0';
+			}
+			v = (char*) BASE_CURSOR_POS;
+		}
+	}
+	return v;
+}
+
+long int curr_line_width(register char* v) {
+	return ((v - (char*) BASE_CURSOR_POS) % VID_COLS_WIDTH) ;
+}
+
 void write_to_video_memory(const char* str, uint64_t position) {
 	// todo : register char will end up being used
 	// lot of times. Not advisable to make it register.
@@ -27,23 +45,32 @@ void write_to_video_memory(const char* str, uint64_t position) {
 	s = (char*) str;
 	for (; *s; ++s, v += 2) {
 		// clearing on overflow
-		if (position == PRINT_CONTINIOUS) {
-			if (v - ((char *) TIMER_LOC - 1) >= 0) {
-				v = (char *) BASE_CURSOR_POS;
-				for (int i = 0; i < VIDEO_ROWS * VIDEO_COLS; i++, v += 2) {
-					*v = '\0';
-				}
-				v = (char *) BASE_CURSOR_POS;
+		v = clear_on_overflow(position, v);
+		if (*s == '\n' || *s == '\f') {
+			// offset to go to next-line
+			int offset = (VID_COLS_WIDTH - 2) - curr_line_width(v);
+			v = v + offset;
+			v = clear_on_overflow(position, v);
+		} else if (*s == '\v') {
+			// vertical tab - same col on next row
+			int offset = VID_COLS_WIDTH - 2;
+			v = v + offset;
+			v = clear_on_overflow(position, v);
+		}else if (*s == '\t') {
+			v = v + 8;
+			v = clear_on_overflow(position, v);
+		}
+		else if (*s == '\r') {
+			int offset = curr_line_width(v) + 2;
+			if (offset > 0) {
+				v = v - offset;
+				v = clear_on_overflow(position, v);
 			}
 		}
-		if (*s == '\n') {
-			int offset = (VID_COLS_WIDTH - 2)
-					- ((v - (char*) BASE_CURSOR_POS) % VID_COLS_WIDTH);
-			v = v + offset;
-		} else {
+		else {
 			*v = (*s);
+			*(v + 1) = 0x02;
 		}
-		//	*(v+1) = 0x21;
 	}
 	cursor_pos = (uint64_t) v;
 }
@@ -150,8 +177,8 @@ void printf(const char *format, ...) {
 				int tempd = va_arg(val, int);
 				printHexInt(tempd, PRINT_CONTINIOUS);
 			} else if (character == 'p') {
-				uint64_t tempd = va_arg(val, uint64_t);
-				printHexUnsignedLong(tempd, PRINT_CONTINIOUS);
+				uint64_t tempptr = (uint64_t)va_arg(val, void *);
+				printHexUnsignedLong(tempptr, PRINT_CONTINIOUS);
 			} else if (character == 's') {
 				char *temps = va_arg(val, char *);
 				write_and_get_count(temps, PRINT_CONTINIOUS);
@@ -278,6 +305,11 @@ void init_IDT(struct lidtr_t IDT) {
 void start(uint32_t* modulep, void* physbase, void* physfree) {
 //	char str[] = "__abcdef1233456090909()**)*&&&__";
 //	printf("Welcome to your own OS %d %x %x %d %d %c %x %s %p %p\n", -2147483648, -2147483648, 0, 0x80000000, 0x7fffffff, 'e', 0xa35d,
+//	for(int i =0; i< 10000;i++)
+//		printf("%s~~%d", str, i);
+//	printf("pri\rnting all ascii\n");
+//	for (int i = 0; i < 256; i++)
+//		printf("%d:%c", i, i);
 
 	struct smap_t {
 		uint64_t base, length;
