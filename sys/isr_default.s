@@ -79,3 +79,15 @@ isr_keyboard:
 	movb $0x20, %al
 	outb %al, $0x20
 	iretq
+
+#init steps mentioned in http://wiki.osdev.org/%228042%22_PS/2_Controller#Translation
+keyboard_init:
+	movb 0xad, %al
+	outb %al, $0x64
+	movb $0xa7, %ah
+	outb %al, $0x64  #step 2:
+	inb $0x60, %al   #step 3: flushing buffer
+	movb $0x20, %al
+	outb %al, $0x64   #step 4: read confg byte
+	inb $0x60,%al
+	andb $0xbc,%al   #5:set config byte, might be useful to check if bit
