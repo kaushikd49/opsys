@@ -197,9 +197,6 @@ void print_time() {
 		printHexIntTime(seconds_boot);
 	}
 }
-//void printf(const char *format, ...) {
-//	write_to_video_memory(format);
-//
 //-------------------------------------------------------------ISR-----------------------------------------------------------------
 //exactly like the GDTR. todo: change the intitialization to the way it is done for gdt
 struct lidtr_t { //initializing ldtr register
@@ -279,11 +276,8 @@ void init_IDT(struct lidtr_t IDT) {
 }
 
 void start(uint32_t* modulep, void* physbase, void* physfree) {
-	char str[] = "__abcdef1233456090909()**)*&&&__";
+//	char str[] = "__abcdef1233456090909()**)*&&&__";
 //	printf("Welcome to your own OS %d %x %x %d %d %c %x %s %p %p\n", -2147483648, -2147483648, 0, 0x80000000, 0x7fffffff, 'e', 0xa35d,
-//			str, &modulep, 0);
-	for (int i = 0; i < 10000; i++)
-		printf("%s~~%d", str, i);
 
 	struct smap_t {
 		uint64_t base, length;
