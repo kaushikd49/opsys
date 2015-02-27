@@ -114,7 +114,6 @@ int write_char_to_vid_mem(char c, uint64_t pos) {
 void printf(const char *format, ...) {
 	va_list val;
 	va_start(val, format);
-	volatile int c = 0;
 	while (*format && *(format + 1)) {
 		if (*format == '%') {
 			format++;
@@ -122,36 +121,29 @@ void printf(const char *format, ...) {
 
 			if (character == 'd') {
 				int tempd = va_arg(val, int);
-				c = printInteger(tempd, PRINT_CONTINIOUS);
-				c = c;
+				printInteger(tempd, PRINT_CONTINIOUS);
 			} else if (character == 'x') {
 				int tempd = va_arg(val, int);
-				c = printHexInt(tempd, PRINT_CONTINIOUS);
-				c = c;
+				printHexInt(tempd, PRINT_CONTINIOUS);
 			} else if (character == 'p') {
 				uint64_t tempd = va_arg(val, uint64_t);
-				c = printHexUnsignedLong(tempd, PRINT_CONTINIOUS);
-				c = c;
+				printHexUnsignedLong(tempd, PRINT_CONTINIOUS);
 			} else if (character == 's') {
 				char *temps = va_arg(val, char *);
-				c = write_and_get_count(temps, PRINT_CONTINIOUS);
-				c = c;
+				write_and_get_count(temps, PRINT_CONTINIOUS);
 			} else if (character == 'c') {
 				// char promoted to int in va_arg
 				char tempc = va_arg(val, int);
-				c = write_char_to_vid_mem(tempc, PRINT_CONTINIOUS);
-				c = c;
+				write_char_to_vid_mem(tempc, PRINT_CONTINIOUS);
 			}
 		} else {
-			c = write_char_to_vid_mem(*format, PRINT_CONTINIOUS);
-			c = c;
+			write_char_to_vid_mem(*format, PRINT_CONTINIOUS);
 		}
 		format++;
 	}
 
 	while (*format) {
-		c = write_char_to_vid_mem(*format, PRINT_CONTINIOUS);
-		c = c;
+		write_char_to_vid_mem(*format, PRINT_CONTINIOUS);
 		format++;
 	}
 	va_end(val);
