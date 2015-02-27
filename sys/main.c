@@ -3,22 +3,46 @@
 #include <sys/tarfs.h>
 #include <stdarg.h> // todo: check if importing this here is allowed
 //#include "isrhandler_default.c"
-uint64_t cursor_pos = 0xb8000;
+uint64_t BASE_CURSOR_POS = 0xb8000;
+uint64_t cursor_pos = 0xb8000; // todo use above constant
 uint64_t PRINT_CONTINIOUS = 0;
+int VIDEO_COLS = 80;
+int VIDEO_ROWS = 50;
+int VID_COLS_WIDTH = 2 * 80;
+int MAX_VID_ADDR = 0xb8000 + (80 * 50 * 2);
+
+uint64_t TIMER_LOC = 0xb8ef0;
 
 void write_to_video_memory(const char* str, uint64_t position) {
 	// todo : register char will end up being used
 	// lot of times. Not advisable to make it register.
 	register char *s, *v;
 
-	if (position == PRINT_CONTINIOUS)
+	if (position == PRINT_CONTINIOUS) {
 		v = (char*) cursor_pos;
-	else
+	} else {
 		v = (char*) position;
+	}
 
 	s = (char*) str;
 	for (; *s; ++s, v += 2) {
-		*v = (*s);
+		// clearing on overflow
+		if (position == PRINT_CONTINIOUS) {
+			if (v - ((char *) TIMER_LOC - 1) >= 0) {
+				v = (char *) BASE_CURSOR_POS;
+				for (int i = 0; i < VIDEO_ROWS * VIDEO_COLS; i++, v += 2) {
+					*v = '\0';
+				}
+				v = (char *) BASE_CURSOR_POS;
+			}
+		}
+		if (*s == '\n') {
+			int offset = (VID_COLS_WIDTH - 2)
+					- ((v - (char*) BASE_CURSOR_POS) % VID_COLS_WIDTH);
+			v = v + offset;
+		} else {
+			*v = (*s);
+		}
 		//	*(v+1) = 0x21;
 	}
 	cursor_pos = (uint64_t) v;
@@ -150,7 +174,7 @@ void printf(const char *format, ...) {
 }
 
 int printHexIntTime(int n) {
-	return printInteger(n, 0xb8ef0);
+	return printInteger(n, TIMER_LOC);
 }
 
 //try optimizing this function. see if we need to use a more refined way.
@@ -191,6 +215,7 @@ struct idtD {
 	uint32_t offset3;
 	uint32_t zero2;
 }__attribute__((packed));
+
 void add_int_handler(uint64_t isr_base, uint64_t isr_number,
 		uint64_t handler_name, char type, uint16_t segment_selector) {
 	uint16_t offset1 = (uint16_t)(handler_name & 0x000000000000FFFF);
@@ -254,9 +279,12 @@ void init_IDT(struct lidtr_t IDT) {
 }
 
 void start(uint32_t* modulep, void* physbase, void* physfree) {
-//	char str[] = "abcde";
+	char str[] = "__abcdef1233456090909()**)*&&&__";
 //	printf("Welcome to your own OS %d %x %x %d %d %c %x %s %p %p\n", -2147483648, -2147483648, 0, 0x80000000, 0x7fffffff, 'e', 0xa35d,
 //			str, &modulep, 0);
+	for (int i = 0; i < 10000; i++)
+		printf("%s~~%d", str, i);
+
 	struct smap_t {
 		uint64_t base, length;
 		uint32_t type;
