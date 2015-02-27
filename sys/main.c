@@ -31,7 +31,7 @@ int printInteger(int n, uint64_t pos) {
 	if (n < 0) {
 		neg = 1;
 	} else if (n == 0) {
-		i -= 2;
+		i -= 1;
 		count++;
 	}
 
@@ -62,16 +62,16 @@ int write_and_get_count(char* ptr, uint64_t pos) {
 	return i;
 }
 
-char* getHexa(int last_index, uint64_t n, char res[]) {
+char* getHexa(int last_index, int64_t n, char res[], int num_nibbles) {
 	char c = '0';
 	int i = last_index, j = 0;
-	uint64_t new_n = n;
-	uint64_t base = 0xf;
+	int64_t new_n = n;
+	int64_t base = 0xf;
 	if (n == 0) {
 		res[last_index] = 0;
 		return res + last_index - 1;
 	} else {
-		while (new_n != 0) {
+		while (new_n != 0 && j < num_nibbles) {
 			int nibble = (0xf) & (base & new_n) >> (4 * j);
 			if (nibble >= 10) {
 				c = (nibble + 87);
@@ -92,7 +92,7 @@ char* getHexa(int last_index, uint64_t n, char res[]) {
 int printHexInt(int n, uint64_t pos) {
 	char res[] = "00000000";
 	int last_index = 7;
-	char* ptr = getHexa(last_index, n, res);
+	char* ptr = getHexa(last_index, n, res, 8);
 	return write_and_get_count(ptr, pos);
 }
 
@@ -100,7 +100,7 @@ int printHexInt(int n, uint64_t pos) {
 int printHexUnsignedLong(uint64_t n, uint64_t pos) {
 	char res[] = "000000000000000000"; // 16 for ptr val, 2 for 0x
 	int last_index = 17;
-	char* ptr = getHexa(last_index, n, res);
+	char* ptr = getHexa(last_index, n, res, 16);
 	*(--ptr) = 'x';
 	*(--ptr) = '0';
 	return write_and_get_count(ptr, pos);
@@ -263,8 +263,8 @@ void init_IDT(struct lidtr_t IDT) {
 
 void start(uint32_t* modulep, void* physbase, void* physfree) {
 	char str[] = "abcde";
-	printf("Welcome to your own OS %d %c %x %s %p\n", -2147483647, 'e', 0xa35d,
-			str, &modulep);
+//	printf("Welcome to your own OS %d %x %x %d %d %c %x %s %p %p\n", -2147483648, -2147483648, 0, 0x80000000, 0x7fffffff, 'e', 0xa35d,
+//			str, &modulep, 0);
 	struct smap_t {
 		uint64_t base, length;
 		uint32_t type;
