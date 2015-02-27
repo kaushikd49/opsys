@@ -11,22 +11,22 @@ void write_to_video_memory(const char* str, uint64_t position) {
 	// lot of times. Not advisable to make it register.
 	register char *s, *v;
 
-	if(position == PRINT_CONTINIOUS)
+	if (position == PRINT_CONTINIOUS)
 		v = (char*) cursor_pos;
 	else
 		v = (char*) position;
 
 	s = (char*) str;
-	for (; *s; ++s, v += 2){
+	for (; *s; ++s, v += 2) {
 		*v = (*s);
-	//	*(v+1) = 0x21;
+		//	*(v+1) = 0x21;
 	}
 	cursor_pos = (uint64_t) v;
 }
 
 int printInteger(int n, uint64_t pos) {
 	int count = 0, i = 10, neg = 0;
-	char number[] = "00000000000"; 
+	char number[] = "00000000000";
 
 	if (n < 0) {
 		neg = 1;
@@ -36,10 +36,10 @@ int printInteger(int n, uint64_t pos) {
 	}
 
 	while (n != 0) {
-        int digit = (n % 10); 
-        if(digit<0)
-                digit *= -1;
-        char rem = digit + '0';
+		int digit = (n % 10);
+		if (digit < 0)
+			digit *= -1;
+		char rem = digit + '0';
 		number[i--] = rem;
 		n /= 10;
 		count++;
@@ -54,28 +54,22 @@ int printInteger(int n, uint64_t pos) {
 	return count;
 }
 
-void write_hex(int count, char* ptr, uint64_t pos) {
-	int newcount = count + 2;
-	char newchar[newcount];
-
-	newchar[0] = '0';
-	newchar[1] = 'x';
-	for (int i = 2; i < newcount; i++, ptr++) {
-		newchar[i] = *ptr;
-	}
-	write_to_video_memory(newchar, pos);
+int write_and_get_count(char* ptr, uint64_t pos) {
+	write_to_video_memory(ptr, pos);
+	int i = 0;
+	for (i = 0; ptr[i]; i++)
+		;
+	return i;
 }
 
-int printHexa(int last_index, uint64_t n, char res[], uint64_t pos) {
+char* getHexa(int last_index, uint64_t n, char res[]) {
 	char c = '0';
 	int i = last_index, j = 0;
 	uint64_t new_n = n;
 	uint64_t base = 0xf;
-	int count = 0;
 	if (n == 0) {
-		char* zero = "0x0";
-		write_hex(1, zero, pos);
-		count = 1;
+		res[last_index] = 0;
+		return res + last_index - 1;
 	} else {
 		while (new_n != 0) {
 			int nibble = (0xf) & (base & new_n) >> (4 * j);
@@ -89,13 +83,8 @@ int printHexa(int last_index, uint64_t n, char res[], uint64_t pos) {
 			new_n = new_n & ~base;
 			base = base << 4;
 		}
-		count = last_index - i;
-		if (count > 0) {
-			char* ptr = res + i + 1;
-			write_hex(count, ptr, pos);
-		}
+		return res + i + 1;
 	}
-	return count;
 }
 
 //do a check for errors after complete function
@@ -103,27 +92,29 @@ int printHexa(int last_index, uint64_t n, char res[], uint64_t pos) {
 int printHexInt(int n, uint64_t pos) {
 	char res[] = "00000000";
 	int last_index = 7;
-	int count = printHexa(last_index, n, res, pos);
-	return count + 2;
+	char* ptr = getHexa(last_index, n, res);
+	return write_and_get_count(ptr, pos);
 }
 
 // todo: prints junk. recheck
 int printHexUnsignedLong(uint64_t n, uint64_t pos) {
-	char res[] = "0000000000000000";
-	int last_index = 15;
-	int count = printHexa(last_index, n, res, pos);
-	return count + 2;
+	char res[] = "000000000000000000"; // 16 for ptr val, 2 for 0x
+	int last_index = 17;
+	char* ptr = getHexa(last_index, n, res);
+	*(--ptr) = 'x';
+	*(--ptr) = '0';
+	return write_and_get_count(ptr, pos);
 }
 
-void write_char_to_vid_mem(char c, uint64_t pos) {
+int write_char_to_vid_mem(char c, uint64_t pos) {
 	char tempcarray[] = { c, '\0' };
-	write_to_video_memory(tempcarray, pos);
+	return write_and_get_count(tempcarray, pos);
 }
 
 void printf(const char *format, ...) {
 	va_list val;
 	va_start(val, format);
-
+	volatile int c = 0;
 	while (*format && *(format + 1)) {
 		if (*format == '%') {
 			format++;
@@ -131,73 +122,50 @@ void printf(const char *format, ...) {
 
 			if (character == 'd') {
 				int tempd = va_arg(val, int);
-				printInteger(tempd, PRINT_CONTINIOUS);
-
+				c = printInteger(tempd, PRINT_CONTINIOUS);
+				c = c;
 			} else if (character == 'x') {
 				int tempd = va_arg(val, int);
-				printHexInt(tempd, PRINT_CONTINIOUS);
+				c = printHexInt(tempd, PRINT_CONTINIOUS);
+				c = c;
 			} else if (character == 'p') {
 				uint64_t tempd = va_arg(val, uint64_t);
-//				printHexInt(tempd, PRINT_CONTINIOUS);
-				printHexUnsignedLong(tempd, PRINT_CONTINIOUS);
+				c = printHexUnsignedLong(tempd, PRINT_CONTINIOUS);
+				c = c;
 			} else if (character == 's') {
 				char *temps = va_arg(val, char *);
-				write_to_video_memory(temps, PRINT_CONTINIOUS);
+				c = write_and_get_count(temps, PRINT_CONTINIOUS);
+				c = c;
 			} else if (character == 'c') {
 				// char promoted to int in va_arg
 				char tempc = va_arg(val, int);
-				write_char_to_vid_mem(tempc, PRINT_CONTINIOUS);
+				c = write_char_to_vid_mem(tempc, PRINT_CONTINIOUS);
+				c = c;
 			}
 		} else {
-			write_char_to_vid_mem(*format, PRINT_CONTINIOUS);
+			c = write_char_to_vid_mem(*format, PRINT_CONTINIOUS);
+			c = c;
 		}
 		format++;
 	}
 
 	while (*format) {
-		write_char_to_vid_mem(*format, PRINT_CONTINIOUS);
+		c = write_char_to_vid_mem(*format, PRINT_CONTINIOUS);
+		c = c;
 		format++;
 	}
 	va_end(val);
 }
-//-------------------------TIME TESTING-------------------------------------------------------------------------------------------
-//int printIntegerTime(int n) {
-//	int count = 0, i = 10, neg = 0;
-//	char number[11] = "0000000000"; // log(2^31-1) + sign char
-//
-//	if (n < 0) {
-//		neg = 1;
-//		n *= -1;
-//	} else if (n == 0) {
-//		i -= 2;
-//		count++;
-//	}
-//
-//	while (n != 0) {
-//		char rem = (n % 10) + '0';
-//		number[i--] = rem;
-//		n /= 10;
-//		count++;
-//	}
-//
-//	if (neg) {
-//		number[i--] = '-';
-//		count++;
-//	}
-//	char *ptr = number + i + 1;
-//	write_to_video_memory_time(ptr);
-//	return count;
-//}
 
 int printHexIntTime(int n) {
 	return printInteger(n, 0xb8ef0);
 }
 
 //try optimizing this function. see if we need to use a more refined way.
-void print_time(){
+void print_time() {
 	//with a frequency of 18.2065 Hz, a interrupt is sent every .0549254 seconds so a second happens every 18.2 calls.
-	static int seconds_boot=0;
-	static int ms_boot=0;
+	static int seconds_boot = 0;
+	static int ms_boot = 0;
 //	static int lost_precision = 0; //for the .2 so every 10 increment increment ms_boot once more
 	//printf("%x", time);
 //	lost_precision++;
@@ -205,12 +173,11 @@ void print_time(){
 //	if(lost_precision == 9) //can optimize
 //		ms_boot++;
 
-	if(ms_boot < 18){
+	if (ms_boot < 18) {
 		return;
-	}
-	else{
-		ms_boot = ms_boot%2; //can optimize
-		seconds_boot = seconds_boot+1;
+	} else {
+		ms_boot = ms_boot % 2; //can optimize
+		seconds_boot = seconds_boot + 1;
 		printHexIntTime(seconds_boot);
 	}
 }
@@ -219,11 +186,11 @@ void print_time(){
 //
 //-------------------------------------------------------------ISR-----------------------------------------------------------------
 //exactly like the GDTR. todo: change the intitialization to the way it is done for gdt
-struct lidtr_t {//initializing ldtr register
+struct lidtr_t { //initializing ldtr register
 	uint16_t size;
 	uint64_t base;
 }__attribute__((packed));
-struct idtD{
+struct idtD {
 	uint16_t offset_1;
 	uint16_t segment_selector;
 	char zero;
@@ -232,11 +199,12 @@ struct idtD{
 	uint32_t offset3;
 	uint32_t zero2;
 }__attribute__((packed));
-void add_int_handler(uint64_t isr_base, uint64_t isr_number, uint64_t handler_name, char type, uint16_t segment_selector){
+void add_int_handler(uint64_t isr_base, uint64_t isr_number,
+		uint64_t handler_name, char type, uint16_t segment_selector) {
 	uint16_t offset1 = (uint16_t)(handler_name & 0x000000000000FFFF);
-	uint16_t offset2 = (uint16_t)(handler_name>>16 & 0x000000000000FFFF);
-	uint32_t offset3 = (uint32_t)(handler_name>>32 & 0x00000000FFFFFFFF);
-	struct idtD *isr_base1 = (struct idtD *)isr_base;
+	uint16_t offset2 = (uint16_t)(handler_name >> 16 & 0x000000000000FFFF);
+	uint32_t offset3 = (uint32_t)(handler_name >> 32 & 0x00000000FFFFFFFF);
+	struct idtD *isr_base1 = (struct idtD *) isr_base;
 	isr_base1[isr_number].offset_1 = offset1;
 	isr_base1[isr_number].segment_selector = segment_selector;
 	isr_base1[isr_number].zero = 0;
@@ -246,57 +214,57 @@ void add_int_handler(uint64_t isr_base, uint64_t isr_number, uint64_t handler_na
 	isr_base1[isr_number].zero2 = 0;
 }
 
-
 //offset 1 at 32 and offset 2 at 40 because first 31 used by exceptions Hardcoding them for now
-void config_PIC(){
+void config_PIC() {
 	unsigned char PIC1data, PIC2data;
 
 	__asm__ __volatile__(
-					"inb $0x21,%0\n\t"
-					:"=a"(PIC1data));
+			"inb $0x21,%0\n\t"
+			:"=a"(PIC1data));
 	//printf("sdasd: %x",PIC1data);
 	__asm__ __volatile__(
-						"inb $0xA1,%0\n\t"
-						:"=a"(PIC2data));
+			"inb $0xA1,%0\n\t"
+			:"=a"(PIC2data));
 	//printf("pic2: %x", PIC2data);
 	__asm__ __volatile__("movb $0x11, %al\n\t"
-						"outb %al, $0x20 \n\t"
-						"movb $0x11, %al\n\t"
-						"outb %al, $0xA0 \n\t"
-						"movb $0x20, %al\n\t"
-						"outb %al, $0x21 \n\t"//32
-						"movb $0x28, %al\n\t"
-						"outb %al, $0xA1 \n\t"//32+8
-						"movb $4, %al\n\t"
-						"outb %al, $0x21 \n\t"  //set bit for the cascade
-						"movb $2, %al\n\t"
-						"outb %al, $0xA1\n\t"  //this is just the the position where it is cascaded for the pic to know
-						"movb $0x01, %al\n\t"
-						"outb %al, $0x21\n\t"
-						"movb $0x01, %al\n\t"
-						"outb %al, $0xA1\n\t"
-						);
+			"outb %al, $0x20 \n\t"
+			"movb $0x11, %al\n\t"
+			"outb %al, $0xA0 \n\t"
+			"movb $0x20, %al\n\t"
+			"outb %al, $0x21 \n\t" //32
+			"movb $0x28, %al\n\t"
+			"outb %al, $0xA1 \n\t"//32+8
+			"movb $4, %al\n\t"
+			"outb %al, $0x21 \n\t"//set bit for the cascade
+			"movb $2, %al\n\t"
+			"outb %al, $0xA1\n\t"//this is just the the position where it is cascaded for the pic to know
+			"movb $0x01, %al\n\t"
+			"outb %al, $0x21\n\t"
+			"movb $0x01, %al\n\t"
+			"outb %al, $0xA1\n\t"
+	);
 	__asm__ __volatile__("outb %0,$0x21\n\t"
-					     :: "a"(PIC1data));
+			:: "a"(PIC1data));
 	__asm__ __volatile__("outb %0,$0xA1\n\t"
-						 ::"a"(PIC2data));
-
+			::"a"(PIC2data));
 
 }
 extern void isr_default();
 extern void isr_timer();
 extern void isr_keyboard();
-void init_IDT(struct lidtr_t IDT){
+void init_IDT(struct lidtr_t IDT) {
 	uint32_t i = 0;
-	for( i = 0;i<256;i++){
-		add_int_handler((uint64_t)IDT.base,i,(uint64_t)isr_default,0xEF,0x08);//everything set as trap.
+	for (i = 0; i < 256; i++) {
+		add_int_handler((uint64_t) IDT.base, i, (uint64_t) isr_default, 0xEF,
+				0x08);  //everything set as trap.
 		//__asm__ __volatile__("INT $0");
 	}
 }
 
 void start(uint32_t* modulep, void* physbase, void* physfree) {
 	char str[] = "abcde";
-	printf("Welcome to your own OS %d %c %x %s %p\n", -2147483647, 'e', 0xa35d, str, &modulep);
+	printf("Welcome to your own OS %d %c %x %s %p\n", -2147483647, 'e', 0xa35d,
+			str, &modulep);
 	struct smap_t {
 		uint64_t base, length;
 		uint32_t type;
@@ -315,19 +283,20 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	// kernel starts here
 	unsigned long flags;
 	__asm__ __volatile__ (
-							"pushf\n\t"
-							"pop %0"
-							:"=g"(flags));
-	flags = flags & (1<<9);
+			"pushf\n\t"
+			"pop %0"
+			:"=g"(flags));
+	flags = flags & (1 << 9);
 	//printf("hello: %d",flags);
 
 	//while
 
 	printf("done");
-	while(1);
+	while (1)
+		;
 	//__asm__ __volatile__(
-		//				"int $55\n\t"
-		//				 "cli");
+	//				"int $55\n\t"
+	//				 "cli");
 	//int i = 0;
 	//int j = 5/i;
 	// printf("%d", j);
@@ -338,14 +307,14 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	//__asm__ __volatile__("INT $52");
 	//int n = 34;
 	/*
-	uint64_t result;
-	__asm__ __volatile__("xor %%rbx, %%rbx\n\t"
-						"syscall"
-						:"=a"(result)
-						:"0"(n)
-						:"rbx");*/
+	 uint64_t result;
+	 __asm__ __volatile__("xor %%rbx, %%rbx\n\t"
+	 "syscall"
+	 :"=a"(result)
+	 :"0"(n)
+	 :"rbx");*/
 	/*
-	*/
+	 */
 }
 
 #define INITIAL_STACK_SIZE 4096
@@ -356,17 +325,18 @@ struct tss_t tss;
 struct idtD idt_tab[255];
 struct lidtr_t IDT;
 
-void init_init_IDT(){
-	IDT.size = 0x1000;//hex(256*16)
+void init_init_IDT() {
+	IDT.size = 0x1000;	//hex(256*16)
 	IDT.base = (uint64_t)(idt_tab);
 	__asm__ __volatile("lidt (%0)"
-						:
-						:"a"(&IDT));
+			:
+			:"a"(&IDT));
 	init_IDT(IDT);
 }
-void add_custom_interrupt(){
-	add_int_handler((uint64_t)IDT.base, 32, (uint64_t)isr_timer, 0xEE,0x08); //mode set to present|Ring 3|Interrupt   - Segment usual kernel segments
-	add_int_handler((uint64_t)IDT.base, 33, (uint64_t)isr_keyboard, 0xEE, 0x08);
+void add_custom_interrupt() {
+	add_int_handler((uint64_t) IDT.base, 32, (uint64_t) isr_timer, 0xEE, 0x08); //mode set to present|Ring 3|Interrupt   - Segment usual kernel segments
+	add_int_handler((uint64_t) IDT.base, 33, (uint64_t) isr_keyboard, 0xEE,
+			0x08);
 }
 void boot(void) {
 	// note: function changes rsp, local stack variables can't be practically used
@@ -385,7 +355,7 @@ void boot(void) {
 	//printf("%x", 15);
 	//print_time();
 	__asm__ __volatile__ ("movb $0xFE, %al\n\t"
-							  "outb  %al, $0x21\n\t");
+			"outb  %al, $0x21\n\t");
 	__asm__ ("sti");
 	start(
 			(uint32_t*) ((char*) (uint64_t) loader_stack[3] + (uint64_t)
@@ -394,5 +364,6 @@ void boot(void) {
 	s = "!!!!! start() returned !!!!!";
 	//for(v = (char*)0xb8000; *s; ++s, v += 2) *v = *s;
 	printf(s);
-	while (1);
+	while (1)
+		;
 }
