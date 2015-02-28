@@ -7,4 +7,7 @@ display/x $rdi
 display/x $rsi
 display/x $rbp
 display/32xw $rsp
-break start 
+break boot
+target remote localhost:9998 
+
+

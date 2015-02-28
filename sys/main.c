@@ -266,6 +266,7 @@ void config_PIC() {
 extern void isr_default();
 extern void isr_timer();
 extern void isr_keyboard();
+extern void keyboard_init();
 void init_IDT(struct lidtr_t IDT) {
 	uint32_t i = 0;
 	for (i = 0; i < 256; i++) {
@@ -289,8 +290,8 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 			smap < (struct smap_t*) ((char*) modulep + modulep[1] + 2 * 4);
 			++smap) {
 		if (smap->type == 1 /* memory */&& smap->length != 0) {
-			printf("Available Physical Memory [%x-%x]\n", smap->base,
-					smap->base + smap->length);
+			//printf("Available Physical Memory [%x-%x]\n", smap->base,
+			//		smap->base + smap->length);
 		}
 	}
 	//printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
@@ -305,7 +306,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 
 	//while
 
-	printf("done");
+	//printf("done");
 	while (1)
 		;
 	//__asm__ __volatile__(
@@ -354,7 +355,7 @@ void add_custom_interrupt() {
 }
 void boot(void) {
 	// note: function changes rsp, local stack variables can't be practically used
-	register char *s;
+	//register char *s;
 	__asm__(
 			"movq %%rsp, %0;"
 			"movq %1, %%rsp;"
@@ -366,18 +367,19 @@ void boot(void) {
 	init_init_IDT();
 	config_PIC();
 	add_custom_interrupt();
+	keyboard_init();
 	//printf("%x", 15);
 	//print_time();
-	__asm__ __volatile__ ("movb $0xFE, %al\n\t"
+	__asm__ __volatile__ ("movb $0xFC, %al\n\t"
 			"outb  %al, $0x21\n\t");
 	__asm__ ("sti");
 	start(
 			(uint32_t*) ((char*) (uint64_t) loader_stack[3] + (uint64_t)
 					& kernmem - (uint64_t) & physbase), &physbase,
 			(void*) (uint64_t) loader_stack[4]);
-	s = "!!!!! start() returned !!!!!";
+	//s = "!!!!! start() returned !!!!!";
 	//for(v = (char*)0xb8000; *s; ++s, v += 2) *v = *s;
-	printf(s);
+	//printf(s);
 	while (1)
 		;
 }
