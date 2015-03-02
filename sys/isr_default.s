@@ -68,10 +68,10 @@ isr_keyboard:
 	pushq %r9
 	pushq %r10
 	pushq %r11
-	inb $0x60, %al
-	movq $0xb8000, %rbx
-	movb %al, (%rbx)
-	#call isrhandler_keyboard
+	#inb $0x60, %al
+	#movq $0xb8000, %rbx
+	#movb %al, (%rbx)
+	call isrhandler_keyboard
 	popq %r11
 	popq %r10
 	popq %r9

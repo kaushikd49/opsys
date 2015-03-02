@@ -2,6 +2,7 @@
 #include <sys/gdt.h>
 #include <sys/tarfs.h>
 #include <stdarg.h> // todo: check if importing this here is allowed
+//#include "initkeyboard.c"
 //#include "isrhandler_default.c"
 uint64_t BASE_CURSOR_POS = 0xb8000;
 uint64_t cursor_pos = 0xb8000; // todo use above constant
@@ -294,6 +295,7 @@ extern void isr_default();
 extern void isr_timer();
 extern void isr_keyboard();
 extern void keyboard_init();
+extern void init_keyboard_map();
 void init_IDT(struct lidtr_t IDT) {
 	uint32_t i = 0;
 	for (i = 0; i < 256; i++) {
@@ -372,6 +374,7 @@ struct tss_t tss;
 struct idtD idt_tab[255];
 struct lidtr_t IDT;
 
+
 void init_init_IDT() {
 	IDT.size = 0x1000;	//hex(256*16)
 	IDT.base = (uint64_t)(idt_tab);
@@ -399,6 +402,7 @@ void boot(void) {
 	init_init_IDT();
 	config_PIC();
 	add_custom_interrupt();
+	init_keyboard_map();
 	keyboard_init();
 	//printf("%x", 15);
 	//print_time();
