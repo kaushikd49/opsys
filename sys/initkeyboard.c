@@ -1,8 +1,9 @@
-char keyboard_map[256][2];
+char keyboard_map[256][3];
 void init_keyboard_map(){
 	int i;
-	for(i = 0; i < 256; i++)
+	for(i = 0; i < 256; i++){
 		keyboard_map[i][1] = 0;
+	}
 //	keyboard_map[0][0] = ;
 //	keyboard_map[0][1] = ;
 //	keyboard_map[1][0] = ;
@@ -32,7 +33,8 @@ void init_keyboard_map(){
 //	keyboard_map[13][0] = ;
 //	keyboard_map[13][1] = ;
 	keyboard_map[14][0] = 0x60;//backtick
-	keyboard_map[14][1] = 1;
+	keyboard_map[14][1] = 2;
+	keyboard_map[14][2] = 0x7E;//~
 //	keyboard_map[15][0] = ;
 //	keyboard_map[15][1] = ;
 //	keyboard_map[16][0] = ;
@@ -48,7 +50,8 @@ void init_keyboard_map(){
 	keyboard_map[21][0] = 0x71;//q
 	keyboard_map[21][1] = 1;
 	keyboard_map[22][0] = 0x31;//1
-	keyboard_map[22][1] = 1;
+	keyboard_map[22][1] = 2;
+	keyboard_map[22][2] = 0x21;//!
 //	keyboard_map[23][0] = ;
 //	keyboard_map[23][1] = ;
 //	keyboard_map[24][0] = ;
@@ -64,7 +67,8 @@ void init_keyboard_map(){
 	keyboard_map[29][0] = 0x77;//w
 	keyboard_map[29][1] = 1;
 	keyboard_map[30][0] = 0x32;//2
-	keyboard_map[30][1] = 1;
+	keyboard_map[30][1] = 2;
+	keyboard_map[30][2] = 0x40;//@
 //	keyboard_map[31][0] = ;
 //	keyboard_map[31][1] = ;
 //	keyboard_map[32][0] = ;
@@ -78,9 +82,11 @@ void init_keyboard_map(){
 	keyboard_map[36][0] = 0x65;//e
 	keyboard_map[36][1] = 1;
 	keyboard_map[37][0] = 0x34;//4
-	keyboard_map[37][1] = 1;
+	keyboard_map[37][1] = 2;
+	keyboard_map[37][2] = 0x24;//$
 	keyboard_map[38][0] = 0x33;//3
-	keyboard_map[38][1] = 1;
+	keyboard_map[38][1] = 2;
+	keyboard_map[38][2] = 0x23;//#
 //	keyboard_map[39][0] = ;
 //	keyboard_map[39][1] = ;
 //	keyboard_map[40][0] = ;
@@ -96,7 +102,8 @@ void init_keyboard_map(){
 	keyboard_map[45][0] = 0x72;//r
 	keyboard_map[45][1] = 1;
 	keyboard_map[46][0] = 0x35;//5
-	keyboard_map[46][1] = 1;
+	keyboard_map[46][1] = 2;
+	keyboard_map[46][2] = 0x25;//%
 //	keyboard_map[47][0] = ;
 //	keyboard_map[47][1] = ;
 //	keyboard_map[48][0] = ;
@@ -112,7 +119,8 @@ void init_keyboard_map(){
 	keyboard_map[53][0] = 0x79;//y
 	keyboard_map[53][1] = 1;
 	keyboard_map[54][0] = 0x36;//6
-	keyboard_map[54][1] = 1;
+	keyboard_map[54][1] = 2;
+	keyboard_map[54][2] = 0x5E; //^
 //	keyboard_map[55][0] = ;
 //	keyboard_map[55][1] = ;
 //	keyboard_map[56][0] = ;
@@ -126,15 +134,18 @@ void init_keyboard_map(){
 	keyboard_map[60][0] = 0x75;//u
 	keyboard_map[60][1] = 1;
 	keyboard_map[61][0] = 0x37;//7
-	keyboard_map[61][1] = 1;
+	keyboard_map[61][1] = 2;
+	keyboard_map[61][2] = 0x26;//&
 	keyboard_map[62][0] = 0x38;//8
-	keyboard_map[62][1] = 1;
+	keyboard_map[62][1] = 2;
+	keyboard_map[62][2] = 0x2A;//*
 //	keyboard_map[63][0] = ;
 //	keyboard_map[63][1] = ;
 //	keyboard_map[64][0] = ;
 //	keyboard_map[64][1] = ;
 	keyboard_map[65][0] = 0x2C;//,
-	keyboard_map[65][1] = 1;
+	keyboard_map[65][1] = 2;
+	keyboard_map[65][2] = 0x3C; //<
 	keyboard_map[66][0] = 0x6B;//k
 	keyboard_map[66][1] = 1;
 	keyboard_map[67][0] = 0x69;//i
@@ -142,25 +153,31 @@ void init_keyboard_map(){
 	keyboard_map[68][0] = 0x6F;//o
 	keyboard_map[68][1] = 1;
 	keyboard_map[69][0] = 0x30;//0
-	keyboard_map[69][1] = 1;
+	keyboard_map[69][1] = 2;
+	keyboard_map[69][2] = 0x29;//)
 	keyboard_map[70][0] = 0x39;//9
-	keyboard_map[70][1] = 1;
+	keyboard_map[70][1] = 2;
+	keyboard_map[70][2] = 0x28;//(
 //	keyboard_map[71][0] = ;
 //	keyboard_map[71][1] = ;
 //	keyboard_map[72][0] = ;
 //	keyboard_map[72][1] = ;
 	keyboard_map[73][0] = 0x2E;//.
-	keyboard_map[73][1] = 1;
+	keyboard_map[73][1] = 2;
+	keyboard_map[73][2] = 0x3E;//>
 	keyboard_map[74][0] = 0x2F;// /
-	keyboard_map[74][1] = 1;
+	keyboard_map[74][1] = 2;
+	keyboard_map[74][2] = 0x3F; //?
 	keyboard_map[75][0] = 0x6C;// l
 	keyboard_map[75][1] = 1;
 	keyboard_map[76][0] = 0x3B;// ;
-	keyboard_map[76][1] = 1;
+	keyboard_map[76][1] = 2;
+	keyboard_map[76][2] = 0x3A;//:
 	keyboard_map[77][0] = 0x70;// p
 	keyboard_map[77][1] = 1;
 	keyboard_map[78][0] = 0x2D;//-
-	keyboard_map[78][1] = 1;
+	keyboard_map[78][1] = 2;
+	keyboard_map[78][2] = 0x5F; //_
 //	keyboard_map[79][0] = ;
 //	keyboard_map[79][1] = ;
 //	keyboard_map[80][0] = ;
@@ -168,13 +185,16 @@ void init_keyboard_map(){
 //	keyboard_map[81][0] = ;
 //	keyboard_map[81][1] = ;
 	keyboard_map[82][0] = 0x27;// '
-	keyboard_map[82][1] = 1;
+	keyboard_map[82][1] = 2;
+	keyboard_map[82][2] = 0x22; //"
 //	keyboard_map[83][0] = ;
 //	keyboard_map[83][1] = ;
 	keyboard_map[84][0] = 0x5B;// [
-	keyboard_map[84][1] = 1;
+	keyboard_map[84][1] = 2;
+	keyboard_map[84][2] = 0x7B;//{
 	keyboard_map[85][0] = 0x3D;// =
-	keyboard_map[85][1] = 1;
+	keyboard_map[85][1] = 2;
+	keyboard_map[85][2] = 0x2B;//+
 //	keyboard_map[86][0] = ;
 //	keyboard_map[86][1] = ;
 //	keyboard_map[87][0] = ;
@@ -186,11 +206,13 @@ void init_keyboard_map(){
 //	keyboard_map[90][0] = ;
 //	keyboard_map[90][1] = ;
 	keyboard_map[91][0] = 0x5D; // ]
-	keyboard_map[91][1] = 1;
+	keyboard_map[91][1] = 2;
+	keyboard_map[91][2] = 0x7D; //}
 //	keyboard_map[92][0] = ;
 //	keyboard_map[92][1] = ;
 	keyboard_map[93][0] = 0x5C; // forwardslash
-	keyboard_map[93][1] = 1;
+	keyboard_map[93][1] = 2;
+	keyboard_map[93][2] = 0x7C; //|
 //	keyboard_map[94][0] = ;
 //	keyboard_map[94][1] = ;
 //	keyboard_map[95][0] = ;

@@ -7,7 +7,7 @@
 #define RELEASE_CODE (~15)
 #define A_PRESSED 0x1C
 #define SHIFT_PRESSED 0x12
-extern char keyboard_map[256][2];
+extern char keyboard_map[256][3];
 void isrhandler_keyboard(){
 	char scancode;
 	static int released = 0;
@@ -42,9 +42,18 @@ void isrhandler_keyboard(){
 //			printchar = 'a' ^ caps;
 //			printf("printing:%c\n", printchar);
 //		}
-		else if(keyboard_map[(int)(scancode)][1] == 1){
+		if(keyboard_map[(int)(scancode)][1] == 1){
 			printchar = keyboard_map[(int)(scancode)][0];
 			printchar = printchar ^caps;
+			printf("printing:%c\n", printchar);
+		}
+		else if(caps == 0 && keyboard_map[(int)(scancode)][1] == 2){
+			printchar = keyboard_map[(int)(scancode)][0];
+			printchar = printchar ^caps;
+			printf("printing:%c\n", printchar);
+		}
+		else if(caps !=0 && keyboard_map[(int)(scancode)][1] == 2){
+			printchar = keyboard_map[(int)(scancode)][2];
 			printf("printing:%c\n", printchar);
 		}
 	}
