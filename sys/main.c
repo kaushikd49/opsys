@@ -29,7 +29,7 @@ char* clear_on_overflow(uint64_t position, register char* v) {
 }
 
 long int curr_line_width(register char* v) {
-	return ((v - (char*) BASE_CURSOR_POS) % VID_COLS_WIDTH) ;
+	return ((v - (char*) BASE_CURSOR_POS) % VID_COLS_WIDTH);
 }
 
 void write_to_video_memory(const char* str, uint64_t position) {
@@ -47,33 +47,35 @@ void write_to_video_memory(const char* str, uint64_t position) {
 	for (; *s; ++s, v += 2) {
 		// clearing on overflow
 		v = clear_on_overflow(position, v);
-		if (*s == '\n' || *s == '\f') {
-			// offset to go to next-line
-			int offset = (VID_COLS_WIDTH - 2) - curr_line_width(v);
-			v = v + offset;
-			v = clear_on_overflow(position, v);
-		} else if (*s == '\v') {
-			// vertical tab - same col on next row
-			int offset = VID_COLS_WIDTH - 2;
-			v = v + offset;
-			v = clear_on_overflow(position, v);
-		}else if (*s == '\t') {
-			v = v + 8;
-			v = clear_on_overflow(position, v);
-		}
-		else if (*s == '\r') {
-			int offset = curr_line_width(v) + 2;
-			if (offset > 0) {
-				v = v - offset;
-				v = clear_on_overflow(position, v);
-			}
-		}
-		else {
+//		if (*s == '\n' || *s == '\f') {
+//			// offset to go to next-line
+//			int offset = (VID_COLS_WIDTH - 2) - curr_line_width(v);
+//			v = v + offset;
+//			v = clear_on_overflow(position, v);
+//		} else if (*s == '\v') {
+//			// vertical tab - same col on next row
+//			int offset = VID_COLS_WIDTH - 2;
+//			v = v + offset;
+//			v = clear_on_overflow(position, v);
+//		} else if (*s == '\t') {
+//			v = v + 8;
+//			v = clear_on_overflow(position, v);
+//		} else if (*s == '\r') {
+//			int offset = curr_line_width(v) + 2;
+//			if (offset > 0) {
+//				v = v - offset;
+//				v = clear_on_overflow(position, v);
+//			}
+//		}
+//		else
+		{
 			*v = (*s);
 			*(v + 1) = 0x02;
 		}
 	}
-	cursor_pos = (uint64_t) v;
+	if (position == PRINT_CONTINIOUS) {
+		cursor_pos = (uint64_t) v;
+	}
 }
 
 int printInteger(int n, uint64_t pos) {
@@ -373,7 +375,6 @@ extern char kernmem, physbase;
 struct tss_t tss;
 struct idtD idt_tab[255];
 struct lidtr_t IDT;
-
 
 void init_init_IDT() {
 	IDT.size = 0x1000;	//hex(256*16)

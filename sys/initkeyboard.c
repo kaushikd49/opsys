@@ -91,8 +91,8 @@ void init_keyboard_map(){
 //	keyboard_map[39][1] = ;
 //	keyboard_map[40][0] = ;
 //	keyboard_map[40][1] = ;
-//	keyboard_map[41][0] = ;
-//	keyboard_map[41][1] = ;
+	keyboard_map[41][0] = 0x20; // space
+	keyboard_map[41][1] = 1;
 	keyboard_map[42][0] = 0x76;//v
 	keyboard_map[42][1] = 1;
 	keyboard_map[43][0] = 0x66;//f
@@ -229,8 +229,8 @@ void init_keyboard_map(){
 //	keyboard_map[100][1] = ;
 //	keyboard_map[101][0] = ;
 //	keyboard_map[101][1] = ;
-//	keyboard_map[102][0] = ;
-//	keyboard_map[102][1] = ;
+	keyboard_map[102][0] = 0x8; //backspace
+	keyboard_map[102][1] = 1;
 //	keyboard_map[103][0] = ;
 //	keyboard_map[103][1] = ;
 //	keyboard_map[104][0] = ;
