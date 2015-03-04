@@ -4,6 +4,7 @@
 .global isr_timer
 .global isr_keyboard
 .global keyboard_init
+.global trap_default
 .align 4
 
 isr_default:
@@ -27,7 +28,26 @@ isr_default:
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
 	iretq
 
+trap_default:
 
+	pushq %rax
+	pushq %rcx
+	pushq %rdx
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_default
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rdx
+	popq %rcx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	iretq
 
 
 
@@ -99,8 +119,8 @@ keyboard_init:
 	movb $0xaa, %al   #6:controller self test
 	outb %al, $0x64
 	inb $0x60, %al
-	movq $0xb8000, %rbx
-	movb %al, (%rbx)
+	#movq $0xb8000, %rbx
+	#movb %al, (%rbx)
 	#port 1 check
 	movb $0xab, %al   #6:controller self test
 	outb %al, $0x64
@@ -108,8 +128,8 @@ keyboard_init:
 	movb $0x00, %bl
 	cmp %al,%bl
 	jne s9
-	movq $0xb8008, %rbx
-	movb $0x65, (%rbx)
+	#movq $0xb8008, %rbx
+	#movb $0x65, (%rbx)
  s9:movb $0xae, %al   #6:controller self test
 	outb %al, $0x64
 	movb $0x60, %al
@@ -122,7 +142,7 @@ keyboard_init:
 	movb $0xFA, %bl
 	cmp %al, %bl
 	jne exit
-	movq $0xb8016, %rbx
-	movb $0x75, (%rbx)
+	#movq $0xb8016, %rbx
+	#movb $0x75, (%rbx)
 exit:
 	retq

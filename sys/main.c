@@ -242,7 +242,7 @@ struct idtD {
 	uint32_t offset3;
 	uint32_t zero2;
 }__attribute__((packed));
-
+//parameters: the base address of the isr table, the interupt number we are mapping, handler function, type of the interrupt(trap, interrupt), segment of the handler)
 void add_int_handler(uint64_t isr_base, uint64_t isr_number,
 		uint64_t handler_name, char type, uint16_t segment_selector) {
 	uint16_t offset1 = (uint16_t)(handler_name & 0x000000000000FFFF);
@@ -270,6 +270,7 @@ void config_PIC() {
 			"inb $0xA1,%0\n\t"
 			:"=a"(PIC2data));
 	//printf("pic2: %x", PIC2data);
+	//the steps are done in order.
 	__asm__ __volatile__("movb $0x11, %al\n\t"
 			"outb %al, $0x20 \n\t"
 			"movb $0x11, %al\n\t"
@@ -281,7 +282,7 @@ void config_PIC() {
 			"movb $4, %al\n\t"
 			"outb %al, $0x21 \n\t"//set bit for the cascade
 			"movb $2, %al\n\t"
-			"outb %al, $0xA1\n\t"//this is just the the position where it is cascaded for the pic to know
+			"outb %al, $0xA1\n\t"//this is just the position where it is cascaded for the pic to know
 			"movb $0x01, %al\n\t"
 			"outb %al, $0x21\n\t"
 			"movb $0x01, %al\n\t"
@@ -294,16 +295,25 @@ void config_PIC() {
 
 }
 extern void isr_default();
+extern void trap_default();
 extern void isr_timer();
 extern void isr_keyboard();
 extern void keyboard_init();
 extern void init_keyboard_map();
+
 void init_IDT(struct lidtr_t IDT) {
 	uint32_t i = 0;
-	for (i = 0; i < 256; i++) {
-		add_int_handler((uint64_t) IDT.base, i, (uint64_t) isr_default, 0xEF,
-				0x08);  //everything set as trap.
-		//__asm__ __volatile__("INT $0");
+//	for (i = 0; i < 256; i++) {
+//		add_int_handler((uint64_t) IDT.base, i, (uint64_t) isr_default, 0xEF,
+//				0x08);  //everything set as trap.
+//		//__asm__ __volatile__("INT $0");
+//	}
+	//setting trap
+	for (i = 0; i <32; i++){
+		add_int_handler((uint64_t) IDT.base, i, (uint64_t) trap_default, 0xEF, 0x08);//note: we are making the type as P|RING 3|0|TRAP GATE(1111)
+	}
+	for ( i =32; i < 256; i++){
+		add_int_handler((uint64_t) IDT.base, i, (uint64_t) isr_default, 0xEE, 0x08);//note: we are making type as P|RING 3|0|INTERRUPT GATE(1110)
 	}
 }
 
@@ -374,20 +384,20 @@ uint32_t* loader_stack;
 extern char kernmem, physbase;
 struct tss_t tss;
 struct idtD idt_tab[255];
-struct lidtr_t IDT;
-
+//struct lidtr_t IDT;
+static struct lidtr_t lidtr = {
+	0x1000,
+	(uint64_t)(idt_tab),
+};
 void init_init_IDT() {
-	IDT.size = 0x1000;	//hex(256*16)
-	IDT.base = (uint64_t)(idt_tab);
 	__asm__ __volatile("lidt (%0)"
 			:
-			:"a"(&IDT));
-	init_IDT(IDT);
+			:"a"(&lidtr));
+	init_IDT(lidtr);
 }
 void add_custom_interrupt() {
-	add_int_handler((uint64_t) IDT.base, 32, (uint64_t) isr_timer, 0xEE, 0x08); //mode set to present|Ring 3|Interrupt   - Segment usual kernel segments
-	add_int_handler((uint64_t) IDT.base, 33, (uint64_t) isr_keyboard, 0xEE,
-			0x08);
+	add_int_handler((uint64_t) lidtr.base, 32, (uint64_t) isr_timer, 0xEE, 0x08); //mode set to present|Ring 3|Interrupt   - Segment usual kernel segments
+	add_int_handler((uint64_t) lidtr.base, 33, (uint64_t) isr_keyboard, 0xEE,0x08);
 }
 void boot(void) {
 	// note: function changes rsp, local stack variables can't be practically used
@@ -402,11 +412,15 @@ void boot(void) {
 	setup_tss();
 	init_init_IDT();
 	config_PIC();
+
 	add_custom_interrupt();
 	init_keyboard_map();
 	keyboard_init();
 	//printf("%x", 15);
 	//print_time();
+	__asm__ __volatile("INT $32\n\t"
+								   "cli");
+	__asm__ __volatile("INT $33\n\t""cli");
 	__asm__ __volatile__ ("movb $0xFC, %al\n\t"
 			"outb  %al, $0x21\n\t");
 	__asm__ ("sti");
