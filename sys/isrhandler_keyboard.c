@@ -3,14 +3,35 @@
 #include <sys/sbunix.h>
 #include <sys/gdt.h>
 #include <sys/tarfs.h>
+//#ifndef PRINTF_HEADER_FILE
+//#include "printf.h"
+//#define PRINTF_HEADER_FILE
+//#endif
+
+void write_to_video_memory(const char* str, uint64_t position);
+int write_char_to_vid_mem(char c, uint64_t pos) ;
 
 #define KEY_RELEASE (~15)
-#define SPACE 0x29
 #define SHIFT 0x12
 #define ENTER 0x5a
+#define BACKSPACE 0x66
+#define TAB 0xd
+
+
 #define A_PRESSED 0x1C
 
 extern char keyboard_map[256][3];
+uint64_t glyph_pos = 0xb8ed0;
+
+void clear_and_print_str_at(char *str) {
+	write_to_video_memory("             ", glyph_pos); // clear space for the glyph tp be writen
+	write_to_video_memory(str, glyph_pos);
+}
+
+void clear_and_print_char_at(char c) {
+	write_to_video_memory("             ", glyph_pos); // clear space for the glyph tp be writen
+	write_char_to_vid_mem(c, glyph_pos);
+}
 
 void isrhandler_keyboard() {
 	char scancode;
@@ -30,9 +51,17 @@ void isrhandler_keyboard() {
 		if (scancode == SHIFT) {
 			caps = 0;
 		}
-	} else if (scancode == ENTER) {
-		printf("%c", '\n');
-	} else {
+	} 
+	else if (scancode == ENTER) {
+		clear_and_print_str_at("<ENT>");
+	} 
+	else if (scancode == TAB) {
+		clear_and_print_str_at("<TAB>");
+	} 
+	else if (scancode == BACKSPACE) {
+		clear_and_print_str_at("<BACKSPACE>");
+	} 
+	else {
 		if (scancode == SHIFT)
 			caps = 0x20;
 
@@ -41,16 +70,16 @@ void isrhandler_keyboard() {
 			// Print characters
 			printchar = keyboard_map[int_scancode][0];
 			printchar = printchar ^ caps;
-			printf("%c", printchar);
+			clear_and_print_char_at(printchar);
 		} else if (caps == 0 && keyboard_map[int_scancode][1] == 2) {
 			// Print digits
 			printchar = keyboard_map[int_scancode][0];
 			printchar = printchar ^ caps;
-			printf("%c", printchar);
+			clear_and_print_char_at(printchar);
 		} else if (caps != 0 && keyboard_map[int_scancode][1] == 2) {
 			// Print symbols
 			printchar = keyboard_map[int_scancode][2];
-			printf("%c", printchar);
+			clear_and_print_char_at(printchar);
 		}
 	}
 }
