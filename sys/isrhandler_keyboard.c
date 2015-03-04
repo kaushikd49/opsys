@@ -17,7 +17,7 @@ void write_to_video_memory(const char* str, uint64_t position);
 #define A_PRESSED 0x1C
 
 extern char keyboard_map[256][3];
-uint64_t glyph_pos = 0xb8ed0;
+uint64_t glyph_pos = 0xb8f60;
 
 void clear_and_print_str_at(char *str) {
 	write_to_video_memory("             ", glyph_pos); // clear space for the glyph tp be writen

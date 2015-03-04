@@ -9,7 +9,7 @@
 
 uint64_t BASE_CURSOR_POS = 0xb8000;
 uint64_t PRINT_CONTINIOUS = 0;
-uint64_t TIMER_LOC = 0xb8ef0;
+uint64_t TIMER_LOC = 0xb8f80;
 
 // 3 pages (excluding last line for timer)
 // worth of characters can be buffered.
@@ -155,7 +155,7 @@ void write_buffer_view_into_vid_mem() {
 		from = video_buffer;
 	}
 	char *vid_ptr = (char *) BASE_CURSOR_POS;
-	for (char*p = from; p <= to; p++) {
+	for (char*p = from; p <= to; p++, vid_ptr++) {
 		*vid_ptr = *p;
 	}
 }
@@ -173,7 +173,6 @@ void write_to_video_memory(const char* str, uint64_t position) {
 	}
 	// first of all, buffer it
 	write_string_into_buffer(str);
-
 	write_buffer_view_into_vid_mem(vid_buffer_tail_ptr);
 }
 
