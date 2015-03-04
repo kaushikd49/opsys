@@ -3,19 +3,15 @@
 #include <sys/sbunix.h>
 #include <sys/gdt.h>
 #include <sys/tarfs.h>
-//#ifndef PRINTF_HEADER_FILE
-//#include "printf.h"
-//#define PRINTF_HEADER_FILE
-//#endif
 
-void write_to_video_memory(const char* str, uint64_t position);
 int write_char_to_vid_mem(char c, uint64_t pos) ;
+void write_to_video_memory(const char* str, uint64_t position);
 
-#define KEY_RELEASE (~15)
-#define SHIFT 0x12
-#define ENTER 0x5a
-#define BACKSPACE 0x66
 #define TAB 0xd
+#define ENTER 0x5a
+#define SHIFT 0x12
+#define BACKSPACE 0x66
+#define KEY_RELEASE (~15)
 
 
 #define A_PRESSED 0x1C

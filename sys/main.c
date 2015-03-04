@@ -1,29 +1,22 @@
 #include <sys/sbunix.h>
 #include <sys/gdt.h>
 #include <sys/tarfs.h>
-#include <stdarg.h> // todo: check if importing this here is allowed
-//#ifndef PRINTF_HEADER_FILE
-//#include "printf.h"
-//#define PRINTF_HEADER_FILE
-//#endif
+#include <stdarg.h>
 
-
+int printHexIntTime(int n);
+int write_char_to_vid_mem(char c, uint64_t pos);
 void write_to_video_memory(const char* str, uint64_t position);
-int write_char_to_vid_mem(char c, uint64_t pos) ;
-int printHexIntTime(int n) ;
 
-//#include "initkeyboard.c"
-//#include "isrhandler_default.c"
 //try optimizing this function. see if we need to use a more refined way.
 void print_time() {
-	//with a frequency of 18.2065 Hz, a interrupt is sent every .0549254 seconds so a second happens every 18.2 calls.
+	// with a frequency of 18.2065 Hz, a interrupt is sent every .0549254 seconds so a second happens every 18.2 calls.
 	static int seconds_boot = 0;
 	static int ms_boot = 0;
-//	static int lost_precision = 0; //for the .2 so every 10 increment increment ms_boot once more
+// static int lost_precision = 0; //for the .2 so every 10 increment increment ms_boot once more
 	//printf("%x", time);
-//	lost_precision++;
+// lost_precision++;
 	ms_boot = ms_boot + 1;
-//	if(lost_precision == 9) //can optimize
+// if(lost_precision == 9) //can optimize
 //		ms_boot++;
 
 	if (ms_boot < 18) {
@@ -115,10 +108,10 @@ void init_IDT(struct lidtr_t IDT) {
 }
 
 void start(uint32_t* modulep, void* physbase, void* physfree) {
-//	char str[] = "__abcdef1233456090909()**)*&&&__";
+	char str[] = "__abcdef1233456090909()**)*&&&__";
 //	printf("Welcome to your own OS %d %x %x %d %d %c %x %s %p %p\n", -2147483648, -2147483648, 0, 0x80000000, 0x7fffffff, 'e', 0xa35d,
-//	for(int i =0; i< 10000;i++)
-//		printf("%s~~%d", str, i);
+	for (int i = 0; i < 10000; i++)
+		printf("%s~~%d", str, i);
 //	printf("pri\rnting all ascii\n");
 //	for (int i = 0; i < 256; i++)
 //		printf("%d:%c", i, i);
