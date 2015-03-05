@@ -25,10 +25,12 @@ To connect a remote debugger to the running qemu VM:
 
 
 -----------------------------
-Scroll support is provided. Buffer limit is thrice the size of video memory.
-Last line of video memory is reserved for displaying glyph and timer in right corner.
+----------README------------
+Scroll support is provided by using a buffer. 
+Buffer limit is thrice the size of video memory, beyond that the data will not be printed.
+Last line of video memory is used for displaying glyph and timer in right corner.
 Whitespaces are handled.
-Following non-displayable chars are mapped as below
+Following non-displayable chars are printed as below
 		--Enter - <ENT>
 		--Tab - <TAB>
 		--Backspace - <BACKSPACE>

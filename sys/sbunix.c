@@ -43,11 +43,14 @@ void update_buffer_ptrs(char* q) {
 	vid_buffer_view_ptr = q;
 }
 
+int will_buffer_overflow(int len) {
+	return vid_buffer_tail_ptr + (2 * len) - video_buffer >= VID_BUFFER_SIZE;
+}
+
 void shift_buffer_on_overflow(int len) {
-	int str_bytes = 2 * len;
 	// buffer overflow check
-	if (vid_buffer_tail_ptr + str_bytes - video_buffer >= VID_BUFFER_SIZE) {
-		int offset = str_bytes + 1;
+	if (will_buffer_overflow(len)) {
+		int offset = 2 * len + 1;
 		// shift buffer contents to top
 		char *p = video_buffer + offset;
 		for (; p <= vid_buffer_tail_ptr; p++) {
@@ -63,6 +66,8 @@ void shift_buffer_on_overflow(int len) {
 }
 
 void repeat_chars_into_buffer(char c, int num) {
+	if(will_buffer_overflow(num))
+		return;
 	shift_buffer_on_overflow(num);
 	char *r = vid_buffer_tail_ptr;
 	if (num > 0) {
@@ -87,7 +92,7 @@ char* handle_oversized_str(const char* s) {
 		// truncate str to accommodate it to the vid buffer
 		str += len - MAX_CHARS_IN_VID_BUFFER;
 	}
-	shift_buffer_on_overflow(len);
+//	shift_buffer_on_overflow(len);
 	return str;
 }
 
@@ -125,7 +130,7 @@ void write_buffer_view_into_vid_mem() {
 	// copy a window of size vid_mem from vid_mem_buffer to vid_mem
 	char *from = vid_buffer_view_ptr, *to = vid_buffer_view_ptr;
 	int lines = (vid_buffer_view_ptr - video_buffer) / 160;
-	int linesPrintable = VIDEO_ROWS - 1;
+	int linesPrintable = (VIDEO_ROWS) / 2;
 	int linesToDiscard = lines - linesPrintable;
 
 	if (linesToDiscard > 0) {
