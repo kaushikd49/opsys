@@ -10,7 +10,9 @@ void isrhandler_default(){
 //	"movq $0xb8004, %rax\n\t"
 //	"movb $71, (%rax)\n\t"
 //	);
-	printf("Interupt ");
+	printf("Interupt occurred, Interrupt handler not mapped");
 }
-
+void traphandler_default(){
+	printf("trap occurred, trap handler not mapped ");
+}
 #endif
