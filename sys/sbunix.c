@@ -88,11 +88,6 @@ void repeat_chars_into_buffer(char c, int num) {
 		for (int i = 0; i < num; i++, r += 2) {
 			write_char_color(r, c);
 		}
-	} else if (num < 0) {
-		num *= -1;
-		for (int i = 0; i < num; i++, r -= 2) {
-			write_char_color(r, c);
-		}
 	}
 	update_buffer_ptrs(r);
 }
@@ -121,8 +116,7 @@ void write_string_into_buffer(const char* str) {
 	for (char *s = (char *) str; *s; ++s) {
 		if (*s == '\n' || *s == '\f') {
 			// offset to go to next-line
-			offset = (VIDEO_COLS)
-					- curr_line_char_width(vid_buffer_tail_ptr);
+			offset = (VIDEO_COLS) - curr_line_char_width(vid_buffer_tail_ptr);
 		} else if (*s == '\v') {
 			// vertical tab - same col on next row
 			offset = VIDEO_COLS;
