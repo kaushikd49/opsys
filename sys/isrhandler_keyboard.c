@@ -4,15 +4,20 @@
 #include <sys/gdt.h>
 #include <sys/tarfs.h>
 
-int write_char_to_vid_mem(char c, uint64_t pos) ;
+extern char * vid_buffer_view_ptr;
+int write_char_to_vid_mem(char c, uint64_t pos);
 void write_to_video_memory(const char* str, uint64_t position);
+void write_buffer_view_into_vid_mem();
 
 #define TAB 0xd
 #define ENTER 0x5a
 #define SHIFT 0x12
 #define BACKSPACE 0x66
 #define KEY_RELEASE (~15)
+#define ARROW_KEY_BEGIN -32
 
+#define DOWN 0x72
+#define UP 0x75
 
 #define A_PRESSED 0x1C
 
@@ -33,6 +38,7 @@ void isrhandler_keyboard() {
 	char scancode;
 	static int key_released = 0;
 	static int caps = 0;
+	static int arrow_key = 0;
 	char printchar;
 
 	__asm__ __volatile__("inb $0x60, %%al\n\t"
@@ -47,19 +53,29 @@ void isrhandler_keyboard() {
 		if (scancode == SHIFT) {
 			caps = 0;
 		}
-	} 
-	else if (scancode == ENTER) {
+	} else if (scancode == ENTER) {
 		clear_and_print_str_at("<ENT>");
-	} 
-	else if (scancode == TAB) {
+	} else if (scancode == TAB) {
 		clear_and_print_str_at("<TAB>");
-	} 
-	else if (scancode == BACKSPACE) {
+	} else if (scancode == BACKSPACE) {
 		clear_and_print_str_at("<BACKSPACE>");
-	} 
-	else {
-		if (scancode == SHIFT)
+	} else {
+		if (scancode == SHIFT) {
 			caps = 0x20;
+		} else if (scancode == ARROW_KEY_BEGIN) {
+			arrow_key = 1;
+		} else if (arrow_key && !key_released) {
+			int VID_COLS_WIDTH = 160;
+			if (scancode == UP)
+				vid_buffer_view_ptr -= VID_COLS_WIDTH;
+			else if (scancode == DOWN)
+				vid_buffer_view_ptr += VID_COLS_WIDTH;
+			write_buffer_view_into_vid_mem();
+		} else if (arrow_key && key_released
+				&& (scancode == UP || scancode == DOWN)) {
+			// arrow key released
+			arrow_key = 0;
+		}
 
 		int int_scancode = (int) (scancode);
 		if (keyboard_map[int_scancode][1] == 1) {

@@ -30,24 +30,6 @@ void write_char_color(char * v, char s) {
 	*(v + 1) = 0x02;
 }
 
-//void clear_screen() {
-//	register char* v = (char*) BASE_CURSOR_POS;
-//	for (int i = 0; i < VIDEO_ROWS * VIDEO_COLS; i++, v += 2) {
-//		*v = '\0';
-//	}
-//}
-
-//char* clear_on_overflow(uint64_t position, register char* v) {
-//	// clearing on overflow
-//	if (position == PRINT_CONTINIOUS) {
-//		if (v - ((char*) TIMER_LOC - 1) >= 0) {
-//			clear_screen();
-//			v = (char*) BASE_CURSOR_POS;
-//		}
-//	}
-//	return v;
-//}
-
 long int curr_line_width(register char* v) {
 	return ((v - (char*) video_buffer) % VID_COLS_WIDTH);
 }
@@ -169,7 +151,7 @@ void write_to_video_memory(const char* str, uint64_t position) {
 	}
 	// first of all, buffer it
 	write_string_into_buffer(str);
-	write_buffer_view_into_vid_mem(vid_buffer_tail_ptr);
+	write_buffer_view_into_vid_mem();
 }
 
 int printInteger(int n, uint64_t pos) {
