@@ -22,3 +22,16 @@ When using the -curses mode, switch to the qemu> console with ESC-2.
 To connect a remote debugger to the running qemu VM:
   gdb ./kernel
   target remote localhost:9998
+
+
+-----------------------------
+Scroll support is provided. Buffer limit is thrice the size of video memory.
+Last line of video memory is reserved for displaying glyph and timer in right corner.
+Whitespaces are handled.
+Following non-displayable chars are mapped as below
+		--Enter - <ENT>
+		--Tab - <TAB>
+		--Backspace - <BACKSPACE>
+TEAM:
+Muthukumar Suresh
+Kaushik Devarajaiah
