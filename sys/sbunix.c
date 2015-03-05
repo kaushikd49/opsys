@@ -49,7 +49,7 @@ void write_char_color(char * v, char s) {
 //}
 
 long int curr_line_width(register char* v) {
-	return ((v - (char*) BASE_CURSOR_POS) % VID_COLS_WIDTH);
+	return ((v - (char*) video_buffer) % VID_COLS_WIDTH);
 }
 
 long int curr_line_char_width(char* v) {
@@ -125,13 +125,14 @@ void write_string_into_buffer(const char* str) {
 					- curr_line_char_width(vid_buffer_tail_ptr);
 		} else if (*s == '\v') {
 			// vertical tab - same col on next row
-			offset = VIDEO_COLS - 1;
+			offset = VIDEO_COLS;
 		} else if (*s == '\t') {
 			offset = 4;
 		} else if (*s == '\r') {
-			offset = curr_line_char_width(vid_buffer_tail_ptr) + 1;
+			vid_buffer_tail_ptr -= curr_line_width(vid_buffer_tail_ptr);
 		} else if (*s == '\b') {
-			repeat_chars_into_buffer('\0', -1);
+			vid_buffer_tail_ptr -= 2;
+			repeat_chars_into_buffer('\0', 1);
 			vid_buffer_tail_ptr -= 2;
 		} else {
 			repeat_chars_into_buffer(*s, 1);
