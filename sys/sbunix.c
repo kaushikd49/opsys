@@ -53,7 +53,8 @@ long int curr_line_width(register char* v) {
 }
 
 long int curr_line_char_width(char* v) {
-	return ((v - (char*) BASE_CURSOR_POS) % VIDEO_COLS);
+	long int chars_written = (v - video_buffer) / 2;
+	return chars_written % VIDEO_COLS;
 }
 
 void update_buffer_ptrs(char* q) {
@@ -120,7 +121,7 @@ void write_string_into_buffer(const char* str) {
 	for (char *s = (char *) str; *s; ++s) {
 		if (*s == '\n' || *s == '\f') {
 			// offset to go to next-line
-			offset = (VIDEO_COLS - 1)
+			offset = (VIDEO_COLS)
 					- curr_line_char_width(vid_buffer_tail_ptr);
 		} else if (*s == '\v') {
 			// vertical tab - same col on next row
