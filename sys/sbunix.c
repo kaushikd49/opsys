@@ -123,11 +123,15 @@ void write_string_into_buffer(const char* str) {
 
 void write_buffer_view_into_vid_mem() {
 	// copy a window of size vid_mem from vid_mem_buffer to vid_mem
-	char *from = vid_buffer_view_ptr, *to = vid_buffer_view_ptr; //todo: void handle
-	char *temp = vid_buffer_view_ptr - VID_MEM_WRITABLE;
-	if (temp >= video_buffer) {
+	char *from = vid_buffer_view_ptr, *to = vid_buffer_view_ptr;
+	int lines = (vid_buffer_view_ptr - video_buffer) / 160;
+	int linesPrintable = VIDEO_ROWS - 1;
+	int linesToDiscard = lines - linesPrintable;
+
+	if (linesToDiscard > 0) {
 		// enough stuff inside buffer to cover video memory
-		from = temp;
+//		from = vid_buffer_view_ptr - (160 * linesToDiscard);
+		from = video_buffer + (160 * linesToDiscard);
 	} else {
 		from = video_buffer;
 	}
