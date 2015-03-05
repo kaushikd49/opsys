@@ -218,9 +218,9 @@ void boot(void) {
 	keyboard_init();
 	//printf("%x", 15);
 	//print_time();
-	__asm__ __volatile("INT $32\n\t"
+	__asm__ __volatile("INT $15\n\t"
 								   "cli");
-	__asm__ __volatile("INT $33\n\t""cli");
+	__asm__ __volatile("INT $55\n\t""cli");
 	__asm__ __volatile__ ("movb $0xFC, %al\n\t"
 			"outb  %al, $0x21\n\t");
 	__asm__ ("sti");
