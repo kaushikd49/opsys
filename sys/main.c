@@ -110,8 +110,8 @@ void init_IDT(struct lidtr_t IDT) {
 void start(uint32_t* modulep, void* physbase, void* physfree) {
 	char str[] = "__its_!@#$%^&*()_dangerous__";
 //	printf("Welcome to your own OS %d %x %x %d %d %c %x %s %p %p\n", -2147483648, -2147483648, 0, 0x80000000, 0x7fffffff, 'e', 0xa35d,
-	for (int i = 0; i < 51; i++)
-		printf("%s~~%d\n", str, i);
+	for (int i = 0; i < 100; i++)
+		printf("%s~~%d", str, i);
 //	printf("pri\rnting all ascii\n");
 //	for (int i = 0; i < 256; i++)
 //		printf("%d:%c", i, i);

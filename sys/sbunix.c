@@ -5,7 +5,6 @@
 #define  VIDEO_COLS 80
 #define  VIDEO_ROWS 50
 #define  VID_COLS_WIDTH (2 * VIDEO_COLS)
-//static const int MAX_VID_ADDR = 0xb8000 + (VIDEO_ROWS * VIDEO_COLS * 2);
 
 uint64_t BASE_CURSOR_POS = 0xb8000;
 uint64_t PRINT_CONTINIOUS = 0;

@@ -5,6 +5,8 @@
 #include <sys/tarfs.h>
 
 extern char * vid_buffer_view_ptr;
+extern char * vid_buffer_tail_ptr;
+extern char * video_buffer;
 int write_char_to_vid_mem(char c, uint64_t pos);
 void write_to_video_memory(const char* str, uint64_t position);
 void write_buffer_view_into_vid_mem();
@@ -65,11 +67,20 @@ void isrhandler_keyboard() {
 		} else if (scancode == ARROW_KEY_BEGIN) {
 			arrow_key = 1;
 		} else if (arrow_key && !key_released) {
+			//todo reuse constants from other file
 			int VID_COLS_WIDTH = 160;
-			if (scancode == UP)
-				vid_buffer_view_ptr -= VID_COLS_WIDTH;
-			else if (scancode == DOWN)
-				vid_buffer_view_ptr += VID_COLS_WIDTH;
+//			int VID_BUFFER_SIZE = 80 * 49 * 3;
+			if (scancode == UP) {
+				if (vid_buffer_view_ptr - VID_COLS_WIDTH < video_buffer) {
+					vid_buffer_view_ptr = video_buffer;
+				} else {
+					vid_buffer_view_ptr -= VID_COLS_WIDTH;
+				}
+			} else if (scancode == DOWN) {
+				if (vid_buffer_view_ptr + VID_COLS_WIDTH <= vid_buffer_tail_ptr) {
+					vid_buffer_view_ptr += VID_COLS_WIDTH;
+				}
+			}
 			write_buffer_view_into_vid_mem();
 		} else if (arrow_key && key_released
 				&& (scancode == UP || scancode == DOWN)) {
