@@ -118,10 +118,10 @@ void init_IDT(struct lidtr_t IDT) {
 }
 
 void start(uint32_t* modulep, void* physbase, void* physfree) {
-	char str[] = "__its_!@#$%^&*()_dangerous__";
+	//char str[] = "__its_!@#$%^&*()_dangerous__";
 //	printf("Welcome to your own OS %d %x %x %d %d %c %x %s %p %p\n", -2147483648, -2147483648, 0, 0x80000000, 0x7fffffff, 'e', 0xa35d,
-	for (int i = 0; i < 60; i++)
-		printf("%s~~%d\n", str, i);
+	//for (int i = 0; i < 60; i++)
+	//	printf("%s~~%d\n", str, i);
 //	printf("pri\rnting all ascii\n");
 //	for (int i = 0; i < 256; i++)
 //		printf("%d:%c", i, i);
@@ -218,9 +218,6 @@ void boot(void) {
 	keyboard_init();
 	//printf("%x", 15);
 	//print_time();
-	__asm__ __volatile("INT $15\n\t"
-								   "cli");
-	__asm__ __volatile("INT $55\n\t""cli");
 	__asm__ __volatile__ ("movb $0xFC, %al\n\t"
 			"outb  %al, $0x21\n\t");
 	__asm__ ("sti");
