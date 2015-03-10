@@ -8,7 +8,7 @@
 .align 4
 
 isr_default:
-
+	cli
 	pushq %rax
 	pushq %rcx
 	pushq %rdx
@@ -26,10 +26,11 @@ isr_default:
 	popq %rax
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
 	iretq
 
 trap_default:
-
+	cli
 	pushq %rax
 	pushq %rcx
 	pushq %rdx
@@ -47,6 +48,7 @@ trap_default:
 	popq %rax
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
 	iretq
 
 
@@ -55,6 +57,7 @@ trap_default:
 
 
 isr_timer:
+	cli
 	pushq %rax
 	pushq %rcx
 	pushq %rdx
@@ -74,12 +77,14 @@ isr_timer:
 	popq %rax
 	movb $0x20, %al
 	outb %al, $0x20
+	sti
 	iretq
 
 
 .text
 
 isr_keyboard:
+	cli
 	pushq %rax
 	pushq %rcx
 	pushq %rdx
@@ -102,10 +107,12 @@ isr_keyboard:
 	popq %rax
 	movb $0x20, %al
 	outb %al, $0x20
+	sti
 	iretq
 
 #init steps mentioned in http://wiki.osdev.org/%228042%22_PS/2_Controller#Translation
 keyboard_init:
+	cli
 	movb $0xad, %al
 	outb %al, $0x64
 	movb $0xa7, %ah
@@ -150,4 +157,5 @@ keyboard_init:
 	#movq $0xb8016, %rbx
 	#movb $0x75, (%rbx)
 exit:
+	sti
 	retq

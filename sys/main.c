@@ -125,13 +125,13 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 //	printf("pri\rnting all ascii\n");
 //	for (int i = 0; i < 256; i++)
 //		printf("%d:%c", i, i);
-
 	struct smap_t {
 		uint64_t base, length;
 		uint32_t type;
 	}__attribute__((packed)) *smap;
-	while (modulep[0] != 0x9001)
+	while (modulep[0] != 0x9001){
 		modulep += modulep[1] + 2;
+	}
 	for (smap = (struct smap_t*) (modulep + 2);
 			smap < (struct smap_t*) ((char*) modulep + modulep[1] + 2 * 4);
 			++smap) {
@@ -140,7 +140,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 					smap->base + smap->length);
 		}
 	}
-	//printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
+	printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 	// kernel starts here
 	unsigned long flags;
 	__asm__ __volatile__ (
@@ -148,34 +148,6 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 			"pop %0"
 			:"=g"(flags));
 	flags = flags & (1 << 9);
-	//printf("hello: %d",flags);
-
-	//while
-
-	//printf("done");
-	while (1)
-		;
-	//__asm__ __volatile__(
-	//				"int $55\n\t"
-	//				 "cli");
-	//int i = 0;
-	//int j = 5/i;
-	// printf("%d", j);
-	//add_int_handler((uint64_t)&_binary_tarfs_end, 31, (uint64_t)isr_default, 0x8E, 0x08);
-//	int j = 0;
-//	//int i = 2/j;
-//	printf("%d", i);
-	//__asm__ __volatile__("INT $52");
-	//int n = 34;
-	/*
-	 uint64_t result;
-	 __asm__ __volatile__("xor %%rbx, %%rbx\n\t"
-	 "syscall"
-	 :"=a"(result)
-	 :"0"(n)
-	 :"rbx");*/
-	/*
-	 */
 }
 
 #define INITIAL_STACK_SIZE 4096
@@ -198,6 +170,7 @@ void init_init_IDT() {
 void add_custom_interrupt() {
 	add_int_handler((uint64_t) lidtr.base, 32, (uint64_t) isr_timer, 0xEE, 0x08); //mode set to present|Ring 3|Interrupt   - Segment usual kernel segments
 	add_int_handler((uint64_t) lidtr.base, 33, (uint64_t) isr_keyboard, 0xEE,0x08);
+
 }
 void boot(void) {
 	// note: function changes rsp, local stack variables can't be practically used
@@ -216,8 +189,6 @@ void boot(void) {
 	add_custom_interrupt();
 	init_keyboard_map();
 	keyboard_init();
-	//printf("%x", 15);
-	//print_time();
 	__asm__ __volatile__ ("movb $0xFC, %al\n\t"
 			"outb  %al, $0x21\n\t");
 	__asm__ ("sti");
@@ -225,6 +196,7 @@ void boot(void) {
 			(uint32_t*) ((char*) (uint64_t) loader_stack[3] + (uint64_t)
 					& kernmem - (uint64_t) & physbase), &physbase,
 			(void*) (uint64_t) loader_stack[4]);
+
 	//s = "!!!!! start() returned !!!!!";
 	//for(v = (char*)0xb8000; *s; ++s, v += 2) *v = *s;
 	//printf(s);
