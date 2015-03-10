@@ -115,6 +115,11 @@ keyboard_init:
 	outb %al, $0x64   #step 4: read confg byte
 	inb $0x60,%al
 	andb $0xbc,%al   #5:set config byte, might be useful to check if bit
+	movb %al,%bl
+ 	movb $0x60,%al
+	outb %al, $0x64
+	movb %bl, %al
+	outb %al, $0x60
 	#controller work check
 	movb $0xaa, %al   #6:controller self test
 	outb %al, $0x64
