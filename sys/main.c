@@ -4,6 +4,11 @@
 #include <stdarg.h>
 #include <sys/paging.h>
 
+#define MAX_NUMBER_PAGES (1<<18)
+#define PAGE_SIZE (1<<12)
+#define PAGE_ALIGN (1<<12)
+#define CHAR_SIZE (1<<3)
+#define MAX_FREELIST_LENGTH (MAX_NUMBER_PAGES/CHAR_SIZE)
 int printHexIntTime(int n);
 int write_char_to_vid_mem(char c, uint64_t pos);
 void write_to_video_memory(const char* str, uint64_t position);
@@ -120,6 +125,69 @@ void init_IDT(struct lidtr_t IDT) {
 	}
 }
 
+struct smap_t {
+	uint64_t base, length;
+	uint32_t type;
+}__attribute__((packed)) *smap;
+void create_free_list(uint32_t* modulep, char *free_list){
+	uint64_t i;
+	uint64_t current_index;
+	uint64_t current_bit;
+	for(i = 0; i < MAX_FREELIST_LENGTH; i++) //char
+		free_list[i] = 0;
+	printf("\nfree list size%d", i);
+	for (smap = (struct smap_t*) (modulep + 2);
+				smap < (struct smap_t*) ((char*) modulep + modulep[1] + 2 * 4);
+				++smap){
+		if (smap->type == 1 /* memory */&& smap->length != 0) {
+			uint64_t start = ((smap->base)+PAGE_ALIGN-1)&~(PAGE_ALIGN-1);
+			current_index = (start >>3); //right shift 6 for the index
+			current_bit = (start & 0xff);
+			while (start <(smap->base+smap->length)){
+//				printf("\n%x", start);
+				if(start + 0x1000 <(smap->base +smap->length))
+					free_list[current_index] |= 1<<current_bit;
+				current_bit++;
+				if(current_bit == 8){
+					current_index += 1;
+					current_bit = 0;
+				}
+				start = start + 0x1000;
+			}
+		}
+	}
+	free_list[0] = free_list[0] & 0xFE;
+}
+uint64_t get_free_page(char *free_list){
+	int k, i = 0, check = 0;//todo: could optimize to search from previous page given
+	for(;i<MAX_FREELIST_LENGTH;i++){
+		if((uint64_t)(free_list[i])>0){
+			k = 0;
+			while(k<8 && (uint64_t)(((1<<k) & free_list[i]))==0){
+				k++;
+
+			}
+			if(k <8){
+				check = 1;
+				break;
+			}
+		}
+	}
+	if(check == 1){
+		uint64_t return_val = (i*8+k)<<12;
+		free_list[i] ^= 1<<k;
+		return return_val;
+	}
+	return 0;
+}
+void return_page(uint64_t page, char *free_list){
+	uint64_t page_frame = page>>12;//remove the offset bits
+	uint64_t page_index = page_frame / 8; // get the page index in the free list
+	uint64_t page_shift = page_frame % 8; // get the shift in the location in the free list
+	if((uint64_t)(free_list[page_index] ^ 1<<page_shift) >0){ //just a check to make sure that the user does not give a non-free page
+		free_list[page_index] ^= 1<<page_shift;
+	}
+}
 void start(uint32_t* modulep, void* physbase, void* physfree) {
 	printf("physbase:%p, physfree:%p\n", physbase, physfree);
 //	char str[] = "__its_!@#$%^&*()_dangerous__";
@@ -140,13 +208,14 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	to = extract_bits(from, 16, 31, to, 32, 47);
 	printf("copied from %p to %p\n", from, to);
 
-	struct smap_t {
-		uint64_t base, length;
-		uint32_t type;
-	}__attribute__((packed)) *smap;
-	while (modulep[0] != 0x9001) {
+//	struct smap_t {
+//		uint64_t base, length;
+//		uint32_t type;
+//	}__attribute__((packed)) *smap;
+	while (modulep[0] != 0x9001){
 		modulep += modulep[1] + 2;
 	}
+	//int check = 0;
 	for (smap = (struct smap_t*) (modulep + 2);
 			smap < (struct smap_t*) ((char*) modulep + modulep[1] + 2 * 4);
 			++smap) {
@@ -158,12 +227,22 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	}
 	printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 	// kernel starts here
-	unsigned long flags;
-	__asm__ __volatile__ (
-			"pushf\n\t"
-			"pop %0"
-			:"=g"(flags));
-	flags = flags & (1 << 9);
+	printf("\ncreating free list");
+	uint64_t temp = (uint64_t)physfree;
+	printf("\nlocation of physfree+temp: %x", temp);
+	uint64_t free_list_location = (uint64_t)((((uint64_t)physfree)&(~(PAGE_SIZE - 1))) + (PAGE_SIZE));
+	printf("\nlocation of free list: %x", free_list_location);
+	char *free_list = (char *)(free_list_location);
+	create_free_list(modulep, free_list);
+	uint64_t ret = get_free_page(free_list);
+	printf("\nans: %x", ret);
+	ret = get_free_page(free_list);
+	printf("\nans: %x", ret);
+	return_page(ret, free_list);
+	ret = get_free_page(free_list);
+	printf("\nans: %x", ret);
+	return_page(0x1000, free_list);
+	printf("\ndone");
 }
 
 #define INITIAL_STACK_SIZE 4096

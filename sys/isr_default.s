@@ -10,8 +10,12 @@
 isr_default:
 	cli
 	pushq %rax
+	pushq %rbx
 	pushq %rcx
 	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
 	pushq %r8
 	pushq %r9
 	pushq %r10
@@ -21,8 +25,12 @@ isr_default:
 	popq %r10
 	popq %r9
 	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
 	popq %rdx
 	popq %rcx
+	popq %rbx
 	popq %rax
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
@@ -32,8 +40,12 @@ isr_default:
 trap_default:
 	cli
 	pushq %rax
+	pushq %rbx
 	pushq %rcx
 	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
 	pushq %r8
 	pushq %r9
 	pushq %r10
@@ -43,8 +55,12 @@ trap_default:
 	popq %r10
 	popq %r9
 	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
 	popq %rdx
 	popq %rcx
+	popq %rbx
 	popq %rax
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
@@ -59,9 +75,12 @@ trap_default:
 isr_timer:
 	cli
 	pushq %rax
+	pushq %rbx
 	pushq %rcx
 	pushq %rdx
 	pushq %rdi
+	pushq %rsi
+	pushq %rbp
 	pushq %r8
 	pushq %r9
 	pushq %r10
@@ -71,9 +90,12 @@ isr_timer:
 	popq %r10
 	popq %r9
 	popq %r8
+	popq %rbp
+	popq %rsi
 	popq %rdi
 	popq %rdx
 	popq %rcx
+	popq %rbx
 	popq %rax
 	movb $0x20, %al
 	outb %al, $0x20
@@ -86,9 +108,12 @@ isr_timer:
 isr_keyboard:
 	cli
 	pushq %rax
+	pushq %rbx
 	pushq %rcx
 	pushq %rdx
 	pushq %rdi
+	pushq %rsi
+	pushq %rbp
 	pushq %r8
 	pushq %r9
 	pushq %r10
@@ -101,9 +126,12 @@ isr_keyboard:
 	popq %r10
 	popq %r9
 	popq %r8
+	popq %rbp
+	popq %rsi
 	popq %rdi
 	popq %rdx
 	popq %rcx
+	popq %rbx
 	popq %rax
 	movb $0x20, %al
 	outb %al, $0x20
