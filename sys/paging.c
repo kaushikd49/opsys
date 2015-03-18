@@ -282,8 +282,8 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 
 	uint64_t* deepest_entity = NULL;
 	set_paging(0xffffffff80200000, (uint64_t) physbase);
-	int res = page_lookup(0xffffffff80200000, deepest_entity);
+	int res = page_lookup(0xffffffff90200000, deepest_entity);
 
-	printf("lookup res is:%d, deepest-entity%p", res, *deepest_entity);
+	printf("lookup res is:%d, deepest-entity:%p\n", res, *deepest_entity);
 }
 
