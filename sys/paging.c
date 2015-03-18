@@ -84,6 +84,7 @@ void set_paging(int pml4_num, int pdir_ptr_num, int dir_num, int table_num) {
 	*(ptable + table_num - 1) = get_ptable_entry();
 
 }
+
 // todo: duplicated smap definition from main.
 struct smap_t {
 	uint64_t base, length;

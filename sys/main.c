@@ -4,11 +4,6 @@
 #include <stdarg.h>
 #include <sys/paging.h>
 
-#define MAX_NUMBER_PAGES (1<<18)
-#define PAGE_SIZE (1<<12)
-#define PAGE_ALIGN (1<<12)
-#define CHAR_SIZE (1<<3)
-#define MAX_FREELIST_LENGTH (MAX_NUMBER_PAGES/CHAR_SIZE)
 int printHexIntTime(int n);
 int write_char_to_vid_mem(char c, uint64_t pos);
 void write_to_video_memory(const char* str, uint64_t position);
