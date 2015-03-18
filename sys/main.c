@@ -2,6 +2,7 @@
 #include <sys/gdt.h>
 #include <sys/tarfs.h>
 #include <stdarg.h>
+#include <sys/paging.h>
 
 int printHexIntTime(int n);
 int write_char_to_vid_mem(char c, uint64_t pos);
@@ -45,9 +46,9 @@ struct idtD {
 //parameters: the base address of the isr table, the interupt number we are mapping, handler function, type of the interrupt(trap, interrupt), segment of the handler)
 void add_int_handler(uint64_t isr_base, uint64_t isr_number,
 		uint64_t handler_name, char type, uint16_t segment_selector) {
-	uint16_t offset1 = (uint16_t)(handler_name & 0x000000000000FFFF);
-	uint16_t offset2 = (uint16_t)(handler_name >> 16 & 0x000000000000FFFF);
-	uint32_t offset3 = (uint32_t)(handler_name >> 32 & 0x00000000FFFFFFFF);
+	uint16_t offset1 = (uint16_t) (handler_name & 0x000000000000FFFF);
+	uint16_t offset2 = (uint16_t) (handler_name >> 16 & 0x000000000000FFFF);
+	uint32_t offset3 = (uint32_t) (handler_name >> 32 & 0x00000000FFFFFFFF);
 	struct idtD *isr_base1 = (struct idtD *) isr_base;
 	isr_base1[isr_number].offset_1 = offset1;
 	isr_base1[isr_number].segment_selector = segment_selector;
@@ -109,33 +110,48 @@ void init_IDT(struct lidtr_t IDT) {
 //		//__asm__ __volatile__("INT $0");
 //	}
 	//setting trap
-	for (i = 0; i <32; i++){
-		add_int_handler((uint64_t) IDT.base, i, (uint64_t) trap_default, 0xEF, 0x08);//note: we are making the type as P|RING 3|0|TRAP GATE(1111)
+	for (i = 0; i < 32; i++) {
+		add_int_handler((uint64_t) IDT.base, i, (uint64_t) trap_default, 0xEF,
+				0x08);//note: we are making the type as P|RING 3|0|TRAP GATE(1111)
 	}
-	for ( i =32; i < 256; i++){
-		add_int_handler((uint64_t) IDT.base, i, (uint64_t) isr_default, 0xEE, 0x08);//note: we are making type as P|RING 3|0|INTERRUPT GATE(1110)
+	for (i = 32; i < 256; i++) {
+		add_int_handler((uint64_t) IDT.base, i, (uint64_t) isr_default, 0xEE,
+				0x08);//note: we are making type as P|RING 3|0|INTERRUPT GATE(1110)
 	}
 }
 
 void start(uint32_t* modulep, void* physbase, void* physfree) {
+	printf("physbase:%p, physfree:%p\n", physbase, physfree);
 //	char str[] = "__its_!@#$%^&*()_dangerous__";
-	printf("Welcome to your own OS %d %x %x %d %d %c %x %s %p %p\n", -2147483648, -2147483648, 0, 0x80000000, 0x7fffffff, 'e', 0xa35d);
+	printf("Welcome to your own OS %d %x %x %d %d %c %x %s %p %p\n",
+			-2147483648, -2147483648, 0, 0x80000000, 0x7fffffff, 'e', 0xa35d);
 //	for (int i = 0; i < 500; i++)
 //		printf("%s~~%d\t", str, i);
 //	printf("pri\rnting all ascii\n");
 //	for (int i = 0; i < 256; i++)
 //		printf("%d:%c", i, i);
+
+	int before = 0x1;
+	int after = set_bit(before, 0, 1);
+	printf("res before and after %x:%x\n", before, after);
+
+	uint64_t to = 0xbbbbaaaa8bcd;
+	uint64_t from = 0xffffffff2edab01f;
+	to = extract_bits(from, 16, 31, to, 32, 47);
+	printf("copied from %p to %p\n", from, to);
+
 	struct smap_t {
 		uint64_t base, length;
 		uint32_t type;
 	}__attribute__((packed)) *smap;
-	while (modulep[0] != 0x9001){
+	while (modulep[0] != 0x9001) {
 		modulep += modulep[1] + 2;
 	}
 	for (smap = (struct smap_t*) (modulep + 2);
 			smap < (struct smap_t*) ((char*) modulep + modulep[1] + 2 * 4);
 			++smap) {
 		if (smap->type == 1 /* memory */&& smap->length != 0) {
+			printf("Length of memory:%d\n", smap->length);
 			printf("Available Physical Memory [%x-%x]\n", smap->base,
 					smap->base + smap->length);
 		}
@@ -157,10 +173,7 @@ extern char kernmem, physbase;
 struct tss_t tss;
 struct idtD idt_tab[255];
 //struct lidtr_t IDT;
-static struct lidtr_t lidtr = {
-	0x1000,
-	(uint64_t)(idt_tab),
-};
+static struct lidtr_t lidtr = { 0x1000, (uint64_t) (idt_tab), };
 void init_init_IDT() {
 	__asm__ __volatile("lidt (%0)"
 			:
@@ -168,8 +181,10 @@ void init_init_IDT() {
 	init_IDT(lidtr);
 }
 void add_custom_interrupt() {
-	add_int_handler((uint64_t) lidtr.base, 32, (uint64_t) isr_timer, 0xEE, 0x08); //mode set to present|Ring 3|Interrupt   - Segment usual kernel segments
-	add_int_handler((uint64_t) lidtr.base, 33, (uint64_t) isr_keyboard, 0xEE,0x08);
+	add_int_handler((uint64_t) lidtr.base, 32, (uint64_t) isr_timer, 0xEE,
+			0x08); //mode set to present|Ring 3|Interrupt   - Segment usual kernel segments
+	add_int_handler((uint64_t) lidtr.base, 33, (uint64_t) isr_keyboard, 0xEE,
+			0x08);
 
 }
 void boot(void) {
@@ -193,8 +208,8 @@ void boot(void) {
 			"outb  %al, $0x21\n\t");
 	__asm__ ("sti");
 	start(
-			(uint32_t*) ((char*) (uint64_t) loader_stack[3] + (uint64_t)
-					& kernmem - (uint64_t) & physbase), &physbase,
+			(uint32_t*) ((char*) (uint64_t) loader_stack[3]
+					+ (uint64_t) &kernmem - (uint64_t) &physbase), &physbase,
 			(void*) (uint64_t) loader_stack[4]);
 
 	//s = "!!!!! start() returned !!!!!";
