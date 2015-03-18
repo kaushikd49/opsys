@@ -129,21 +129,21 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	printf("physbase:%p, physfree:%p\n", physbase, physfree);
 //	char str[] = "__its_!@#$%^&*()_dangerous__";
 	printf("Welcome to your own OS %d %x %x %d %d %c %x %s %p %p\n",
-			-2147483648, -2147483648, 0, 0x80000000, 0x7fffffff, 'e', 0xa35d);
+			-2147483648, -2147483648, 0, 0x80000000, 0x7fffffff, 'e', 0xa35d,"oolala", &physbase, &physfree);
 //	for (int i = 0; i < 500; i++)
 //		printf("%s~~%d\t", str, i);
 //	printf("pri\rnting all ascii\n");
 //	for (int i = 0; i < 256; i++)
 //		printf("%d:%c", i, i);
 
-	int before = 0x1;
-	int after = set_bit(before, 0, 1);
-	printf("res before and after %x:%x\n", before, after);
-
-	uint64_t to = 0xbbbbaaaa8bcd;
-	uint64_t from = 0xffffffff2edab01f;
-	to = extract_bits(from, 16, 31, to, 32, 47);
-	printf("copied from %p to %p\n", from, to);
+//	int before = 0x1;
+//	int after = set_bit(before, 0, 1);
+//	printf("res before and after %x:%x\n", before, after);
+//
+//	uint64_t to = 0xbbbbaaaa8bcd;
+//	uint64_t from = 0xffffffff2edab01f;
+//	to = extract_bits(from, 16, 31, to, 32, 47);
+//	printf("copied from %p to %p\n", from, to);
 
 //	struct smap_t {
 //		uint64_t base, length;
@@ -164,7 +164,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	}
 	printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 	// kernel starts here
-	manage_memory(physfree, modulep);
+	manage_memory(physbase, physfree, modulep);
 }
 
 #define INITIAL_STACK_SIZE 4096

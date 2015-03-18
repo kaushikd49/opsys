@@ -13,77 +13,10 @@
 #define CHAR_SIZE (1<<3)
 #define MAX_FREELIST_LENGTH (MAX_NUMBER_PAGES/CHAR_SIZE)
 
-//uint64_t get_free_pages();
-uint64_t * pml_base_ptr = NULL;
+uint64_t * pml_base_ptr = NULL; // equivalent to CR3
 
-// todo: dummy below
-uint64_t * get_free_pages() {
-	return (uint64_t *) 1;
-}
-
-uint64_t set_bit(uint64_t ele, int bit_num, int bit_val) {
-	uint64_t bit_in_uint64 = ULONG_ONE << bit_num;
-	if (bit_val == 1)
-		ele |= bit_in_uint64; // set
-	else
-		ele &= ~bit_in_uint64; // unset
-	return ele;
-}
-
-uint64_t extract_bits(uint64_t from, int fstart_bit, int fend_bit, uint64_t to,
-		int tstart_bit, int tend_bit) {
-	// start and end both are inclusive
-	for (int i = fstart_bit, j = tstart_bit; i <= fend_bit; i++, j++) {
-		uint64_t bit_in_uint64 = ULONG_ONE << i;
-		unsigned int ith_bit = (from & bit_in_uint64) >> i;
-		to = set_bit(to, j, ith_bit);
-	}
-	return to;
-}
-
-// todo: dummy below
-uint64_t get_pml4_entry() {
-	uint64_t entry = set_bit(ULONG_ZERO, 0, 1); // Present
-	entry = set_bit(ULONG_ZERO, 1, 1); // Read/Write
-	// 51:12 fill 40 bit address
-	// 0, 1,
-	return entry;
-}
-
-uint64_t get_pdpt_entry() {
-	return 1;
-}
-
-uint64_t get_pd_entry() {
-	return 1;
-}
-
-uint64_t get_ptable_entry() {
-	return 1;
-}
-// todo: dummy above
-
-void set_paging(int pml4_num, int pdir_ptr_num, int dir_num, int table_num) {
-	if (pml4_num > PML_SIZE || pdir_ptr_num > PDPTR_SIZE || dir_num > PD_SIZE
-			|| table_num > PT_SIZE) {
-//		printf("dirnum or tablenum exeecind limits. exiting");
-		return;// no exit yet
-	}
-
-	if (pml_base_ptr == NULL) {
-		pml_base_ptr = get_free_pages();
-	}
-
-	uint64_t *pdir_ptr = get_free_pages();
-	uint64_t *pdir = get_free_pages();
-	uint64_t *ptable = get_free_pages();
-
-	*(pml_base_ptr + pml4_num - 1) = get_pml4_entry();
-	*(pdir_ptr + pdir_ptr_num - 1) = get_pdpt_entry();
-	*(pdir + dir_num - 1) = get_pd_entry();
-	*(ptable + table_num - 1) = get_ptable_entry();
-
-}
+char* free_list = NULL;
+uint64_t free_list_location = ULONG_ZERO;
 
 // todo: duplicated smap definition from main.
 struct smap_t {
@@ -151,24 +84,184 @@ void return_page(uint64_t page, char *free_list) {
 	}
 }
 
-void manage_memory(void* physfree, uint32_t* modulep) {
+// todo: dummy below
+uint64_t * get_free_frame() {
+	uint64_t freePage = get_free_page(free_list);
+	printf("returning freepage:%p\n", freePage);
+	return (uint64_t *) freePage;
+}
+
+uint64_t set_bit(uint64_t ele, int bit_num, int bit_val) {
+	uint64_t bit_in_uint64 = ULONG_ONE << bit_num;
+	if (bit_val == 1)
+		ele |= bit_in_uint64; // set
+	else
+		ele &= ~bit_in_uint64; // unset
+	return ele;
+}
+
+uint64_t extract_bits(uint64_t from, int fstart_bit, int fend_bit, uint64_t to,
+		int tstart_bit, int tend_bit) {
+	// start and end both are inclusive
+	for (int i = fstart_bit, j = tstart_bit; i <= fend_bit; i++, j++) {
+		uint64_t bit_in_uint64 = ULONG_ONE << i;
+		unsigned int ith_bit = (from & bit_in_uint64) >> i;
+		to = set_bit(to, j, ith_bit);
+	}
+	return to;
+}
+
+uint64_t get40bit_addr(uint64_t entry, uint64_t extract_from) {
+	// 51:12 fill 40 bit address
+	entry = extract_bits(extract_from, 12, 51, entry, 12, 51);
+	return entry;
+}
+
+uint64_t get_pml4_entry(uint64_t pdir_ptr) {
+	uint64_t entry = set_bit(ULONG_ZERO, 0, 1); // Present
+	entry = set_bit(entry, 1, 1); // Read/Write
+	return get40bit_addr(entry, pdir_ptr);
+}
+
+uint64_t get_pdpt_entry(uint64_t pdir) {
+	uint64_t entry = set_bit(ULONG_ZERO, 0, 1); // Present
+	entry = set_bit(entry, 1, 1); // Read/Write
+	return get40bit_addr(entry, pdir);
+}
+
+uint64_t get_pd_entry(uint64_t ptable) {
+	uint64_t entry = set_bit(ULONG_ZERO, 0, 1); // Present
+	entry = set_bit(entry, 1, 1); // Read/Write
+	return get40bit_addr(entry, ptable);
+}
+
+uint64_t get_ptable_entry(uint64_t physical_addr) {
+	uint64_t entry = set_bit(ULONG_ZERO, 0, 1); // Present
+	entry = set_bit(entry, 1, 1); // Read/Write
+	return get40bit_addr(entry, physical_addr);
+}
+// todo: dummy above
+
+struct paging_entities {
+	int page_index;
+	int table_index;
+	int dir_index;
+	int pdir_ptr_index;
+	int pml_index;
+}__attribute__((packed));
+
+// For given linear address, set various paging entities' indexes
+void get_paging_entity_indexes(struct paging_entities* p_entities,
+		uint64_t linear_addr) {
+	p_entities->page_index = (int) extract_bits(linear_addr, 0, 11, 0, 0, 11); // may not need this
+	p_entities->table_index = (int) extract_bits(linear_addr, 12, 20, 0, 0, 8);
+	p_entities->dir_index = (int) extract_bits(linear_addr, 21, 29, 0, 0, 8);
+	p_entities->pdir_ptr_index = (int) extract_bits(linear_addr, 30, 38, 0, 0,
+			8);
+	p_entities->pml_index = (int) extract_bits(linear_addr, 39, 47, 0, 0, 8);
+}
+
+uint64_t * set_paging(uint64_t linear_addr, uint64_t physical_addr) {
+	struct paging_entities pe;
+	get_paging_entity_indexes(&pe, linear_addr);
+
+	if (pml_base_ptr == NULL) {
+		pml_base_ptr = get_free_frame();
+	}
+
+	uint64_t *pdir_ptr = get_free_frame();
+	uint64_t *pdir = get_free_frame();
+	uint64_t *ptable = get_free_frame();
+//	uint64_t *page = get_free_frame();
+
+	printf("pml_base_ptr + pe.pml_index  %p\n", pml_base_ptr + pe.pml_index);
+	printf("pdir_ptr + pe.pdir_ptr_index  %p\n", pdir_ptr + pe.pdir_ptr_index);
+	printf("pdir + pe.dir_index %p\n", pdir + pe.dir_index);
+	printf("ptable + pe.table_index %p\n", ptable + pe.table_index);
+
+	*(pml_base_ptr + pe.pml_index) = get_pml4_entry(*pdir_ptr);
+	*(pdir_ptr + pe.pdir_ptr_index) = get_pdpt_entry(*pdir);
+	*(pdir + pe.dir_index) = get_pd_entry(*ptable);
+	*(ptable + pe.table_index) = get_ptable_entry(physical_addr);
+	return ptable + pe.table_index;
+}
+
+int is_not_allocated(uint64_t* entry) {
+	return *entry == 0; //todo: check this logic
+}
+
+// Entity - pml, pdir_ptr, pdir or ptable
+// Return whether pml, pdir_ptr, pdir or ptable is not present
+// Status for each would be indicated by 1,2,3,4 respectively
+// If all are present, then return 0.
+// Also set the deepest entity present to deepest_entity
+int page_lookup(uint64_t linear_addr, uint64_t* deepest_entity) {
+	struct paging_entities pe;
+	get_paging_entity_indexes(&pe, linear_addr);
+	uint64_t *pml = pml_base_ptr + pe.pml_index;
+	printf("pml lookup %p\n", pml);
+	if (is_not_allocated(pml)) {
+		return 1;
+	} else {
+		*deepest_entity = (uint64_t) pml;
+		extract_bits(*pml, 12, 51, ULONG_ZERO, 12, 51);
+		uint64_t *pdir_ptr = pml + pe.pdir_ptr_index;
+		printf("pdir_ptr lookup %p\n", pdir_ptr);
+		if (is_not_allocated(pdir_ptr)) {
+			return 2;
+		} else {
+			*deepest_entity = (uint64_t) pdir_ptr;
+			uint64_t *pdir = pdir_ptr + pe.dir_index;
+			printf("pdir lookup %p\n", pdir);
+			if (is_not_allocated(pdir)) {
+				return 3;
+			} else {
+				*deepest_entity = (uint64_t) pdir;
+				uint64_t *ptable = pdir + pe.table_index;
+				printf("ptable lookup %p\n", ptable);
+				if (is_not_allocated(ptable)) {
+					return 4;
+				} else {
+					*deepest_entity = (uint64_t) ptable;
+					return 0;
+				}
+			}
+		}
+	}
+}
+
+void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 	// kernel starts here
 	printf("\ncreating free list");
 	uint64_t temp = (uint64_t) physfree;
 	printf("\nlocation of physfree+temp: %x", temp);
-	uint64_t free_list_location = (uint64_t) ((((uint64_t) physfree)
-			& (~(PAGE_SIZE - 1))) + (PAGE_SIZE));
-	printf("\nlocation of free list: %x", free_list_location);
-	char* free_list = (char*) (free_list_location);
+
+	if (free_list_location == ULONG_ZERO) {
+		free_list_location = (uint64_t) ((((uint64_t) physfree)
+				& (~(PAGE_SIZE - 1))) + (PAGE_SIZE));
+		printf("\nlocation of free list: %x", free_list_location);
+	}
+	if (free_list == NULL) {
+		free_list = (char*) (free_list_location);
+	}
+
 	create_free_list(modulep, free_list);
+
 	uint64_t ret = get_free_page(free_list);
-	printf("\nans: %x", ret);
+	printf("\nans: %p", ret);
+
 	ret = get_free_page(free_list);
-	printf("\nans: %x", ret);
+	printf("\nans: %p", ret);
 	return_page(ret, free_list);
+
 	ret = get_free_page(free_list);
-	printf("\nans: %x", ret);
+	printf("\nans: %p", ret);
 	return_page(0x1000, free_list);
-	printf("\ndone");
+
+	uint64_t* deepest_entity = NULL;
+	set_paging(0xffffffff80200000, (uint64_t) physbase);
+	int res = page_lookup(0xffffffff80200000, deepest_entity);
+
+	printf("lookup res is:%d, deepest-entity%p", res, *deepest_entity);
 }
 
