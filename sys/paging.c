@@ -174,20 +174,39 @@ uint64_t * set_paging(uint64_t linear_addr, uint64_t physical_addr) {
 	uint64_t *ptable = get_free_frame();
 //	uint64_t *page = get_free_frame();
 
+	printf("pdirptr %p\n", pdir_ptr);
+	printf("pdir %p\n", pdir);
+	printf("ptable %p\n", ptable);
+
 	printf("pml_base_ptr + pe.pml_index  %p\n", pml_base_ptr + pe.pml_index);
 	printf("pdir_ptr + pe.pdir_ptr_index  %p\n", pdir_ptr + pe.pdir_ptr_index);
 	printf("pdir + pe.dir_index %p\n", pdir + pe.dir_index);
 	printf("ptable + pe.table_index %p\n", ptable + pe.table_index);
 
-	*(pml_base_ptr + pe.pml_index) = get_pml4_entry(*pdir_ptr);
-	*(pdir_ptr + pe.pdir_ptr_index) = get_pdpt_entry(*pdir);
-	*(pdir + pe.dir_index) = get_pd_entry(*ptable);
+	*(pml_base_ptr + pe.pml_index) = get_pml4_entry((uint64_t) pdir_ptr);
+	*(pdir_ptr + pe.pdir_ptr_index) = get_pdpt_entry((uint64_t) pdir);
+	*(pdir + pe.dir_index) = get_pd_entry((uint64_t) ptable);
 	*(ptable + pe.table_index) = get_ptable_entry(physical_addr);
+
+	printf("stored pml_base_ptr + pe.pml_index  %p\n",
+			*(pml_base_ptr + pe.pml_index));
+	printf("stored pdir_ptr + pe.pdir_ptr_index  %p\n",
+			*(pdir_ptr + pe.pdir_ptr_index));
+	printf("stored pdir + pe.dir_index %p\n", *(pdir + pe.dir_index));
+	printf("stored ptable + pe.table_index %p\n", *(ptable + pe.table_index));
+
 	return ptable + pe.table_index;
 }
 
 int is_not_allocated(uint64_t* entry) {
 	return *entry == 0; //todo: check this logic
+}
+
+uint64_t* next_entity_entry(uint64_t* entity_entry, int offset) {
+	uint64_t *next_entity_base = (uint64_t *) get40bit_addr(ULONG_ZERO,
+			*entity_entry);
+	uint64_t* next_entry = next_entity_base + offset;
+	return next_entry;
 }
 
 // Entity - pml, pdir_ptr, pdir or ptable
@@ -198,26 +217,29 @@ int is_not_allocated(uint64_t* entry) {
 int page_lookup(uint64_t linear_addr, uint64_t* deepest_entity) {
 	struct paging_entities pe;
 	get_paging_entity_indexes(&pe, linear_addr);
+
 	uint64_t *pml = pml_base_ptr + pe.pml_index;
 	printf("pml lookup %p\n", pml);
+
 	if (is_not_allocated(pml)) {
 		return 1;
 	} else {
 		*deepest_entity = (uint64_t) pml;
-		extract_bits(*pml, 12, 51, ULONG_ZERO, 12, 51);
-		uint64_t *pdir_ptr = pml + pe.pdir_ptr_index;
+		uint64_t* pdir_ptr = next_entity_entry(pml, pe.pdir_ptr_index);
 		printf("pdir_ptr lookup %p\n", pdir_ptr);
+
 		if (is_not_allocated(pdir_ptr)) {
 			return 2;
 		} else {
 			*deepest_entity = (uint64_t) pdir_ptr;
-			uint64_t *pdir = pdir_ptr + pe.dir_index;
+			uint64_t* pdir = next_entity_entry(pdir_ptr, pe.dir_index);
 			printf("pdir lookup %p\n", pdir);
+
 			if (is_not_allocated(pdir)) {
 				return 3;
 			} else {
 				*deepest_entity = (uint64_t) pdir;
-				uint64_t *ptable = pdir + pe.table_index;
+				uint64_t* ptable = next_entity_entry(pdir, pe.table_index);
 				printf("ptable lookup %p\n", ptable);
 				if (is_not_allocated(ptable)) {
 					return 4;
