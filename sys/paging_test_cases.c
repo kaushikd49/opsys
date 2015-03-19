@@ -65,5 +65,6 @@ void testLookup() {
 
 void pagingTests(void* physbase, void* physfree, uint32_t* modulep) {
 	manage_memory(physbase, physfree, modulep);
-	testLookup();
+	print_result_check(0xffffffff80210000, 0);
+//	testLookup();
 }

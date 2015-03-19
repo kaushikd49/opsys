@@ -13,7 +13,6 @@
 #define CHAR_SIZE (1<<3)
 #define MAX_FREELIST_LENGTH (MAX_NUMBER_PAGES/CHAR_SIZE)
 
-
 # define NULL1 ((void*)1)
 # define NULL2 ((void*)2)
 
@@ -245,10 +244,14 @@ int page_lookup(uint64_t linear_addr, uint64_t* deepest_entity,
 	struct paging_entities pe;
 	get_paging_entity_indexes(&pe, linear_addr);
 
-	// reset
 	//todo: check if the sentinel 0 is ok
 	*deepest_entity = *deepest_entity_base = 0;
-	//todo: check if pml_base_ptr is not set
+
+	if (pml_base_ptr == NULL) {
+		printf("Error: pml_base_ptr is NULL");
+		return -1;
+	}
+
 	uint64_t *pml = pml_base_ptr + pe.pml_index;
 	printf("pml lookup %p\n", pml);
 
@@ -258,7 +261,8 @@ int page_lookup(uint64_t linear_addr, uint64_t* deepest_entity,
 		*deepest_entity = (uint64_t) pml;
 		*deepest_entity_base = (uint64_t) pml_base_ptr;
 		uint64_t* pdir_ptr = next_entity_entry(pml, pe.pdir_ptr_index);
-		printf("pdir_ptr lookup %p, deepentity:%p\n", pdir_ptr, *deepest_entity);
+		printf("pdir_ptr lookup %p, deepentity:%p\n", pdir_ptr,
+				*deepest_entity);
 
 		if (is_entry_not_created(pdir_ptr)) {
 			return 2;
@@ -274,7 +278,8 @@ int page_lookup(uint64_t linear_addr, uint64_t* deepest_entity,
 				*deepest_entity = (uint64_t) pdir;
 				*deepest_entity_base = (uint64_t) next_entity_base(pdir_ptr);
 				uint64_t* ptable = next_entity_entry(pdir, pe.table_index);
-				printf("ptable lookup %p, deepentity:%p\n", ptable, *deepest_entity);
+				printf("ptable lookup %p, deepentity:%p\n", ptable,
+						*deepest_entity);
 				if (is_entry_not_created(ptable)) {
 					return 4;
 				} else {
@@ -341,7 +346,6 @@ uint64_t * setup_page_tables(uint64_t linear_addr, uint64_t physical_addr) {
 	if (pml_base_ptr == NULL)
 		pml_base_ptr = get_free_frame();
 
-
 	// USE OF THE LOCAL VARS BELOW IS VERY IMPOROTANT.
 	// USED NULL TO INITIALIZE PTRS BELOW AND CHANGE
 	// OF VALUE OF ONE AFFECTED ANOTHER!
@@ -373,10 +377,9 @@ uint64_t * setup_page_tables(uint64_t linear_addr, uint64_t physical_addr) {
 				deepest_entity_base);
 		returnPtable = ptable;
 	} else {
-		printf("yay already set! ");
 		uint64_t* pt_base = (uint64_t *) (*deepest_entity_base);
-		printf("found page with PTE:%p, pt base:%p\n", *(pt_base + pe.table_index),
-				pt_base);
+		printf("found page with PTE:%p, pt base:%p\n",
+				*(pt_base + pe.table_index), pt_base);
 		*(pt_base + pe.table_index) = get_ptable_entry(physical_addr);
 		printf("phys addr given:%p, after re-updation %p\n", physical_addr,
 				*(pt_base + pe.table_index));
