@@ -111,7 +111,7 @@ uint64_t extract_bits(uint64_t from, int fstart_bit, int fend_bit, uint64_t to,
 	return to;
 }
 
-uint64_t get40bit_addr(uint64_t entry, uint64_t extract_from) {
+uint64_t update40bit_addr(uint64_t entry, uint64_t extract_from) {
 	// 51:12 fill 40 bit address
 	entry = extract_bits(extract_from, 12, 51, entry, 12, 51);
 	return entry;
@@ -120,26 +120,43 @@ uint64_t get40bit_addr(uint64_t entry, uint64_t extract_from) {
 uint64_t get_pml4_entry(uint64_t pdir_ptr) {
 	uint64_t entry = set_bit(ULONG_ZERO, 0, 1); // Present
 	entry = set_bit(entry, 1, 1); // Read/Write
-	return get40bit_addr(entry, pdir_ptr);
+	return update40bit_addr(entry, pdir_ptr);
+}
+
+void set_pml4_entry(uint64_t* pml4_entry, uint64_t pdir_ptr) {
+	*pml4_entry = update40bit_addr(*pml4_entry, pdir_ptr);
 }
 
 uint64_t get_pdpt_entry(uint64_t pdir) {
 	uint64_t entry = set_bit(ULONG_ZERO, 0, 1); // Present
 	entry = set_bit(entry, 1, 1); // Read/Write
-	return get40bit_addr(entry, pdir);
+	return update40bit_addr(entry, pdir);
+}
+
+void set_pdirptr_entry(uint64_t* pdir_ptr_entry, uint64_t pdir) {
+	*pdir_ptr_entry = update40bit_addr(*pdir_ptr_entry, pdir);
 }
 
 uint64_t get_pd_entry(uint64_t ptable) {
 	uint64_t entry = set_bit(ULONG_ZERO, 0, 1); // Present
 	entry = set_bit(entry, 1, 1); // Read/Write
-	return get40bit_addr(entry, ptable);
+	return update40bit_addr(entry, ptable);
+}
+
+void set_pd_entry(uint64_t* pdir_entry, uint64_t ptable) {
+	*pdir_entry = update40bit_addr(*pdir_entry, ptable);
 }
 
 uint64_t get_ptable_entry(uint64_t physical_addr) {
 	uint64_t entry = set_bit(ULONG_ZERO, 0, 1); // Present
 	entry = set_bit(entry, 1, 1); // Read/Write
-	return get40bit_addr(entry, physical_addr);
+	return update40bit_addr(entry, physical_addr);
 }
+
+void set_pt_entry(uint64_t* pt_entry, uint64_t physical_addr){
+	*pt_entry = update40bit_addr(*pt_entry, physical_addr);
+}
+
 // todo: dummy above
 
 struct paging_entities {
@@ -203,7 +220,7 @@ int is_not_allocated(uint64_t* entry) {
 }
 
 uint64_t* next_entity_entry(uint64_t* entity_entry, int offset) {
-	uint64_t *next_entity_base = (uint64_t *) get40bit_addr(ULONG_ZERO,
+	uint64_t *next_entity_base = (uint64_t *) update40bit_addr(ULONG_ZERO,
 			*entity_entry);
 	uint64_t* next_entry = next_entity_base + offset;
 	return next_entry;
@@ -252,8 +269,72 @@ int page_lookup(uint64_t linear_addr, uint64_t* deepest_entity) {
 	}
 }
 
+uint64_t * setup_page_tables(uint64_t linear_addr, uint64_t physical_addr) {
+	struct paging_entities pe;
+	get_paging_entity_indexes(&pe, linear_addr);
+
+	if (pml_base_ptr == NULL)
+		pml_base_ptr = get_free_frame();
+
+	uint64_t * deepest_entity = NULL;
+	uint64_t *returnPtable = NULL;
+	int res = page_lookup(linear_addr, deepest_entity);
+
+	if (res == 1) {
+		// No entities are present for this linear address
+		uint64_t *pdir_ptr = get_free_frame();
+		uint64_t *pdir = get_free_frame();
+		uint64_t *ptable = get_free_frame();
+
+		*(pml_base_ptr + pe.pml_index) = get_pml4_entry((uint64_t) pdir_ptr);
+		*(pdir_ptr + pe.pdir_ptr_index) = get_pdpt_entry((uint64_t) pdir);
+		*(pdir + pe.dir_index) = get_pd_entry((uint64_t) ptable);
+		*(ptable + pe.table_index) = get_ptable_entry(physical_addr);
+		returnPtable = ptable;
+	} else if (res == 2) {
+		// only pml is present for this linear address
+		uint64_t *pml4_entry = (uint64_t *) (*deepest_entity);
+		uint64_t* pdir_ptr = get_free_frame();
+		set_pml4_entry(pml4_entry, (uint64_t) pdir_ptr);
+
+		uint64_t *pdir = get_free_frame();
+		uint64_t *ptable = get_free_frame();
+
+		*(pdir_ptr + pe.pdir_ptr_index) = get_pdpt_entry((uint64_t) pdir);
+		*(pdir + pe.dir_index) = get_pd_entry((uint64_t) ptable);
+		*(ptable + pe.table_index) = get_ptable_entry(physical_addr);
+		returnPtable = ptable;
+	} else if (res == 3) {
+		// pml and pdir_ptr are present for this linear address
+		uint64_t* pdir_ptr_entry = (uint64_t *) (*deepest_entity);
+		uint64_t *pdir = get_free_frame();
+		set_pdirptr_entry(pdir_ptr_entry, (uint64_t) pdir);
+		uint64_t *ptable = get_free_frame();
+
+		*(pdir + pe.dir_index) = get_pd_entry((uint64_t) ptable);
+		*(ptable + pe.table_index) = get_ptable_entry(physical_addr);
+		returnPtable = ptable;
+	} else if (res == 4) {
+		// pml, pdir_ptr and pdir are present for this linear address, but not ptable
+		uint64_t* pdir_entry = (uint64_t *) (*deepest_entity);
+		uint64_t *ptable = get_free_frame();
+		set_pd_entry(pdir_entry, (uint64_t) ptable);
+
+		*(ptable + pe.table_index) = get_ptable_entry(physical_addr);
+		returnPtable = ptable;
+	} else {
+		printf("yay already set! ");
+		uint64_t* pt_entry = (uint64_t *) (*deepest_entity);
+		printf("found PTE:%p, phys addr given:%p\n", *pt_entry, physical_addr);
+		set_pt_entry(pt_entry, physical_addr);
+		printf("after re-updation %p\n", *pt_entry);
+	}
+
+	return returnPtable + pe.table_index;
+}
+
 void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
-	// kernel starts here
+// kernel starts here
 	printf("\ncreating free list");
 	uint64_t temp = (uint64_t) physfree;
 	printf("\nlocation of physfree+temp: %x", temp);
@@ -281,7 +362,8 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 	return_page(0x1000, free_list);
 
 	uint64_t* deepest_entity = NULL;
-	set_paging(0xffffffff80200000, (uint64_t) physbase);
+	setup_page_tables(0xffffffff80200000, (uint64_t) physbase);
+	setup_page_tables(0xffffffff80210000, (uint64_t) physbase);
 	int res = page_lookup(0xffffffff80200000, deepest_entity);
 
 	printf("lookup res is:%d, deepest-entity:%p, its value:%p\n", res,
