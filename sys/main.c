@@ -164,7 +164,8 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	}
 	printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 	// kernel starts here
-	manage_memory(physbase, physfree, modulep);
+//	manage_memory(physbase, physfree, modulep);
+	pagingTests(physbase, physfree, modulep);
 }
 
 #define INITIAL_STACK_SIZE 4096
