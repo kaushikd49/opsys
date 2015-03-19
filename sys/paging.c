@@ -87,7 +87,6 @@ void return_page(uint64_t page, char *free_list) {
 	}
 }
 
-// todo: dummy below
 uint64_t * get_free_frame() {
 	uint64_t freePage = get_free_page(free_list);
 	printf("returning freepage:%p\n", freePage);
@@ -126,18 +125,10 @@ uint64_t get_pml4_entry(uint64_t pdir_ptr) {
 	return update40bit_addr(entry, pdir_ptr);
 }
 
-void set_pml4_entry(uint64_t* pml4_entry, uint64_t pdir_ptr) {
-	*pml4_entry = update40bit_addr(*pml4_entry, pdir_ptr);
-}
-
 uint64_t get_pdpt_entry(uint64_t pdir) {
 	uint64_t entry = set_bit(ULONG_ZERO, 0, 1); // Present
 	entry = set_bit(entry, 1, 1); // Read/Write
 	return update40bit_addr(entry, pdir);
-}
-
-void set_pdirptr_entry(uint64_t* pdir_ptr_entry, uint64_t pdir) {
-	*pdir_ptr_entry = update40bit_addr(*pdir_ptr_entry, pdir);
 }
 
 uint64_t get_pd_entry(uint64_t ptable) {
@@ -146,21 +137,11 @@ uint64_t get_pd_entry(uint64_t ptable) {
 	return update40bit_addr(entry, ptable);
 }
 
-void set_pd_entry(uint64_t* pdir_entry, uint64_t ptable) {
-	*pdir_entry = update40bit_addr(*pdir_entry, ptable);
-}
-
 uint64_t get_ptable_entry(uint64_t physical_addr) {
 	uint64_t entry = set_bit(ULONG_ZERO, 0, 1); // Present
 	entry = set_bit(entry, 1, 1); // Read/Write
 	return update40bit_addr(entry, physical_addr);
 }
-
-void set_pt_entry(uint64_t* pt_entry, uint64_t physical_addr) {
-	*pt_entry = update40bit_addr(*pt_entry, physical_addr);
-}
-
-// todo: dummy above
 
 struct paging_entities {
 	int page_index;
@@ -378,9 +359,12 @@ uint64_t * setup_page_tables(uint64_t linear_addr, uint64_t physical_addr) {
 		returnPtable = ptable;
 	} else {
 		uint64_t* pt_base = (uint64_t *) (*deepest_entity_base);
+
 		printf("found page with PTE:%p, pt base:%p\n",
 				*(pt_base + pe.table_index), pt_base);
+
 		*(pt_base + pe.table_index) = get_ptable_entry(physical_addr);
+
 		printf("phys addr given:%p, after re-updation %p\n", physical_addr,
 				*(pt_base + pe.table_index));
 		returnPtable = pt_base;
