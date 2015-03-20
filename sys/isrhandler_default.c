@@ -15,4 +15,13 @@ void isrhandler_default(){
 void traphandler_default(){
 	printf("trap occurred, trap handler not mapped ");
 }
+void traphandler_two(){
+	printf("trap two");
+}
+void traphandler_thirteen(){
+	printf("trap thirteen");
+}
+void traphandler_eight(){
+	printf("trap eight");
+}
 #endif

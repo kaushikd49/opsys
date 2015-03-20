@@ -6,8 +6,7 @@ display/x $rdx
 display/x $rdi
 display/x $rsi
 display/x $rbp
-display/32xw $rsp
-break boot
+break manage_memory 
 target remote localhost:9998 
 
 

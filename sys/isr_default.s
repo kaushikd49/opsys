@@ -5,6 +5,9 @@
 .global isr_keyboard
 .global keyboard_init
 .global trap_default
+.global trap_two
+.global trap_eight
+.global trap_thirteen
 .align 4
 
 isr_default:
@@ -66,6 +69,97 @@ trap_default:
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
 	sti
 	iretq
+
+trap_two:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_two
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_eight:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_eight
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_thirteen:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_thirteen
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
 
 
 

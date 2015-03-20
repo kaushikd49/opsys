@@ -95,7 +95,7 @@ void return_page(uint64_t page, char *free_list) {
 
 uint64_t * get_free_frame() {
 	uint64_t freePage = get_free_page(free_list);
-	printf("returning freepage:%p ", freePage);
+	//printf("returning freepage:%p ", freePage);
 	return (uint64_t *) freePage;
 }
 
@@ -367,7 +367,7 @@ void map_kernel_address(void* physbase, void* physfree) {
 	uint64_t numIters = (range / 4096) + (range % 4096);
 	printf("numIters needed %d\n", numIters);
 	for (int i = 0; i < numIters; i++) {
-		printf("accessing %p ", linear_addr);
+		//printf("accessing %p ", linear_addr);
 		setup_page_tables(linear_addr, physical_addr);
 		linear_addr += 4096;
 		physical_addr += 4096;
@@ -406,16 +406,16 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 
 	create_free_list(modulep, free_list);
 
-	uint64_t ret = get_free_page(free_list);
-	printf("\nans: %p", ret);
+	//uint64_t ret = get_free_page(free_list);
+	//printf("\nans: %p", ret);
 
-	ret = get_free_page(free_list);
-	printf("\nans: %p", ret);
-	return_page(ret, free_list);
+	//ret = get_free_page(free_list);
+	//printf("\nans: %p", ret);
+	//return_page(ret, free_list);
 
-	ret = get_free_page(free_list);
-	printf("\nans: %p", ret);
-	return_page(0x1000, free_list);
+	//ret = get_free_page(free_list);
+	//printf("\nans: %p", ret);
+	//return_page(0x1000, free_list);
 
 	map_linear_addresses(physbase, physfree);
 }
