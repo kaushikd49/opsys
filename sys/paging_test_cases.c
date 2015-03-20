@@ -35,7 +35,7 @@ void testLookup() {
 	uint64_t d = 0xffffffff81210000; //ofst:0,  tabl:16,  dir:9,  dir_ptr:510,  pml:511
 	uint64_t c = 0xffffffff21410000; //ofst:0,  tabl:16,  dir:266,  dir_ptr:508,  pml:511
 	uint64_t b = 0xfffffaba21410000; //ofst:0,  tabl:16,  dir:266,  dir_ptr:232,  pml:501
-	int linearAddr = 0x200000;
+	int linearAddr = 0x226000;
 
 	// duplicate setup for same address
 	setup_page_tables(a, linearAddr);
