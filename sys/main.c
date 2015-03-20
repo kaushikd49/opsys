@@ -196,7 +196,8 @@ void add_custom_interrupt() {
 				0x08);
 	add_int_handler((uint64_t) lidtr.base, 13, (uint64_t) trap_thirteen, 0xEF,
 				0x08);
-
+	add_int_handler((uint64_t) lidtr.base, 13, (uint64_t) trap_thirteen, 0xEF,
+					0x08);
 }
 void boot(void) {
 	// note: function changes rsp, local stack variables can't be practically used
@@ -214,9 +215,9 @@ void boot(void) {
 
 	add_custom_interrupt();
 	init_keyboard_map();
-	//keyboard_init();
-	//__asm__ ("cli");
-	__asm__ __volatile__ ("movb $0xFF, %al\n\t"
+	keyboard_init();
+	__asm__ ("cli");
+	__asm__ __volatile__ ("movb $0xFC, %al\n\t"
 			"outb  %al, $0x21\n\t");
 	__asm__ ("sti");
 	start(

@@ -385,7 +385,7 @@ void map_page_tables_adress() {
 
 void map_linear_addresses(void* physbase, void* physfree) {
 	map_kernel_address(physbase, physfree);
-	map_video_address();
+	//map_video_address();
 //	map_page_tables_adress(); todo: where to map this?
 }
 
