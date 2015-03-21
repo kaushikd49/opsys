@@ -19,6 +19,8 @@
 #define VIRTUAL_PHYSBASE 0xffffffff80200000
 #define VIRTUAL_PHYSFREE_OFFSET 0xffffffff80000000
 
+#define VIRTUAL_ADDR_VIDMEM 0xffffffff800b8000
+
 uint64_t virtual_physfree = 0; // will be set later
 uint64_t virtual_physbase = (uint64_t) VIRTUAL_PHYSBASE;
 
@@ -26,6 +28,8 @@ uint64_t * pml_base_ptr = NULL; // equivalent to CR3
 
 char* free_list = NULL;
 uint64_t free_list_location = ULONG_ZERO;
+
+extern uint64_t BASE_CURSOR_POS;
 
 // todo: duplicated smap definition from main.
 struct smap_t {
@@ -95,7 +99,7 @@ void return_page(uint64_t page, char *free_list) {
 
 uint64_t * get_free_frame() {
 	uint64_t freePage = get_free_page(free_list);
-	//printf("returning freepage:%p ", freePage);
+//	printf("returning freepage:%p ", freePage);
 	return (uint64_t *) freePage;
 }
 
@@ -242,7 +246,9 @@ int page_lookup(uint64_t linear_addr, uint64_t* deepest_entity,
 		return 1;
 	} else {
 		*deepest_entity = (uint64_t) pml;
-		*deepest_entity_base = (uint64_t) pml_base_ptr;
+		// pml entry is there but its child entry is not,
+		// so set its child frame's base as deepest_base
+		*deepest_entity_base = (uint64_t) next_entity_base(pml);
 		uint64_t* pdir_ptr = next_entity_entry(pml, pe.pdir_ptr_index);
 //		printf("pdir_ptr lookup %p, deepentity:%p\n", pdir_ptr,
 //				*deepest_entity);
@@ -251,7 +257,7 @@ int page_lookup(uint64_t linear_addr, uint64_t* deepest_entity,
 			return 2;
 		} else {
 			*deepest_entity = (uint64_t) pdir_ptr;
-			*deepest_entity_base = (uint64_t) next_entity_base(pml);
+			*deepest_entity_base = (uint64_t) next_entity_base(pdir_ptr);
 			uint64_t* pdir = next_entity_entry(pdir_ptr, pe.dir_index);
 //			printf("pdir lookup %p, deepentity:%p\n", pdir, *deepest_entity);
 
@@ -259,7 +265,7 @@ int page_lookup(uint64_t linear_addr, uint64_t* deepest_entity,
 				return 3;
 			} else {
 				*deepest_entity = (uint64_t) pdir;
-				*deepest_entity_base = (uint64_t) next_entity_base(pdir_ptr);
+				*deepest_entity_base = (uint64_t) next_entity_base(pdir);
 				uint64_t* ptable = next_entity_entry(pdir, pe.table_index);
 //				printf("ptable lookup %p, deepentity:%p\n", ptable,
 //						*deepest_entity);
@@ -367,7 +373,7 @@ void map_kernel_address(void* physbase, void* physfree) {
 	uint64_t numIters = (range / 4096) + (range % 4096);
 	printf("numIters needed %d\n", numIters);
 	for (int i = 0; i < 20; i++) {
-		if(i == 35)
+		if (i == 35)
 			printf("accessing %p ", linear_addr);
 		setup_page_tables(linear_addr, physical_addr);
 		linear_addr += 4096;
@@ -377,7 +383,16 @@ void map_kernel_address(void* physbase, void* physfree) {
 }
 
 void map_video_address() {
+	setup_page_tables(VIRTUAL_ADDR_VIDMEM, 0xb8000);
+	uint64_t abc = 1;
+	uint64_t def = 2;
+	uint64_t * deepest_entity = &abc;
+	uint64_t * deepest_entity_base = &def;
 
+	int res = page_lookup(VIRTUAL_ADDR_VIDMEM, deepest_entity,
+			deepest_entity_base);
+	printf("res:%d", res);
+	BASE_CURSOR_POS = VIRTUAL_ADDR_VIDMEM;
 }
 
 void map_page_tables_adress() {
@@ -386,8 +401,16 @@ void map_page_tables_adress() {
 
 void map_linear_addresses(void* physbase, void* physfree) {
 	map_kernel_address(physbase, physfree);
-	//map_video_address();
+	map_video_address();
 //	map_page_tables_adress(); todo: where to map this?
+}
+
+void update_cr3() {
+//	__asm__ __volatile(
+//			"movq %0 %%cr3"
+//			:
+//			:"0"(pml_base_ptr)
+//			 :"%rax");
 }
 
 void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
@@ -419,5 +442,7 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 	//return_page(0x1000, free_list);
 
 	map_linear_addresses(physbase, physfree);
+
+	update_cr3();
 }
 

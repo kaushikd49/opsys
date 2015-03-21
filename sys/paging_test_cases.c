@@ -19,14 +19,14 @@ void print_result_check(uint64_t addr_to_lookup, int expected_res) {
 	int res = page_lookup(addr_to_lookup, deepest_entity, deepest_entity_base);
 
 	if (res != expected_res) {
-		printf("!!!!!!!!!! Assert failure: expected != res %d!=%d !!!!!!!!!!!!",
-				expected_res, res);
+		printf("!!!!!!!!!! Assert failure: expected != res %d!=%d for %p!!!!!!!!!!!!\n",
+				expected_res, res, addr_to_lookup);
 	}
 
-	printf(
-			"lookup result should be %d, is:%d, deepest-entity:%p, its value:%p, deep base:%p\n",
-			expected_res, res, *deepest_entity, *(uint64_t*) (*deepest_entity),
-			*deepest_entity_base);
+//	printf(
+//			"lookup result should be %d, is:%d, deepest-entity:%p, its value:%p, deep base:%p\n",
+//			expected_res, res, *deepest_entity, *(uint64_t*) (*deepest_entity),
+//			*deepest_entity_base);
 }
 
 void testLookup() {
@@ -61,6 +61,8 @@ void testLookup() {
 	// d should be unaffected, hence 3
 	print_result_check(d, 3);
 
+	setup_page_tables(d,linearAddr);
+	print_result_check(d, 0);
 }
 
 void pagingTests(void* physbase, void* physfree, uint32_t* modulep) {

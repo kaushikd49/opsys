@@ -12,7 +12,7 @@ uint64_t TIMER_LOC = 0xb8f80;
 
 // 3 pages (excluding last line for timer)
 // worth of characters can be buffered.
-#define  NUM_SCREENS 1
+#define  NUM_SCREENS 3
 #define  VID_MEM_WRITABLE (VIDEO_COLS * (VIDEO_ROWS - 1)) // reserving last row for timer
 #define  VID_BUFFER_SIZE (VID_MEM_WRITABLE * NUM_SCREENS)
 #define  MAX_CHARS_IN_VID_BUFFER (VID_BUFFER_SIZE / 2) // 1 byte char and other for color
