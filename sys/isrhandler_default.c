@@ -15,13 +15,99 @@ void isrhandler_default(){
 void traphandler_default(){
 	printf("trap occurred, trap handler not mapped ");
 }
+void traphandler_one(){
+	printf("trap two");
+}
 void traphandler_two(){
 	printf("trap two");
+}
+
+void traphandler_three(){
+	printf("trap three");
+}
+void traphandler_four(){
+	printf("trap four");
+}
+void traphandler_five(){
+	printf("trap five");
+}
+void traphandler_six(){
+	printf("trap six");
+}
+void traphandler_seven(){
+	printf("trap seven");
+}
+void traphandler_eight(){
+	printf("trap eight");
+}
+void traphandler_nine(){
+	printf("trap nine");
+}
+
+void traphandler_ten(){
+	printf("trap ten");
+}
+void traphandler_eleven(){
+	printf("trap eleven");
+}
+void traphandler_twelve(){
+	printf("trap twelve");
 }
 void traphandler_thirteen(){
 	printf("trap thirteen");
 }
-void traphandler_eight(){
-	printf("trap eight");
+void traphandler_fourteen(){
+	printf("trap fourteen");
+}
+void traphandler_fifteen(){
+	printf("trap fifteen");
+}
+void traphandler_sixteen(){
+	printf("trap sixteen");
+}
+void traphandler_seventeen(){
+	printf("trap seventeen");
+}
+void traphandler_eighteen(){
+	printf("trap eighteen");
+}
+void traphandler_nineteen(){
+	printf("trap nineteen");
+}
+void traphandler_twenty(){
+	printf("trap twenty");
+}
+void traphandler_twentyone(){
+	printf("trap twentyone");
+}
+void traphandler_twentytwo(){
+	printf("trap twentytwo");
+}
+void traphandler_twentythree(){
+	printf("trap twentythree");
+}
+void traphandler_twentyfour(){
+	printf("trap twentyfour");
+}
+void traphandler_twentyfive(){
+	printf("trap twentyfive");
+}
+void traphandler_twentysix(){
+	printf("trap swentysix");
+}
+void traphandler_twentyseven(){
+	printf("trap twentyseven");
+}
+void traphandler_twentyeight(){
+	printf("trap twentyeight");
+}
+void traphandler_twentynine(){
+	printf("trap twentynine");
+}
+void traphandler_thirty(){
+	printf("trap thirty");
+}
+void traphandler_thirtyone(){
+	printf("trap thirtyone");
 }
 #endif

@@ -38,7 +38,7 @@ void create_free_list(uint32_t* modulep, char *free_list) {
 	uint64_t current_bit;
 	for (i = 0; i < MAX_FREELIST_LENGTH; i++) //char
 		free_list[i] = 0;
-	printf("\nfree list size%d", i);
+//	printf("\nfree list size%d", i);
 	struct smap_t* smap;
 	for (smap = (struct smap_t*) (modulep + 2);
 			smap < (struct smap_t*) ((char*) modulep + modulep[1] + 2 * 4);
@@ -181,26 +181,26 @@ uint64_t * set_paging(uint64_t linear_addr, uint64_t physical_addr) {
 	uint64_t *ptable = get_free_frame();
 //	uint64_t *page = get_free_frame();
 
-	printf("pdirptr %p\n", pdir_ptr);
-	printf("pdir %p\n", pdir);
-	printf("ptable %p\n", ptable);
+//	printf("pdirptr %p\n", pdir_ptr);
+//	printf("pdir %p\n", pdir);
+//	printf("ptable %p\n", ptable);
 
-	printf("pml_base_ptr + pe.pml_index  %p\n", pml_base_ptr + pe.pml_index);
-	printf("pdir_ptr + pe.pdir_ptr_index  %p\n", pdir_ptr + pe.pdir_ptr_index);
-	printf("pdir + pe.dir_index %p\n", pdir + pe.dir_index);
-	printf("ptable + pe.table_index %p\n", ptable + pe.table_index);
-
+//	printf("pml_base_ptr + pe.pml_index  %p\n", pml_base_ptr + pe.pml_index);
+//	printf("pdir_ptr + pe.pdir_ptr_index  %p\n", pdir_ptr + pe.pdir_ptr_index);
+//	printf("pdir + pe.dir_index %p\n", pdir + pe.dir_index);
+//	printf("ptable + pe.table_index %p\n", ptable + pe.table_index);
+//    printf("helloworld");
 	*(pml_base_ptr + pe.pml_index) = get_pml4_entry((uint64_t) pdir_ptr);
 	*(pdir_ptr + pe.pdir_ptr_index) = get_pdpt_entry((uint64_t) pdir);
 	*(pdir + pe.dir_index) = get_pd_entry((uint64_t) ptable);
 	*(ptable + pe.table_index) = get_ptable_entry(physical_addr);
 
-	printf("stored pml_base_ptr + pe.pml_index  %p\n",
-			*(pml_base_ptr + pe.pml_index));
-	printf("stored pdir_ptr + pe.pdir_ptr_index  %p\n",
-			*(pdir_ptr + pe.pdir_ptr_index));
-	printf("stored pdir + pe.dir_index %p\n", *(pdir + pe.dir_index));
-	printf("stored ptable + pe.table_index %p\n", *(ptable + pe.table_index));
+//	printf("stored pml_base_ptr + pe.pml_index  %p\n",
+//			*(pml_base_ptr + pe.pml_index));
+//	printf("stored pdir_ptr + pe.pdir_ptr_index  %p\n",
+//			*(pdir_ptr + pe.pdir_ptr_index));
+//	printf("stored pdir + pe.dir_index %p\n", *(pdir + pe.dir_index));
+//	printf("stored ptable + pe.table_index %p\n", *(ptable + pe.table_index));
 
 	return ptable + pe.table_index;
 }
@@ -231,7 +231,7 @@ int page_lookup(uint64_t linear_addr, uint64_t* deepest_entity,
 	*deepest_entity = *deepest_entity_base = 0;
 
 	if (pml_base_ptr == NULL) {
-		printf("Error: pml_base_ptr is NULL");
+//		printf("Error: pml_base_ptr is NULL");
 		return -1;
 	}
 
@@ -366,8 +366,9 @@ void map_kernel_address(void* physbase, void* physfree) {
 	uint64_t range = virtual_physfree - virtual_physbase;
 	uint64_t numIters = (range / 4096) + (range % 4096);
 	printf("numIters needed %d\n", numIters);
-	for (int i = 0; i < numIters; i++) {
-		//printf("accessing %p ", linear_addr);
+	for (int i = 0; i < 20; i++) {
+		if(i == 35)
+			printf("accessing %p ", linear_addr);
 		setup_page_tables(linear_addr, physical_addr);
 		linear_addr += 4096;
 		physical_addr += 4096;
@@ -391,14 +392,14 @@ void map_linear_addresses(void* physbase, void* physfree) {
 
 void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 // kernel starts here
-	printf("\ncreating free list");
-	uint64_t temp = (uint64_t) physfree;
-	printf("\nlocation of physfree+temp: %x", temp);
+//	printf("\ncreating free list");
+//	uint64_t temp = (uint64_t) physfree;
+//	printf("\nlocation of physfree+temp: %x", temp);
 
 	if (free_list_location == ULONG_ZERO) {
 		free_list_location = (uint64_t) ((((uint64_t) physfree)
 				& (~(PAGE_SIZE - 1))) + (PAGE_SIZE));
-		printf("\nlocation of free list: %x", free_list_location);
+//		printf("\nlocation of free list: %x", free_list_location);
 	}
 	if (free_list == NULL) {
 		free_list = (char*) (free_list_location);

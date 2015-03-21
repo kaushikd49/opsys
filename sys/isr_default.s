@@ -5,9 +5,37 @@
 .global isr_keyboard
 .global keyboard_init
 .global trap_default
+.global trap_one
 .global trap_two
+.global trap_three
+.global trap_four
+.global trap_five
+.global trap_six
+.global trap_seven
 .global trap_eight
+.global trap_nine
+.global trap_ten
+.global trap_eleven
+.global trap_twelve
 .global trap_thirteen
+.global trap_fourteen
+.global trap_fifteen
+.global trap_sixteen
+.global trap_seventeen
+.global trap_eighteen
+.global trap_nineteen
+.global trap_twenty
+.global trap_twentyone
+.global trap_twentytwo
+.global trap_twentythree
+.global trap_twentyfour
+.global trap_twentyfive
+.global trap_twentysix
+.global trap_twentyseven
+.global trap_twentyeight
+.global trap_twentynine
+.global trap_thirty
+.global trap_thirtyone
 .align 4
 
 isr_default:
@@ -69,7 +97,35 @@ trap_default:
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
 	sti
 	iretq
-
+trap_one:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_one
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
 trap_two:
 	cli
 	pushq %rax
@@ -99,6 +155,154 @@ trap_two:
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
 	sti
 	iretq
+trap_three:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_three
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+trap_four:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_four
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+trap_five:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_five
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_six:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_six
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_seven:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_seven
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
 
 trap_eight:
 	cli
@@ -129,6 +333,122 @@ trap_eight:
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
 	sti
 	iretq
+trap_nine:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_nine
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+trap_ten:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_ten
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+trap_eleven:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_eleven
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+trap_twelve:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_twelve
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
 
 trap_thirteen:
 	cli
@@ -144,6 +464,543 @@ trap_thirteen:
 	pushq %r10
 	pushq %r11
 	call traphandler_thirteen
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_fourteen:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_fourteen
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_fifteen:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_fifteen
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_sixteen:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_sixteen
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_seventeen:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_seventeen
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+trap_eighteen:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_eighteen
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+trap_nineteen:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_nineteen
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_twenty:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_twenty
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+trap_twentyone:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_twentyone
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_twentytwo:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_twentytwo
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_twentythree:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_twentythree
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_twentyfour:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_twentyfour
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_twentyfive:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_twentyfive
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_twentysix:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_twentysix
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_twentyseven:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_twentyseven
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_twentyeight:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_twentyeight
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_twentynine:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_twentynine
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_thirty:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_thirty
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	sti
+	iretq
+
+trap_thirtyone:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	call traphandler_thirtyone
 	popq %r11
 	popq %r10
 	popq %r9

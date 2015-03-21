@@ -7,7 +7,7 @@
 int printHexIntTime(int n);
 int write_char_to_vid_mem(char c, uint64_t pos);
 void write_to_video_memory(const char* str, uint64_t position);
-
+extern char video_buffer[4096];
 //try optimizing this function. see if we need to use a more refined way.
 void print_time() {
 	// with a frequency of 18.2065 Hz, a interrupt is sent every .0549254 seconds so a second happens every 18.2 calls.
@@ -97,13 +97,42 @@ void config_PIC() {
 }
 extern void isr_default();
 extern void trap_default();
-extern void trap_two();
-extern void trap_eight();
-extern void trap_thirteen();
 extern void isr_timer();
 extern void isr_keyboard();
 extern void keyboard_init();
 extern void init_keyboard_map();
+extern void trap_one();
+extern void trap_two();
+extern void trap_three();
+extern void trap_four();
+extern void trap_five();
+extern void trap_six();
+extern void trap_seven();
+extern void trap_eight();
+extern void trap_nine();
+extern void trap_ten();
+extern void trap_eleven();
+extern void trap_twelve();
+extern void trap_thirteen();
+extern void trap_fourteen();
+extern void trap_fifteen();
+extern void trap_sixteen();
+extern void trap_seventeen();
+extern void trap_eighteen();
+extern void trap_nineteen();
+extern void trap_twenty();
+extern void trap_twentyone();
+extern void trap_twentytwo();
+extern void trap_twentythree();
+extern void trap_twentyfour();
+extern void trap_twentyfive();
+extern void trap_twentysix();
+extern void trap_twentyseven();
+extern void trap_twentyeight();
+extern void trap_twentynine();
+extern void trap_thirty();
+extern void trap_thirtyone();
+
 
 void init_IDT(struct lidtr_t IDT) {
 	uint32_t i = 0;
@@ -129,10 +158,12 @@ struct smap_t {
 }__attribute__((packed)) *smap;
 
 void start(uint32_t* modulep, void* physbase, void* physfree) {
-	printf("physbase:%p, physfree:%p\n", physbase, physfree);
+//	printf("physbase:%p, physfree:%p\n", physbase, physfree);
 //	char str[] = "__its_!@#$%^&*()_dangerous__";
-	printf("Welcome to your own OS %d %x %x %d %d %c %x %s %p %p\n",
-			-2147483648, -2147483648, 0, 0x80000000, 0x7fffffff, 'e', 0xa35d,"oolala", &physbase, &physfree);
+//	printf("Welcome to your own OS %d %x %x %d %d %c %x %s %p %p\n",
+//			-2147483648, -2147483648, 0, 0x80000000, 0x7fffffff, 'e', 0xa35d,"oolala", &physbase, &physfree);
+
+	printf("Video buffer: %x -- \n", &video_buffer);
 //	for (int i = 0; i < 500; i++)
 //		printf("%s~~%d\t", str, i);
 //	printf("pri\rnting all ascii\n");
@@ -160,12 +191,12 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 			smap < (struct smap_t*) ((char*) modulep + modulep[1] + 2 * 4);
 			++smap) {
 		if (smap->type == 1 /* memory */&& smap->length != 0) {
-			printf("Length of memory:%d\n", smap->length);
-			printf("Available Physical Memory [%x-%x]\n", smap->base,
-					smap->base + smap->length);
+//			printf("Length of memory:%d\n", smap->length);
+				printf("Available Physical Memory [%x-%x]\n", smap->base,
+						smap->base + smap->length);
 		}
 	}
-	printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
+//	printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 	// kernel starts here
 	manage_memory(physbase, physfree, modulep);
 //	pagingTests(physbase, physfree, modulep);
@@ -190,14 +221,68 @@ void add_custom_interrupt() {
 			0x08); //mode set to present|Ring 3|Interrupt   - Segment usual kernel segments
 	add_int_handler((uint64_t) lidtr.base, 33, (uint64_t) isr_keyboard, 0xEE,
 			0x08);
+	add_int_handler((uint64_t) lidtr.base, 1, (uint64_t) trap_one, 0xEF,
+						0x08);
 	add_int_handler((uint64_t) lidtr.base, 2, (uint64_t) trap_two, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 3, (uint64_t) trap_three, 0xEF,
 				0x08);
+	add_int_handler((uint64_t) lidtr.base, 4, (uint64_t) trap_four, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 5, (uint64_t) trap_five, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 6, (uint64_t) trap_six, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 7, (uint64_t) trap_seven, 0xEF,
+						0x08);
 	add_int_handler((uint64_t) lidtr.base, 8, (uint64_t) trap_eight, 0xEF,
 				0x08);
+	add_int_handler((uint64_t) lidtr.base,9 , (uint64_t) trap_nine, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 10, (uint64_t) trap_ten, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 11, (uint64_t) trap_eleven, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 12, (uint64_t) trap_twelve, 0xEF,
+						0x08);
 	add_int_handler((uint64_t) lidtr.base, 13, (uint64_t) trap_thirteen, 0xEF,
 				0x08);
-	add_int_handler((uint64_t) lidtr.base, 13, (uint64_t) trap_thirteen, 0xEF,
+	add_int_handler((uint64_t) lidtr.base, 14, (uint64_t) trap_fourteen, 0xEF,
 					0x08);
+	add_int_handler((uint64_t) lidtr.base, 15, (uint64_t) trap_fifteen, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 16, (uint64_t) trap_sixteen, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 17, (uint64_t) trap_seventeen, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 18, (uint64_t) trap_eighteen, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 19, (uint64_t) trap_nineteen, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 20, (uint64_t) trap_twenty, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 21, (uint64_t) trap_twentyone, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 22, (uint64_t) trap_twentytwo, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 23, (uint64_t) trap_twentythree, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 24, (uint64_t) trap_twentyfour, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 25, (uint64_t) trap_twentyfive, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 26, (uint64_t) trap_twentysix, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 27, (uint64_t) trap_twentyseven, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 28, (uint64_t) trap_twentyeight, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 29, (uint64_t) trap_twentynine, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 30, (uint64_t) trap_thirty, 0xEF,
+						0x08);
+	add_int_handler((uint64_t) lidtr.base, 31, (uint64_t) trap_thirtyone, 0xEF,
+						0x08);
 }
 void boot(void) {
 	// note: function changes rsp, local stack variables can't be practically used
@@ -220,6 +305,8 @@ void boot(void) {
 	__asm__ __volatile__ ("movb $0xFC, %al\n\t"
 			"outb  %al, $0x21\n\t");
 	__asm__ ("sti");
+//	__asm__("cli");
+	printf("Stack: %x", &stack[INITIAL_STACK_SIZE]);
 	start(
 			(uint32_t*) ((char*) (uint64_t) loader_stack[3]
 					+ (uint64_t) &kernmem - (uint64_t) &physbase), &physbase,
