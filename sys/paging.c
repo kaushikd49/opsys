@@ -372,7 +372,7 @@ void map_kernel_address(void* physbase, void* physfree) {
 	uint64_t range = virtual_physfree - virtual_physbase;
 	uint64_t numIters = (range / 4096) + (range % 4096);
 	printf("numIters needed %d\n", numIters);
-	for (int i = 0; i < 20; i++) {
+	for (int i = 0; i < numIters; i++) {
 		if (i == 35)
 			printf("accessing %p ", linear_addr);
 		setup_page_tables(linear_addr, physical_addr);
@@ -406,11 +406,16 @@ void map_linear_addresses(void* physbase, void* physfree) {
 }
 
 void update_cr3() {
-//	__asm__ __volatile(
-//			"movq %0 %%cr3"
-//			:
-//			:"0"(pml_base_ptr)
-//			 :"%rax");
+       uint64_t pml_base_40bits = update40bit_addr(ULONG_ZERO,
+                       (uint64_t) pml_base_ptr);
+       printf("pre cr3 update");
+       __asm__ __volatile(
+                       "cli\n\t"
+                       "movq %0,%%cr3"
+                       :
+                       :"a"(pml_base_40bits)
+               );
+       printf("post cr3 update");
 }
 
 void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
