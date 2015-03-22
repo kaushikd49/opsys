@@ -20,7 +20,8 @@
 #define VIRTUAL_PHYSFREE_OFFSET 0xffffffff80000000
 
 #define VIRTUAL_ADDR_VIDMEM 0xffffffff800b8000
-
+#define VIRTUAL_ADDR_TIMER_LOC 0xffffffff800b8f80
+#define VIRTUAL_ADDR_GLYPH_POS 0xffffffff800b8f60
 uint64_t virtual_physfree = 0; // will be set later
 uint64_t virtual_physbase = (uint64_t) VIRTUAL_PHYSBASE;
 
@@ -30,7 +31,8 @@ char* free_list = NULL;
 uint64_t free_list_location = ULONG_ZERO;
 
 extern uint64_t BASE_CURSOR_POS;
-
+extern uint64_t TIMER_LOC;
+extern uint64_t glyph_pos;
 // todo: duplicated smap definition from main.
 struct smap_t {
 	uint64_t base, length;
@@ -393,6 +395,8 @@ void map_video_address() {
 			deepest_entity_base);
 	printf("res:%d", res);
 	BASE_CURSOR_POS = VIRTUAL_ADDR_VIDMEM;
+	TIMER_LOC = VIRTUAL_ADDR_TIMER_LOC;
+	glyph_pos = VIRTUAL_ADDR_GLYPH_POS;
 }
 
 void map_page_tables_adress() {
