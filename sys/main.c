@@ -72,22 +72,23 @@ void config_PIC() {
 			:"=a"(PIC2data));
 	//printf("pic2: %x", PIC2data);
 	//the steps are done in order.
-	__asm__ __volatile__("movb $0x11, %al\n\t"
-			"outb %al, $0x20 \n\t"
-			"movb $0x11, %al\n\t"
-			"outb %al, $0xA0 \n\t"
-			"movb $0x20, %al\n\t"
-			"outb %al, $0x21 \n\t" //32
-			"movb $0x28, %al\n\t"
-			"outb %al, $0xA1 \n\t"//32+8
-			"movb $4, %al\n\t"
-			"outb %al, $0x21 \n\t"//set bit for the cascade
-			"movb $2, %al\n\t"
-			"outb %al, $0xA1\n\t"//this is just the position where it is cascaded for the pic to know
-			"movb $0x01, %al\n\t"
-			"outb %al, $0x21\n\t"
-			"movb $0x01, %al\n\t"
-			"outb %al, $0xA1\n\t"
+	__asm__ __volatile__("movb $0x11, %%al\n\t"
+			"outb %%al, $0x20 \n\t"
+			"movb $0x11, %%al\n\t"
+			"outb %%al, $0xA0 \n\t"
+			"movb $0x20, %%al\n\t"
+			"outb %%al, $0x21 \n\t" //32
+			"movb $0x28, %%al\n\t"
+			"outb %%al, $0xA1 \n\t"//32+8
+			"movb $4, %%al\n\t"
+			"outb %%al, $0x21 \n\t"//set bit for the cascade
+			"movb $2, %%al\n\t"
+			"outb %%al, $0xA1\n\t"//this is just the position where it is cascaded for the pic to know
+			"movb $0x01, %%al\n\t"
+			"outb %%al, $0x21\n\t"
+			"movb $0x01, %%al\n\t"
+			"outb %%al, $0xA1\n\t"
+			:::"rax","rbx","rcx","rdx","rdi","rsi"
 	);
 	__asm__ __volatile__("outb %0,$0x21\n\t"
 			:: "a"(PIC1data));
@@ -163,7 +164,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 //	printf("Welcome to your own OS %d %x %x %d %d %c %x %s %p %p\n",
 //			-2147483648, -2147483648, 0, 0x80000000, 0x7fffffff, 'e', 0xa35d,"oolala", &physbase, &physfree);
 
-	printf("Video buffer: %x -- \n", &video_buffer);
+//	printf("Video buffer: %x -- \n", &video_buffer);
 //	for (int i = 0; i < 500; i++)
 //		printf("%s~~%d\t", str, i);
 //	printf("pri\rnting all ascii\n");
@@ -187,18 +188,19 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 		modulep += modulep[1] + 2;
 	}
 	//int check = 0;
-	for (smap = (struct smap_t*) (modulep + 2);
-			smap < (struct smap_t*) ((char*) modulep + modulep[1] + 2 * 4);
-			++smap) {
-		if (smap->type == 1 /* memory */&& smap->length != 0) {
+//	for (smap = (struct smap_t*) (modulep + 2);
+//			smap < (struct smap_t*) ((char*) modulep + modulep[1] + 2 * 4);
+//			++smap) {
+//		if (smap->type == 1 /* memory */&& smap->length != 0) {
 //			printf("Length of memory:%d\n", smap->length);
-				printf("Available Physical Memory [%x-%x]\n", smap->base,
-						smap->base + smap->length);
-		}
-	}
+//				printf("Available Physical Memory [%x-%x]\n", smap->base,
+//						smap->base + smap->length);
+//		}
+//	}
 //	printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 	// kernel starts here
 	manage_memory(physbase, physfree, modulep);
+
 //	pagingTests(physbase, physfree, modulep);
 }
 
@@ -301,12 +303,12 @@ void boot(void) {
 	add_custom_interrupt();
 	init_keyboard_map();
 	keyboard_init();
-	__asm__ ("cli");
-	__asm__ __volatile__ ("movb $0xFC, %al\n\t"
-			"outb  %al, $0x21\n\t");
-	__asm__ ("sti");
-//	__asm__("cli");
-	printf("Stack: %x", &stack[INITIAL_STACK_SIZE]);
+	__asm__ __volatile__("cli");
+//	__asm__ __volatile__ ("movb $0xFC, %%al\n\t"
+//			"outb  %%al, $0x21\n\t"
+//			:::"rax","rbx","rcx","rdx","rdi","rsi");
+//	__asm__ __volatile__("sti");
+//	printf("Stack: %x", &stack[INITIAL_STACK_SIZE]);
 	start(
 			(uint32_t*) ((char*) (uint64_t) loader_stack[3]
 					+ (uint64_t) &kernmem - (uint64_t) &physbase), &physbase,

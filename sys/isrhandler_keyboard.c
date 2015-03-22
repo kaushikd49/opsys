@@ -43,7 +43,7 @@ void isrhandler_keyboard() {
 	static int arrow_key = 0;
 	char printchar;
 
-	__asm__ __volatile__("inb $0x60, %%al\n\t"
+	__asm__ __volatile__("inb $0x60, %0\n\t"
 			:"=a"(scancode));
 	if (scancode == KEY_RELEASE) {
 		key_released = 1;
