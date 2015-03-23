@@ -6,7 +6,7 @@
 #define PDPTR_SIZE 512
 #define ULONG_ONE ((unsigned long)1) // without this left shift  more than 31 will not work
 #define ULONG_ZERO ((unsigned long)0)
-
+#define page_frame_number(PAGE_ADDRESS) (PAGE_ADDRESS>>12)
 #define MAX_NUMBER_PAGES (1<<18)
 #define PAGE_SIZE (1<<12)
 #define PAGE_ALIGN (1<<12)
@@ -34,6 +34,10 @@ extern uint64_t BASE_CURSOR_POS;
 extern uint64_t TIMER_LOC;
 extern uint64_t glyph_pos;
 // todo: duplicated smap definition from main.
+typedef struct page_t {
+	char is_free;
+	uint32_t ref_count;
+}page_t;
 struct smap_t {
 	uint64_t base, length;
 	uint32_t type;
@@ -52,8 +56,12 @@ void create_free_list(uint32_t* modulep, char *free_list) {
 		if (smap->type == 1 /* memory */&& smap->length != 0) {
 			uint64_t start = ((smap->base) + PAGE_ALIGN - 1)
 					& ~(PAGE_ALIGN - 1);
-			current_index = (start >> 3); //right shift 6 for the index
-			current_bit = (start & 0xff);
+			uint64_t page_index = start>>12;
+			current_index = (page_index >> 3); //right shift 6 for the index
+			current_bit = (page_index & 0xff);
+			printf("Available Physical Memory [%x-%x]\n", smap->base,
+																smap->base + smap->length);
+			printf("%x -- %x\n", current_index, current_bit);
 			while (start < (smap->base + smap->length)) {
 //				printf("\n%x", start);
 				if (start + 0x1000 < (smap->base + smap->length))
@@ -68,6 +76,34 @@ void create_free_list(uint32_t* modulep, char *free_list) {
 		}
 	}
 	free_list[0] = free_list[0] & 0xFE;
+}
+void create_free_list_test(uint32_t* modulep, page_t *free_list) {
+	uint64_t i;
+	uint64_t current_index;
+	for (i = 0; i < MAX_NUMBER_PAGES; i++){
+		free_list[i].is_free = 0;
+		free_list[i].ref_count = 0;
+	}
+//	printf("\nfree list size%d", i);
+	struct smap_t* smap;
+	for (smap = (struct smap_t*) (modulep + 2);
+			smap < (struct smap_t*) ((char*) modulep + modulep[1] + 2 * 4);
+			++smap) {
+		if (smap->type == 1 /* memory */&& smap->length != 0) {
+			uint64_t start = ((smap->base) + PAGE_ALIGN - 1)
+					& ~(PAGE_ALIGN - 1);
+
+			while (start < (smap->base + smap->length)) {
+//				printf("\n%x", start);
+
+				current_index = (start >> 12); //right shift 12 for the page index
+				if (start + 0x1000 < (smap->base + smap->length))
+					free_list[current_index].is_free = 1;
+				start = start + 0x1000;
+			}
+		}
+	}
+	free_list[0].is_free = 0;
 }
 uint64_t get_free_page(char *free_list) {
 	int k, i = 0, check = 0; //todo: could optimize to search from previous page given
@@ -430,14 +466,20 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 
 	if (free_list_location == ULONG_ZERO) {
 		free_list_location = (uint64_t) ((((uint64_t) physfree)
-				& (~(PAGE_SIZE - 1))) + (PAGE_SIZE));
-//		printf("\nlocation of free list: %x", free_list_location);
+				& (~(PAGE_SIZE - 1))) + (PAGE_SIZE)); //location 229000,
+		printf("\nlocation of free list: %x", free_list_location);
 	}
 	if (free_list == NULL) {
 		free_list = (char*) (free_list_location);
 	}
-
 	create_free_list(modulep, free_list);
+//	uint64_t after_free_list = (uint64_t)(&free_list[MAX_FREELIST_LENGTH]);
+//	printf("\nlocation of after free list: %x", after_free_list);
+//	uint64_t after_free_list_aligned = (uint64_t) ((((uint64_t) after_free_list)
+//			& (~(PAGE_SIZE - 1))) + (PAGE_SIZE));//location 232000
+//	printf("\nlocation of after free list aligned: %x", after_free_list_aligned);
+//	page_t *free_page_list = (page_t *)&after_free_list_aligned;
+//	create_free_list_test(modulep, free_page_list);
 
 	//uint64_t ret = get_free_page(free_list);
 	//printf("\nans: %p", ret);
