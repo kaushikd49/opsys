@@ -12,28 +12,24 @@
 #define PAGE_ALIGN (1<<12)
 #define CHAR_SIZE (1<<3)
 #define MAX_FREELIST_LENGTH (MAX_NUMBER_PAGES/CHAR_SIZE)
-
-# define NULL1 ((void*)1)
-# define NULL2 ((void*)2)
-
+#define NULL1 ((void*)1)
+#define NULL2 ((void*)2)
 #define VIRTUAL_PHYSBASE 0xffffffff80200000
 #define VIRTUAL_PHYSFREE_OFFSET 0xffffffff80000000
-
 #define VIRTUAL_ADDR_VIDMEM 0xffffffff800b8000
 #define VIRTUAL_ADDR_TIMER_LOC 0xffffffff800b8f80
 #define VIRTUAL_ADDR_GLYPH_POS 0xffffffff800b8f60
+
 uint64_t virtual_physfree = 0; // will be set later
 uint64_t virtual_physbase = (uint64_t) VIRTUAL_PHYSBASE;
-
 uint64_t * pml_base_ptr = NULL; // equivalent to CR3
-
 char* free_list = NULL;
 uint64_t free_list_location = ULONG_ZERO;
 
 extern uint64_t BASE_CURSOR_POS;
 extern uint64_t TIMER_LOC;
 extern uint64_t glyph_pos;
-// todo: duplicated smap definition from main.
+
 typedef struct page_t {
 	char is_free;
 	uint32_t ref_count;
@@ -42,6 +38,20 @@ struct smap_t {
 	uint64_t base, length;
 	uint32_t type;
 }__attribute__((packed));
+
+void create_free_list(uint32_t* modulep, char *free_list);
+void create_free_list_test(uint32_t* modulep, page_t *free_list);
+uint64_t get_free_page(char *free_list);
+int check_boolarray_index(char *array, uint64_t pos, uint64_t limit);
+int check_boolarray_range(char *array, uint64_t start, uint64_t end, uint64_t limit);
+void clear_boolarray_index(char *array, uint64_t pos, uint64_t limit);
+void clear_boolarray_range(char *array, uint64_t start, uint64_t end, uint64_t limit);
+uint64_t get_free_pages(char *free_list,int order);
+void return_page(uint64_t page, char *free_list);
+uint64_t * get_free_frame();
+uint64_t set_bit(uint64_t ele, int bit_num, int bit_val);
+// todo: duplicated smap definition from main.
+
 void create_free_list(uint32_t* modulep, char *free_list) {
 	uint64_t i;
 	uint64_t current_index;
@@ -106,23 +116,78 @@ void create_free_list_test(uint32_t* modulep, page_t *free_list) {
 	free_list[0].is_free = 0;
 }
 uint64_t get_free_page(char *free_list) {
-	int k, i = 0, check = 0; //todo: could optimize to search from previous page given
-	for (; i < MAX_FREELIST_LENGTH; i++) {
-		if ((uint64_t) (free_list[i]) > 0) {
-			k = 0;
-			while (k < 8 && (uint64_t) (((1 << k) & free_list[i])) == 0) {
-				k++;
-			}
-			if (k < 8) {
-				check = 1;
-				break;
-			}
-		}
+	return get_free_pages(free_list, 0);
+//	uint64_t k, i = 0, check = 0; //todo: could optimize to search from previous page given
+//	for (; i < MAX_FREELIST_LENGTH; i++) {
+//		if ((uint64_t) (free_list[i]) > 0) {
+//			k = 0;
+//			while (k < 8 && (uint64_t) (((1 << k) & free_list[i])) == 0) {//k < 8 is an unnecessary check
+//				k++;
+//			}
+//			if (k < 8) {
+//				check = 1;
+//				break;
+//			}
+//		}
+//	}
+//	if (check == 1) {
+//		uint64_t return_val = (i * 8 + k) << 12;
+//		free_list[i] ^= 1 << k;
+//		return return_val;
+//	}
+//	return 0;
+}
+//the pos should be a valid offset. no check done
+int check_boolarray_index(char *array, uint64_t pos, uint64_t limit){
+	if(pos>limit)
+		return 0;
+	uint64_t array_index = pos/8;
+	uint64_t array_offset = pos%8;
+	if((array[array_index]&(1<<array_offset))!=0)
+		return 1;
+	return 0;
+}
+//the start and end should be a valid offset. no check done
+int check_boolarray_range(char *array, uint64_t start, uint64_t end, uint64_t limit){
+	if(end>limit)
+			return 0;
+	uint64_t i = start;
+	while(i<=end && check_boolarray_index(array, i, limit)){
+		i++;
 	}
-	if (check == 1) {
-		uint64_t return_val = (i * 8 + k) << 12;
-		free_list[i] ^= 1 << k;
-		return return_val;
+	if(i >end){
+		return 1;
+	}
+	else{
+		return 0;
+	}
+}
+void clear_boolarray_index(char *array, uint64_t pos, uint64_t limit){
+	if(pos>limit)
+		return;
+	uint64_t array_index = pos/8;
+	uint64_t array_offset = pos%8;
+	char MASK = 0xFF ^ 1<<array_offset;
+	array[array_index] = array[array_index]&MASK;
+}
+void clear_boolarray_range(char *array, uint64_t start, uint64_t end, uint64_t limit){
+	if(end>limit)//invalid case, so if more bits are asked to be set than allowed then sets nothing
+		return;
+	uint64_t i = start;
+	while(i<=end){
+		clear_boolarray_index(array,i,limit);
+		i++;
+	}
+
+}
+uint64_t get_free_pages(char *free_list,int order){
+	uint64_t limit = 1<<order;
+	for(uint64_t i = 0; i < MAX_NUMBER_PAGES;i++){//todo: optimize
+		if(check_boolarray_index(free_list,i, MAX_NUMBER_PAGES-1) == 1 && check_boolarray_index(free_list,i+limit-1, MAX_NUMBER_PAGES-1) == 1 && check_boolarray_range(free_list, i, i+limit-1, MAX_NUMBER_PAGES-1) == 1){
+			clear_boolarray_range(free_list,i, i+limit-1, MAX_NUMBER_PAGES-1);
+			uint64_t phys_page = i*0x1000;
+			return phys_page;
+		}
 	}
 	return 0;
 }
@@ -140,7 +205,10 @@ uint64_t * get_free_frame() {
 //	printf("returning freepage:%p ", freePage);
 	return (uint64_t *) freePage;
 }
-
+uint64_t * get_free_frames(int order){
+	uint64_t freePage = get_free_pages(free_list, order);
+	return (uint64_t *) freePage;
+}
 uint64_t set_bit(uint64_t ele, int bit_num, int bit_val) {
 	uint64_t bit_in_uint64 = ULONG_ONE << bit_num;
 	if (bit_val == 1)
@@ -508,7 +576,21 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 	update_cr3();
 	printf("cr3 mapped\n");
 	printf("physfree: %x\n", &physfree);
-	uint64_t ret = get_free_page(free_list);
-	printf("\nans: %p", ret);
+	uint64_t ret = get_free_pages(free_list,0);
+	printf("\nans1: %p", ret);
+	ret = get_free_pages(free_list,1);
+	printf("\nans2: %p", ret);
+	ret = get_free_pages(free_list,2);
+	printf("\nans3: %p", ret);
+	ret = get_free_pages(free_list,3);
+	printf("\nans3: %p", ret);
+	ret = get_free_pages(free_list,4);
+	printf("\nans3: %p", ret);
+	ret = get_free_pages(free_list,5);
+	printf("\nans3: %p", ret);
+	ret = get_free_pages(free_list,6);
+	printf("\nans3: %p", ret);
+	uint64_t *ret2 = get_free_frames(2);
+	printf("\n%x", ret2);
 }
 
