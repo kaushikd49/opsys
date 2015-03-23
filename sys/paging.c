@@ -438,10 +438,22 @@ void map_video_address() {
 void map_page_tables_adress() {
 
 }
+void map_other_addresses(){
+	//mapping the free list
+	uint64_t virtual_free_list = VIRTUAL_PHYSFREE_OFFSET + (uint64_t) free_list;
+	uint64_t free_list_temp = (uint64_t) free_list;
+	for (int i = 0; i < 3; i++){//free pages is 3 pages long
+		setup_page_tables(virtual_free_list, free_list_temp);
+		virtual_free_list += 4096;
+		free_list_temp += 4096;
+	}
 
+	free_list =(char *)(VIRTUAL_PHYSFREE_OFFSET + (uint64_t) free_list);//change the free_list address from physical to virtual
+}
 void map_linear_addresses(void* physbase, void* physfree) {
 	map_kernel_address(physbase, physfree);
 	map_video_address();
+	map_other_addresses();//this function maps other random addresses we might randomly map after physfree. Example: freelist
 //	map_page_tables_adress(); todo: where to map this?
 }
 
@@ -467,7 +479,7 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 	if (free_list_location == ULONG_ZERO) {
 		free_list_location = (uint64_t) ((((uint64_t) physfree)
 				& (~(PAGE_SIZE - 1))) + (PAGE_SIZE)); //location 229000,
-		printf("\nlocation of free list: %x", free_list_location);
+		printf("\nlocation of free list: %x\n", free_list_location);
 	}
 	if (free_list == NULL) {
 		free_list = (char*) (free_list_location);
@@ -493,7 +505,10 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 	//return_page(0x1000, free_list);
 
 	map_linear_addresses(physbase, physfree);
-
 	update_cr3();
+	printf("cr3 mapped\n");
+	printf("physfree: %x\n", &physfree);
+	uint64_t ret = get_free_page(free_list);
+	printf("\nans: %p", ret);
 }
 
