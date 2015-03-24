@@ -29,10 +29,11 @@ uint64_t free_list_location = ULONG_ZERO;
 extern uint64_t BASE_CURSOR_POS;
 extern uint64_t TIMER_LOC;
 extern uint64_t glyph_pos;
-
+//idea from linux page table
 typedef struct page_t {
 	char is_free;
-	uint32_t ref_count;
+	uint32_t ref_count;//number of references to this page
+	void * virtual_address;
 }page_t;
 struct smap_t {
 	uint64_t base, length;
@@ -87,33 +88,34 @@ void create_free_list(uint32_t* modulep, char *free_list) {
 	}
 	free_list[0] = free_list[0] & 0xFE;
 }
+/*this function has not been completed yet, we will get to it as and when we need it.*/
 void create_free_list_test(uint32_t* modulep, page_t *free_list) {
 	uint64_t i;
-	uint64_t current_index;
+//	uint64_t current_index;
 	for (i = 0; i < MAX_NUMBER_PAGES; i++){
 		free_list[i].is_free = 0;
 		free_list[i].ref_count = 0;
 	}
 //	printf("\nfree list size%d", i);
-	struct smap_t* smap;
-	for (smap = (struct smap_t*) (modulep + 2);
-			smap < (struct smap_t*) ((char*) modulep + modulep[1] + 2 * 4);
-			++smap) {
-		if (smap->type == 1 /* memory */&& smap->length != 0) {
-			uint64_t start = ((smap->base) + PAGE_ALIGN - 1)
-					& ~(PAGE_ALIGN - 1);
-
-			while (start < (smap->base + smap->length)) {
-//				printf("\n%x", start);
-
-				current_index = (start >> 12); //right shift 12 for the page index
-				if (start + 0x1000 < (smap->base + smap->length))
-					free_list[current_index].is_free = 1;
-				start = start + 0x1000;
-			}
-		}
-	}
-	free_list[0].is_free = 0;
+//	struct smap_t* smap;
+//	for (smap = (struct smap_t*) (modulep + 2);
+//			smap < (struct smap_t*) ((char*) modulep + modulep[1] + 2 * 4);
+//			++smap) {
+//		if (smap->type == 1 /* memory */&& smap->length != 0) {
+//			uint64_t start = ((smap->base) + PAGE_ALIGN - 1)
+//					& ~(PAGE_ALIGN - 1);
+//
+//			while (start < (smap->base + smap->length)) {
+////				printf("\n%x", start);
+//
+//				current_index = (start >> 12); //right shift 12 for the page index
+//				if (start + 0x1000 < (smap->base + smap->length))
+//					free_list[current_index].is_free = 1;
+//				start = start + 0x1000;
+//			}
+//		}
+//	}
+//	free_list[0].is_free = 0;
 }
 uint64_t get_free_page(char *free_list) {
 	return get_free_pages(free_list, 0);
@@ -344,7 +346,6 @@ int page_lookup(uint64_t linear_addr, uint64_t* deepest_entity,
 //		printf("Error: pml_base_ptr is NULL");
 		return -1;
 	}
-
 	uint64_t *pml = pml_base_ptr + pe.pml_index;
 //	printf("pml lookup %p\n", pml);
 
@@ -537,7 +538,35 @@ void update_cr3() {
                );
        printf("post cr3 update");
 }
+void manage_memory_test_suite(){
+	printf("cr3 mapped\n");
+	uint64_t ret = get_free_pages(free_list,0);
+	printf("\nans1: %p", ret);
+	uint64_t virtual_test_addr = VIRTUAL_PHYSFREE_OFFSET + (uint64_t) ret;
+	uint64_t test_addr = (uint64_t) ret;
+	setup_page_tables(virtual_test_addr, test_addr);
+	struct page_t *test = (struct page_t *)virtual_test_addr;
+	test[0].is_free = 0;
+	test[0].ref_count = 2;
+	test[0].virtual_address = NULL;
 
+	printf("YAYYYY:  %d", test[0].ref_count);
+//	ret = get_free_pages(free_list,1);
+//	printf("\nans2: %p", ret);
+//	ret = get_free_pages(free_list,2);
+//	printf("\nans3: %p", ret);
+//	ret = get_free_pages(free_list,3);
+//	printf("\nans3: %p", ret);
+//	ret = get_free_pages(free_list,4);
+//	printf("\nans3: %p", ret);
+//
+//	ret = get_free_pages(free_list,5);
+//	printf("\nans3: %p", ret);
+//	ret = get_free_pages(free_list,6);
+//	printf("\nans3: %p", ret);
+//	uint64_t *ret2 = get_free_frames(2);
+//	printf("\n%x", ret2);
+}
 void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 // kernel starts here
 //	printf("\ncreating free list");
@@ -553,44 +582,22 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 		free_list = (char*) (free_list_location);
 	}
 	create_free_list(modulep, free_list);
-//	uint64_t after_free_list = (uint64_t)(&free_list[MAX_FREELIST_LENGTH]);
-//	printf("\nlocation of after free list: %x", after_free_list);
-//	uint64_t after_free_list_aligned = (uint64_t) ((((uint64_t) after_free_list)
-//			& (~(PAGE_SIZE - 1))) + (PAGE_SIZE));//location 232000
-//	printf("\nlocation of after free list aligned: %x", after_free_list_aligned);
-//	page_t *free_page_list = (page_t *)&after_free_list_aligned;
+	/*more detailed page frame structures, we should develop this more as and when we need it for now the bit array is enough*/
+	uint64_t after_free_list = (uint64_t)(&free_list[MAX_FREELIST_LENGTH]);
+	printf("\nlocation of after free list: %x", after_free_list);
+	uint64_t after_free_list_aligned = (uint64_t) ((((uint64_t) after_free_list)
+			& (~(PAGE_SIZE - 1))) + (PAGE_SIZE));//location 232000
+	printf("\nlocation of after free list aligned: %x", after_free_list_aligned);
+//	page_t *free_page_list = (page_t *)after_free_list_aligned;
 //	create_free_list_test(modulep, free_page_list);
+//	uint64_t page_frames_size = sizeof(struct page_t)*MAX_NUMBER_PAGES;
+////	uint64_t kmalloc_start = after_free_list+page_frames_size;
 
-	//uint64_t ret = get_free_page(free_list);
-	//printf("\nans: %p", ret);
 
-	//ret = get_free_page(free_list);
-	//printf("\nans: %p", ret);
-	//return_page(ret, free_list);
 
-	//ret = get_free_page(free_list);
-	//printf("\nans: %p", ret);
-	//return_page(0x1000, free_list);
 
 	map_linear_addresses(physbase, physfree);
 	update_cr3();
-	printf("cr3 mapped\n");
-	printf("physfree: %x\n", &physfree);
-	uint64_t ret = get_free_pages(free_list,0);
-	printf("\nans1: %p", ret);
-	ret = get_free_pages(free_list,1);
-	printf("\nans2: %p", ret);
-	ret = get_free_pages(free_list,2);
-	printf("\nans3: %p", ret);
-	ret = get_free_pages(free_list,3);
-	printf("\nans3: %p", ret);
-	ret = get_free_pages(free_list,4);
-	printf("\nans3: %p", ret);
-	ret = get_free_pages(free_list,5);
-	printf("\nans3: %p", ret);
-	ret = get_free_pages(free_list,6);
-	printf("\nans3: %p", ret);
-	uint64_t *ret2 = get_free_frames(2);
-	printf("\n%x", ret2);
+	manage_memory_test_suite();
 }
 
