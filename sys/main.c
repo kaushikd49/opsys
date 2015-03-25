@@ -31,7 +31,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 //						smap->base + smap->length);
 //		}
 //	}
-//	printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
+	printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 	// kernel starts here
 	manage_memory(physbase, physfree, modulep);
 	init_init_IDT();
