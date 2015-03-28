@@ -46,7 +46,23 @@ struct smap_t {
 	uint64_t base, length;
 	uint32_t type;
 }__attribute__((packed));
+typedef struct cache_init{
+	struct cache_t *head;
+	void *current_virtual;// dont care about reusing virtual space if something gets deallocated then so be it(NOTE: Physical memory is reclaimed).
+}cache_init;
+typedef struct cache_t{
+	int order;
+	void *free;
 
+	//cache_page *head;
+
+}cache_t;
+typedef struct free_t{
+	void *next_free;
+}free_t;
+typedef struct kmalloc_t{
+	uint64_t order;
+}kmalloc_t;
 void create_free_list(uint32_t* modulep, char *free_list);
 void create_free_list_test(uint32_t* modulep, page_t *free_list, void *physbase, void *physfree);
 uint64_t get_free_page(page_t *free_list);
