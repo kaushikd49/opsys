@@ -22,7 +22,6 @@ int check_array_range(page_t *free_list, uint64_t start, uint64_t end);
 void clear_array_range(page_t *free_list, uint64_t start, uint64_t end);
 uint64_t get_free_pages(page_t *free_list,int order);
 void return_page(uint64_t page, page_t *free_list);
-
 //no checks done, programmer care required.
 void return_pages(uint64_t page, page_t *free_list, int order);
 uint64_t * get_free_frame();
