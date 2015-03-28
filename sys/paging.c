@@ -2,6 +2,13 @@
 #include <sys/sbunix.h>
 #include <sys/pagingglobals.h>
 #include <sys/freelist.h>
+
+#define NUM_UNIT64_IN_PAGE PAGE_SIZE/sizeof(uint64_t)
+
+// This is used to copy apt offsets from linear addr and traverse page tables
+// The key is usage of all 1's to make use of self-referential trick.
+#define PG_TRVRSE_BASIC_VA_ADDR 0x0000000000000000
+
 // todo: duplicated smap definition from main.
 uint64_t virtual_physfree = 0; // will be set later
 uint64_t virtual_physbase = (uint64_t) VIRTUAL_PHYSBASE;
@@ -74,43 +81,6 @@ void get_paging_entity_indexes(struct paging_entities* p_entities,
 	p_entities->pdir_ptr_index = (int) extract_bits(linear_addr, 30, 38, 0, 0,
 			8);
 	p_entities->pml_index = (int) extract_bits(linear_addr, 39, 47, 0, 0, 8);
-}
-
-uint64_t * set_paging(uint64_t linear_addr, uint64_t physical_addr) {
-	struct paging_entities pe;
-	get_paging_entity_indexes(&pe, linear_addr);
-
-	if (pml_base_ptr == NULL) {
-		pml_base_ptr = get_free_frame();
-	}
-
-	uint64_t *pdir_ptr = get_free_frame();
-	uint64_t *pdir = get_free_frame();
-	uint64_t *ptable = get_free_frame();
-//	uint64_t *page = get_free_frame();
-
-//	printf("pdirptr %p\n", pdir_ptr);
-//	printf("pdir %p\n", pdir);
-//	printf("ptable %p\n", ptable);
-
-//	printf("pml_base_ptr + pe.pml_index  %p\n", pml_base_ptr + pe.pml_index);
-//	printf("pdir_ptr + pe.pdir_ptr_index  %p\n", pdir_ptr + pe.pdir_ptr_index);
-//	printf("pdir + pe.dir_index %p\n", pdir + pe.dir_index);
-//	printf("ptable + pe.table_index %p\n", ptable + pe.table_index);
-//    printf("helloworld");
-	*(pml_base_ptr + pe.pml_index) = get_pml4_entry((uint64_t) pdir_ptr);
-	*(pdir_ptr + pe.pdir_ptr_index) = get_pdpt_entry((uint64_t) pdir);
-	*(pdir + pe.dir_index) = get_pd_entry((uint64_t) ptable);
-	*(ptable + pe.table_index) = get_ptable_entry(physical_addr);
-
-//	printf("stored pml_base_ptr + pe.pml_index  %p\n",
-//			*(pml_base_ptr + pe.pml_index));
-//	printf("stored pdir_ptr + pe.pdir_ptr_index  %p\n",
-//			*(pdir_ptr + pe.pdir_ptr_index));
-//	printf("stored pdir + pe.dir_index %p\n", *(pdir + pe.dir_index));
-//	printf("stored ptable + pe.table_index %p\n", *(ptable + pe.table_index));
-
-	return ptable + pe.table_index;
 }
 
 int is_entry_not_created(uint64_t* entry) {
@@ -300,68 +270,175 @@ void map_video_address() {
 	glyph_pos = VIRTUAL_ADDR_GLYPH_POS;
 }
 
-void map_page_tables_adress() {
-
+uint64_t copy_as_pageoffset(uint64_t linear_addr, int startbit, int endbit,
+		uint64_t copy_into) {
+	uint64_t temp = extract_bits(linear_addr, startbit, endbit,
+	PG_TRVRSE_BASIC_VA_ADDR, 0, 8) * 8;
+	uint64_t res = extract_bits(temp, 0, 11, copy_into, 0, 11);
+	return res;
 }
-void map_other_addresses(){
+
+uint64_t * virtual_addr_pml4e(uint64_t linear_addr) {
+	// copy the pml4 offset from linear addr to PG_TRVRSE_BASIC_VA_ADDR as the page offset.
+	uint64_t pml4e_virtual_addr = copy_as_pageoffset(linear_addr, 39, 47,
+	PG_TRVRSE_BASIC_VA_ADDR);
+	return (uint64_t *) pml4e_virtual_addr;
+}
+
+uint64_t * virtual_addr_pdirptre(uint64_t linear_addr) {
+	// copy the pml offset and pdirptr offset from linear addr to PG_TRVRSE_BASIC_VA_ADDR
+	//as table and page offsets respectively.
+	uint64_t temp = extract_bits(linear_addr, 39, 47,
+	PG_TRVRSE_BASIC_VA_ADDR, 12, 20);
+	uint64_t pdir_ptre_virtual_addr = copy_as_pageoffset(linear_addr, 30, 38, temp);
+	return (uint64_t *) pdir_ptre_virtual_addr;
+}
+
+uint64_t * virtual_addr_pdire(uint64_t linear_addr) {
+	// copy pml, pdirptr and dir offset from linear addr to PG_TRVRSE_BASIC_VA_ADDR
+	// as dir, table and page offsets respectively
+	uint64_t temp = extract_bits(linear_addr, 39, 47, PG_TRVRSE_BASIC_VA_ADDR,
+			21, 29);
+	temp = extract_bits(linear_addr, 30, 38, temp, 12, 20);
+	uint64_t pdire_virtual_addr = copy_as_pageoffset(linear_addr, 21, 29, temp);
+	return (uint64_t *) pdire_virtual_addr;
+}
+
+uint64_t * virtual_addr_pte(uint64_t linear_addr) {
+	// copy pml, pdirptr, dir and table offset from linear addr to PG_TRVRSE_BASIC_VA_ADDR
+	// as dirptr, dir, table and page offsets respectively
+	uint64_t temp = extract_bits(linear_addr, 39, 47, PG_TRVRSE_BASIC_VA_ADDR,
+			30, 38);
+	temp = extract_bits(linear_addr, 30, 38, temp, 21, 29);
+	temp = extract_bits(linear_addr, 21, 29, temp, 12, 20);
+	uint64_t pte_virtual_addr = copy_as_pageoffset(linear_addr, 12, 20, temp);
+	return (uint64_t *) pte_virtual_addr;
+}
+
+void cleanup_page(uint64_t * page_table_entity_entry) {
+	uint64_t page_table_entity_base = extract_bits(
+			(uint64_t) page_table_entity_entry, 12, 63, ULONG_ZERO, 12, 63);
+	printf("\n input:%p, cleanup from %p:", page_table_entity_entry,
+			page_table_entity_base);
+	uint64_t * ptr = (uint64_t *) page_table_entity_base;
+	for (int i = 0; i < NUM_UNIT64_IN_PAGE; i++, ptr++) {
+		printf("clearing %p ", ptr);
+		*ptr = 0;
+	}
+//	printf("%p done %p", page_table_entity_base, ptr);
+}
+
+void setup_page_tables_after_cr3_update(uint64_t linear_addr,
+		uint64_t physical_addr) {
+	// derive paging entities from linear address and update their target
+	printf("linear_addr is %p\n", linear_addr);
+	uint64_t * pml4e_virtual_addr = virtual_addr_pml4e(linear_addr);
+	if (is_entry_not_created((uint64_t *) pml4e_virtual_addr)) {
+		uint64_t* pdir_ptr = get_free_frame();
+		*pml4e_virtual_addr = get_pml4_entry((uint64_t) pdir_ptr);
+		uint64_t* virtualAddrPdirptre = virtual_addr_pdirptre(linear_addr);
+		cleanup_page(virtualAddrPdirptre);
+	}
+	printf("\npml4e_virtual_addr:%p, value:%p\n", pml4e_virtual_addr,
+			*pml4e_virtual_addr);
+
+	uint64_t * pdir_ptre_virtual_addr = virtual_addr_pdirptre(linear_addr);
+	if (is_entry_not_created((uint64_t *) pdir_ptre_virtual_addr)) {
+		uint64_t* pdir = get_free_frame();
+		*pdir_ptre_virtual_addr = get_pdpt_entry((uint64_t) pdir);
+	}
+	printf("\npdir_ptre_virtual_addr:%p, value:%p\n", pdir_ptre_virtual_addr,
+			*pdir_ptre_virtual_addr);
+
+	uint64_t * pdire_virtual_addr = virtual_addr_pdire(linear_addr);
+	if (is_entry_not_created((uint64_t *) pdire_virtual_addr)) {
+		uint64_t* ptable = get_free_frame();
+		*pdire_virtual_addr = get_pd_entry((uint64_t) ptable);
+	}
+	printf("\npdire_virtual_addr:%p, value:%p\n", pdire_virtual_addr,
+			*pdire_virtual_addr);
+
+	uint64_t * pte_virtual_addr = virtual_addr_pte(linear_addr);
+	if (is_entry_not_created((uint64_t *) pte_virtual_addr)) {
+		*pte_virtual_addr = get_ptable_entry(physical_addr);
+	}
+	printf("\npte_virtual_addr:%p, value:%p\n", pte_virtual_addr,
+			*pte_virtual_addr);
+}
+
+void map_page_tables_adress() {
+	// Make the first entry of pml4 point to the itself
+	*pml_base_ptr = get_pml4_entry((uint64_t) pml_base_ptr);
+	printf("*pml_base_ptr is %p\n", *pml_base_ptr);
+}
+
+void map_other_addresses() {
 	//mapping the free list
 	uint64_t virtual_free_list = VIRTUAL_PHYSFREE_OFFSET + (uint64_t) free_list;
 	uint64_t free_list_temp = (uint64_t) free_list;
-	for (int i = 0; i < 3; i++){//free pages is 3 pages long
+	for (int i = 0; i < 3; i++) {	//free pages is 3 pages long
 		setup_page_tables(virtual_free_list, free_list_temp);
 		virtual_free_list += 4096;
 		free_list_temp += 4096;
 	}
 
-	free_list =(page_t *)(VIRTUAL_PHYSFREE_OFFSET + (uint64_t) free_list);//change the free_list address from physical to virtual
+	free_list = (page_t *) (VIRTUAL_PHYSFREE_OFFSET + (uint64_t) free_list);//change the free_list address from physical to virtual
 }
 void map_linear_addresses(void* physbase, void* physfree) {
 	map_kernel_address(physbase, physfree);
 	map_video_address();
 	map_other_addresses();//this function maps other random addresses we might randomly map after physfree. Example: freelist
-//	map_page_tables_adress(); todo: where to map this?
+	map_page_tables_adress();
 }
 
 void update_cr3() {
-       uint64_t pml_base_40bits = update40bit_addr(ULONG_ZERO,
-                       (uint64_t) pml_base_ptr);
-       printf("pre cr3 update");
-       __asm__ __volatile(
-                       "cli\n\t"
-                       "movq %0,%%cr3"
-                       :
-                       :"a"(pml_base_40bits)
-               );
-       printf("post cr3 update");
+	uint64_t pml_base_40bits = update40bit_addr(ULONG_ZERO,
+			(uint64_t) pml_base_ptr);
+	printf("pre cr3 update");
+	__asm__ __volatile(
+			"cli\n\t"
+			"movq %0,%%cr3"
+			:
+			:"a"(pml_base_40bits)
+	);
+	printf("post cr3 update");
 }
-void manage_memory_test_suite(){
+void manage_memory_test_suite() {
 	printf("cr3 mapped\n");
 	uint64_t *ret = get_free_frames(0);
 	printf("\nans1: %p", ret);
-//	uint64_t virtual_test_addr = VIRTUAL_PHYSFREE_OFFSET + (uint64_t) ret;
-//	uint64_t test_addr = (uint64_t) ret;
-//	setup_page_tables(virtual_test_addr, test_addr);
+	uint64_t virtual_test_addr = VIRTUAL_PHYSFREE_OFFSET + (uint64_t) ret;
+	uint64_t test_addr = (uint64_t) ret;
+	setup_page_tables_after_cr3_update(virtual_test_addr, test_addr);
+	*((uint64_t *)virtual_test_addr) = 0xb00b;
+	printf("\nmem access after ptable-setup %x", *((uint64_t *)virtual_test_addr));
 //	struct page_t *test = (struct page_t *)virtual_test_addr;
 //	test[0].is_free = 0;
 //	test[0].ref_count = 2;
 //	test[0].virtual_address = NULL;
 //	printf("YAYYYY:  %d", test[0].ref_count);
-	ret = get_free_frames(1);
-	printf("\nans2: %p", ret);
-	ret = get_free_frames(2);
-	printf("\nans3: %p", ret);
-	ret = get_free_frames(3);
-	printf("\nans3: %p", ret);
-	ret = get_free_frames(4);
-	printf("\nans3: %p", ret);
-
-	ret = get_free_frames(5);
-	printf("\nans3: %p", ret);
-	ret = get_free_frames(6);
-	printf("\nans3: %p", ret);
-	uint64_t *ret2 = get_free_frames(2);
-	printf("\n%x", ret2);
+//	ret = get_free_frames(1);
+//	printf("\nans2: %p", ret);
+//	ret = get_free_frames(2);
+//	printf("\nans3: %p", ret);
+//	ret = get_free_frames(3);
+//	printf("\nans3: %p", ret);
+//	ret = get_free_frames(4);
+//	printf("\nans3: %p", ret);
+//
+//	ret = get_free_frames(5);
+//	printf("\nans3: %p", ret);
+//	ret = get_free_frames(6);
+//	printf("\nans3: %p", ret);
+//	uint64_t *ret2 = get_free_frames(2);
+//	printf("\n%x", ret2);
 }
+
+void do_paging(void* physbase, void* physfree) {
+	map_linear_addresses(physbase, physfree);
+	update_cr3();
+}
+
 void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 // kernel starts here
 //	printf("\ncreating free list");
@@ -378,14 +455,14 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 	}
 	create_free_list_test(modulep, free_list, physbase, physfree);
 	//can write a better check below. Your wish
-	uint64_t number_pages_free_list = (MAX_NUMBER_PAGES*sizeof(struct page_t))/PAGE_SIZE + 1;//potentially wasting a page if it exactly page sizes here but thats fine and rare
+	uint64_t number_pages_free_list = (MAX_NUMBER_PAGES * sizeof(struct page_t))
+			/ PAGE_SIZE + 1; //potentially wasting a page if it exactly page sizes here but thats fine and rare
 	printf(" NUMBER OF PAGES TAKEN by FREE_PAGES %d\n", number_pages_free_list);
-	for(int i = 0;i<number_pages_free_list;i++){
-		mark_frame_used((uint64_t)free_list_location + i*(0x1000));
+	for (int i = 0; i < number_pages_free_list; i++) {
+		mark_frame_used((uint64_t) free_list_location + i * (0x1000));
 	}
 	mark_frame_used(0xb8000);
-	map_linear_addresses(physbase, physfree);
-	update_cr3();
+	do_paging(physbase, physfree);
 	manage_memory_test_suite();
 }
 

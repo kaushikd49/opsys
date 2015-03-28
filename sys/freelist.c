@@ -202,11 +202,11 @@ void return_pages(uint64_t page, page_t *free_list, int order){
 }
 uint64_t * get_free_frame() {
 	uint64_t freePage = get_free_page(free_list);
-	printf("returning freepage:%p\n ", freePage);
+	printf("returning freepage:%p ", freePage);
 	return (uint64_t *) freePage;
 }
 uint64_t * get_free_frames(int order){
 	uint64_t freePage = get_free_pages(free_list, order);
-	printf("returning freepages:%p\n ", freePage);
+	printf("returning freepages:%p ", freePage);
 	return (uint64_t *) freePage;
 }

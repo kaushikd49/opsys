@@ -14,11 +14,13 @@
 #define MAX_FREELIST_LENGTH (MAX_NUMBER_PAGES/CHAR_SIZE)
 #define NULL1 ((void*)1)
 #define NULL2 ((void*)2)
+
 #define VIRTUAL_PHYSBASE 0xffffffff80200000
 #define VIRTUAL_PHYSFREE_OFFSET 0xffffffff80000000
 #define VIRTUAL_ADDR_VIDMEM 0xffffffff800b8000
 #define VIRTUAL_ADDR_TIMER_LOC 0xffffffff800b8f80
 #define VIRTUAL_ADDR_GLYPH_POS 0xffffffff800b8f60
+
 typedef struct page_t {
 	uint32_t is_free;
 	uint64_t frame_addr;
@@ -56,5 +58,11 @@ uint64_t get_free_pages(page_t *free_list,int order);
 void return_page(uint64_t page, page_t *free_list);
 uint64_t * get_free_frame();
 uint64_t set_bit(uint64_t ele, int bit_num, int bit_val);
+
+
+// We will be using self-referential pages trick, so the entry 0 of PML will map to entry 0.
+// This implies we cannot use PMLE # 0 for general purpose mapping. Corresponding bits are
+// bits [39:47] which cannot be 000000000. At min, they can be 000000001 and this
+// means that min virtual address can be 0000-0010-0000-0000. Make sure this is not breached.
 
 #endif
