@@ -290,7 +290,8 @@ uint64_t * virtual_addr_pdirptre(uint64_t linear_addr) {
 	//as table and page offsets respectively.
 	uint64_t temp = extract_bits(linear_addr, 39, 47,
 	PG_TRVRSE_BASIC_VA_ADDR, 12, 20);
-	uint64_t pdir_ptre_virtual_addr = copy_as_pageoffset(linear_addr, 30, 38, temp);
+	uint64_t pdir_ptre_virtual_addr = copy_as_pageoffset(linear_addr, 30, 38,
+			temp);
 	return (uint64_t *) pdir_ptre_virtual_addr;
 }
 
@@ -328,10 +329,27 @@ void cleanup_page(uint64_t * page_table_entity_entry) {
 //	printf("%p done %p", page_table_entity_base, ptr);
 }
 
+static inline void invalidate_tlb(uint64_t* m) {
+	__asm__ __volatile__ ( "invlpg (%0)" : : "b"(m) : "memory" );
+}
+
+
+void invalidate_addresses_with_page(uint64_t * virtual_addr) {
+	uint64_t temp = extract_bits((uint64_t) virtual_addr, 12, 63, ULONG_ZERO,
+			12, 63);
+	// there are 4096 linear addresses whose page = that of this virtual addr
+	// and all of them need to be flushed
+	for (uint64_t i = 0; i < PAGE_SIZE; i++) {
+		uint64_t addr = extract_bits(i, 0, 11, temp, 0, 11);
+//		printf("clearing %p ", addr);
+		invalidate_tlb((uint64_t *)addr);
+	}
+}
+
 void setup_page_tables_after_cr3_update(uint64_t linear_addr,
 		uint64_t physical_addr) {
 	// derive paging entities from linear address and update their target
-	printf("linear_addr is %p\n", linear_addr);
+	printf("\nlinear_addr is %p, physical:%p\n", linear_addr, physical_addr);
 	uint64_t * pml4e_virtual_addr = virtual_addr_pml4e(linear_addr);
 	if (is_entry_not_created((uint64_t *) pml4e_virtual_addr)) {
 		uint64_t* pdir_ptr = get_free_frame();
@@ -339,33 +357,38 @@ void setup_page_tables_after_cr3_update(uint64_t linear_addr,
 		uint64_t* virtualAddrPdirptre = virtual_addr_pdirptre(linear_addr);
 		cleanup_page(virtualAddrPdirptre);
 	}
-	printf("\npml4e_virtual_addr:%p, value:%p\n", pml4e_virtual_addr,
-			*pml4e_virtual_addr);
+//	printf("\npml4e_virtual_addr:%p, value:%p\n", pml4e_virtual_addr,
+//			*pml4e_virtual_addr);
 
 	uint64_t * pdir_ptre_virtual_addr = virtual_addr_pdirptre(linear_addr);
 	if (is_entry_not_created((uint64_t *) pdir_ptre_virtual_addr)) {
 		uint64_t* pdir = get_free_frame();
 		*pdir_ptre_virtual_addr = get_pdpt_entry((uint64_t) pdir);
 	}
-	printf("\npdir_ptre_virtual_addr:%p, value:%p\n", pdir_ptre_virtual_addr,
-			*pdir_ptre_virtual_addr);
+//	printf("\npdir_ptre_virtual_addr:%p, value:%p\n", pdir_ptre_virtual_addr,
+//			*pdir_ptre_virtual_addr);
 
 	uint64_t * pdire_virtual_addr = virtual_addr_pdire(linear_addr);
 	if (is_entry_not_created((uint64_t *) pdire_virtual_addr)) {
 		uint64_t* ptable = get_free_frame();
 		*pdire_virtual_addr = get_pd_entry((uint64_t) ptable);
 	}
-	printf("\npdire_virtual_addr:%p, value:%p\n", pdire_virtual_addr,
-			*pdire_virtual_addr);
+//	printf("\npdire_virtual_addr:%p, value:%p\n", pdire_virtual_addr,
+//			*pdire_virtual_addr);
 
 	uint64_t * pte_virtual_addr = virtual_addr_pte(linear_addr);
-	if (is_entry_not_created((uint64_t *) pte_virtual_addr)) {
-		*pte_virtual_addr = get_ptable_entry(physical_addr);
+	int present_before = !(is_entry_not_created((uint64_t *) pte_virtual_addr));
+	*pte_virtual_addr = get_ptable_entry(physical_addr);
+	if (present_before) {
+		// invalidate TLB entry
+		printf("!!!invalidating TLB!!!");
+		invalidate_addresses_with_page((uint64_t *) linear_addr);
 	}
-	printf("\npte_virtual_addr:%p, value:%p\n", pte_virtual_addr,
-			*pte_virtual_addr);
+//	printf("\npte_virtual_addr:%p, value:%p\n", pte_virtual_addr,
+//			*pte_virtual_addr);
 }
 
+// IMPORTANT - do not use virtual addresses corresponding to 0 PML offset
 void map_page_tables_adress() {
 	// Make the first entry of pml4 point to the itself
 	*pml_base_ptr = get_pml4_entry((uint64_t) pml_base_ptr);
@@ -410,8 +433,12 @@ void manage_memory_test_suite() {
 	uint64_t virtual_test_addr = VIRTUAL_PHYSFREE_OFFSET + (uint64_t) ret;
 	uint64_t test_addr = (uint64_t) ret;
 	setup_page_tables_after_cr3_update(virtual_test_addr, test_addr);
-	*((uint64_t *)virtual_test_addr) = 0xb00b;
-	printf("\nmem access after ptable-setup %x", *((uint64_t *)virtual_test_addr));
+	*((uint64_t *) virtual_test_addr) = 0xb00b;
+	printf("\nmem access after ptable-setup %x",
+			*((uint64_t *) virtual_test_addr));
+	setup_page_tables_after_cr3_update(virtual_test_addr, test_addr + 5000);
+	printf(" mem access after ptable-setup %x",
+			*((uint64_t *) virtual_test_addr));
 //	struct page_t *test = (struct page_t *)virtual_test_addr;
 //	test[0].is_free = 0;
 //	test[0].ref_count = 2;
