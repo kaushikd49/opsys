@@ -316,6 +316,7 @@ uint64_t * virtual_addr_pte(uint64_t linear_addr) {
 	return (uint64_t *) pte_virtual_addr;
 }
 
+//todo: verify this is working and use cleanup in virtual addr space
 void cleanup_page(uint64_t * page_table_entity_entry) {
 	uint64_t page_table_entity_base = extract_bits(
 			(uint64_t) page_table_entity_entry, 12, 63, ULONG_ZERO, 12, 63);
@@ -354,8 +355,8 @@ void setup_page_tables_after_cr3_update(uint64_t linear_addr,
 	if (is_entry_not_created((uint64_t *) pml4e_virtual_addr)) {
 		uint64_t* pdir_ptr = get_free_frame();
 		*pml4e_virtual_addr = get_pml4_entry((uint64_t) pdir_ptr);
-		uint64_t* virtualAddrPdirptre = virtual_addr_pdirptre(linear_addr);
-		cleanup_page(virtualAddrPdirptre);
+//		uint64_t* virtualAddrPdirptre = virtual_addr_pdirptre(linear_addr);
+//		cleanup_page(virtualAddrPdirptre);
 	}
 //	printf("\npml4e_virtual_addr:%p, value:%p\n", pml4e_virtual_addr,
 //			*pml4e_virtual_addr);
@@ -439,7 +440,11 @@ void manage_memory_test_suite() {
 	setup_page_tables_after_cr3_update(virtual_test_addr, test_addr + 5000);
 	printf(" mem access after ptable-setup %x",
 			*((uint64_t *) virtual_test_addr));
-//	struct page_t *test = (struct page_t *)virtual_test_addr;
+	setup_page_tables_after_cr3_update(0x1234455355, test_addr);
+	printf(" newwww mem access after ptable-setup %x",
+			*((uint64_t *) 0x1234455355));
+
+	//	struct page_t *test = (struct page_t *)virtual_test_addr;
 //	test[0].is_free = 0;
 //	test[0].ref_count = 2;
 //	test[0].virtual_address = NULL;
