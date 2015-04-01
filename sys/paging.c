@@ -408,11 +408,21 @@ void map_other_addresses() {
 
 	free_list = (page_t *) (VIRTUAL_PHYSFREE_OFFSET + (uint64_t) free_list);//change the free_list address from physical to virtual
 }
+void map_tarfs_addresses(){
+	uint64_t virtual_addr = 0xffffffff8020c000;
+	uint64_t physical_addr = 0x20c000;
+	for(int i =0;i<37;i++){
+		setup_page_tables(virtual_addr, physical_addr);
+		virtual_addr = virtual_addr + 0x1000;
+		physical_addr = physical_addr + 0x1000;
+	}
+}
 void map_linear_addresses(void* physbase, void* physfree) {
 	map_kernel_address(physbase, physfree);
 	map_video_address();
 	map_other_addresses();//this function maps other random addresses we might randomly map after physfree. Example: freelist
 	map_page_tables_adress();
+	//map_tarfs_addresses();
 }
 
 void update_cr3() {
