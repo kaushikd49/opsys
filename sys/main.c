@@ -8,7 +8,7 @@
 #include <sys/initkeyboard.h>
 #include <sys/printtime.h>
 #include<sys/kmalloc.h>
-#include<sys/paging_process.h>
+
 #define INITIAL_STACK_SIZE 4096
 extern char video_buffer[4096];
 struct smap_t {
@@ -185,13 +185,13 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 		}
 	}
 	printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
-	// kernel starts here
-	manage_memory(physbase, physfree, modulep);
-	uint64_t *pml_base_ptr_process = NULL;
-	do_paging_process(physbase, physfree, pml_base_ptr_process);
-//	printf("%x", pml_base_ptr_process);
+
+	//	printf("%x", pml_base_ptr_process);
 	init_caches();
 	//traverse_linked_list();
+
+	// kernel starts here
+	manage_memory(physbase, physfree, modulep);
 
 	init_init_IDT();
 	config_PIC();
@@ -199,7 +199,12 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	init_keyboard_map();
 	keyboard_init();
 //	load_elf_trial();
-//	pagingTests(physbase, physfree, modulep);
+
+/*	should be invoked without manage_memory above.
+	todo: this is failing as freelist is returning 0x0 as the free page
+	pagingTests(physbase, physfree, modulep);
+*/
+
 }
 void boot(void) {
 	// note: function changes rsp, local stack variables can't be practically used

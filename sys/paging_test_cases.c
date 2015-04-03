@@ -1,6 +1,7 @@
 #include<sys/paging.h>
 #include<sys/defs.h>
 #include <sys/sbunix.h>
+
 # define NULL1 ((void*)1)
 # define NULL2 ((void*)2)
 
