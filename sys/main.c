@@ -191,7 +191,8 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	//traverse_linked_list();
 
 	// kernel starts here
-	manage_memory(physbase, physfree, modulep);
+//	manage_memory(physbase, physfree, modulep);
+	pagingTests(physbase, physfree, modulep);
 
 	init_init_IDT();
 	config_PIC();

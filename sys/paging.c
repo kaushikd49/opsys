@@ -507,6 +507,24 @@ uint64_t * get_pml4_base_for_process() {
 	return process_pml_base_physical;
 }
 
+int is_linear_addr_mapped(uint64_t linear_addr){
+	uint64_t * pml4e_virtual_addr = virtual_addr_pml4e(linear_addr);
+	if (!is_entry_not_created((uint64_t *) pml4e_virtual_addr)) {
+		uint64_t * pdir_ptre_virtual_addr = virtual_addr_pdirptre(linear_addr);
+
+		if (!is_entry_not_created((uint64_t *) pdir_ptre_virtual_addr)) {
+			uint64_t * pdire_virtual_addr = virtual_addr_pdire(linear_addr);
+
+			if (is_entry_not_created((uint64_t *) pdire_virtual_addr)) {
+				uint64_t * pte_virtual_addr = virtual_addr_pte(linear_addr);
+				int is_pte_present = !(is_entry_not_created((uint64_t *) pte_virtual_addr));
+				return is_pte_present;
+			}
+		}
+	}
+	return 0;
+}
+
 void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 // kernel starts here
 //	printf("\ncreating free list");
@@ -530,14 +548,12 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 		mark_frame_used((uint64_t) free_list_location + i * (0x1000));
 	}
 	mark_frame_used(0xb8000);
-	do_paging(physbase, physfree);
+//	do_paging(physbase, physfree);
 //	manage_memory_test_suite();
 
-	uint64_t *temp = get_pml4_base_for_process();
+//	printf("\npresence:::%d", is_linear_addr_mapped(0x400000));
 
-	// process page table setup
-//	uint64_t *process_pml_base_ptr = get_free_frame();
-//	map_linear_addresses(&process_pml_base_ptr, physbase, physfree);
+//	uint64_t *temp = get_pml4_base_for_process();
 
 }
 
