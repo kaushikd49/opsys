@@ -189,8 +189,8 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	//	printf("%x", pml_base_ptr_process);
 
 	// kernel starts here
-//	manage_memory(physbase, physfree, modulep);
-	pagingTests(physbase, physfree, modulep);
+	manage_memory(physbase, physfree, modulep);
+//	pagingTests(physbase, physfree, modulep);
 	/*	should be invoked without manage_memory above.
 		todo: this is failing as freelist is returning 0x0 as the free page
 		pagingTests(physbase, physfree, modulep);
