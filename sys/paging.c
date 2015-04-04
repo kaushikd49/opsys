@@ -6,8 +6,8 @@
 
 #define NUM_UNIT64_IN_PAGE (PAGE_SIZE/sizeof(uint64_t))
 // This is used to copy apt offsets from linear addr and traverse page tables
-// The key is usage of all 1's to make use of self-referential trick.
-#define PG_TRVRSE_BASIC_VA_ADDR 0x0000000000000000
+// Sign extension for msb is very important.
+#define PG_TRVRSE_BASIC_VA_ADDR 0xFFFFFF7FBFDFEFF0
 #define KERNEL_PML4_BASE_VIRTUAL 0X0
 
 void *get_virtual_location(int order);
@@ -112,7 +112,7 @@ int page_lookup(uint64_t *pml_base_ptr, uint64_t linear_addr,
 	*deepest_entity = *deepest_entity_base = 0;
 
 	if (pml_base_ptr == NULL) {
-//		printf("Error: pml_base_ptr is NULL");
+		printf("Error: pml_base_ptr is NULL");
 		return -1;
 	}
 	uint64_t *pml = pml_base_ptr + pe.pml_index;
@@ -398,7 +398,9 @@ void setup_page_tables_after_cr3_update(uint64_t linear_addr,
 void map_page_tables_adress(uint64_t **pml_base_dbl_ptr) {
 	uint64_t *pml_base_ptr = *pml_base_dbl_ptr;
 	// Make the first entry of pml4 point to the itself
-	*pml_base_ptr = get_pml4_entry((uint64_t) pml_base_ptr);
+//	*pml_base_ptr = get_pml4_entry((uint64_t) pml_base_ptr);
+	uint64_t * temp = pml_base_ptr + 510;
+	*temp = get_pml4_entry((uint64_t) pml_base_ptr);
 //	printf("*pml_base_ptr is %p\n", *pml_base_ptr);
 }
 
@@ -445,21 +447,20 @@ void update_cr3(uint64_t * pml_base_ptr) {
 //	printf("post cr3 update");
 }
 void manage_memory_test_suite() {
-//	printf("cr3 mapped\n");
 	uint64_t *ret = get_free_frames(0);
 //	printf("\nans1: %p", ret);
 	uint64_t virtual_test_addr = VIRTUAL_PHYSFREE_OFFSET + (uint64_t) ret;
 	uint64_t test_addr = (uint64_t) ret;
 	setup_page_tables_after_cr3_update(virtual_test_addr, test_addr);
 	*((uint64_t *) virtual_test_addr) = 0xb00b;
-//	printf("\nmem access after ptable-setup %x",
-//			*((uint64_t *) virtual_test_addr));
+	printf("\nmem access after ptable-setup %x\n",
+			*((uint64_t *) virtual_test_addr));
 	setup_page_tables_after_cr3_update(virtual_test_addr, test_addr + 5000);
-//	printf(" mem access after ptable-setup %x",
-//			*((uint64_t *) virtual_test_addr));
+	printf("diff mem access after ptable-setup %x\n",
+			*((uint64_t *) virtual_test_addr));
 	setup_page_tables_after_cr3_update(0x1234455355, test_addr);
-//	printf(" newwww mem access after ptable-setup %x",
-//			*((uint64_t *) 0x1234455355));
+	printf("another mem access after ptable-setup %x\n",
+			*((uint64_t *) 0x1234455355));
 
 	//	struct page_t *test = (struct page_t *)virtual_test_addr;
 //	test[0].is_free = 0;
@@ -507,7 +508,7 @@ uint64_t * get_pml4_base_for_process() {
 	return process_pml_base_physical;
 }
 
-int is_linear_addr_mapped(uint64_t linear_addr){
+int is_linear_addr_mapped(uint64_t linear_addr) {
 	uint64_t * pml4e_virtual_addr = virtual_addr_pml4e(linear_addr);
 	if (!is_entry_not_created((uint64_t *) pml4e_virtual_addr)) {
 		uint64_t * pdir_ptre_virtual_addr = virtual_addr_pdirptre(linear_addr);
@@ -517,7 +518,8 @@ int is_linear_addr_mapped(uint64_t linear_addr){
 
 			if (is_entry_not_created((uint64_t *) pdire_virtual_addr)) {
 				uint64_t * pte_virtual_addr = virtual_addr_pte(linear_addr);
-				int is_pte_present = !(is_entry_not_created((uint64_t *) pte_virtual_addr));
+				int is_pte_present = !(is_entry_not_created(
+						(uint64_t *) pte_virtual_addr));
 				return is_pte_present;
 			}
 		}

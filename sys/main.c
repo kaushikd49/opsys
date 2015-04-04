@@ -187,13 +187,17 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 
 	//	printf("%x", pml_base_ptr_process);
-	init_caches();
-	//traverse_linked_list();
 
 	// kernel starts here
 //	manage_memory(physbase, physfree, modulep);
 	pagingTests(physbase, physfree, modulep);
+	/*	should be invoked without manage_memory above.
+		todo: this is failing as freelist is returning 0x0 as the free page
+		pagingTests(physbase, physfree, modulep);
+	*/
 
+	init_caches();
+	//traverse_linked_list();
 	init_init_IDT();
 	config_PIC();
 	add_custom_interrupt();
@@ -201,10 +205,6 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	keyboard_init();
 //	load_elf_trial();
 
-/*	should be invoked without manage_memory above.
-	todo: this is failing as freelist is returning 0x0 as the free page
-	pagingTests(physbase, physfree, modulep);
-*/
 
 }
 void boot(void) {
