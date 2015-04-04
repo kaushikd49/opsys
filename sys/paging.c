@@ -5,10 +5,13 @@
 #include <sys/kmalloc.h>
 
 #define NUM_UNIT64_IN_PAGE (PAGE_SIZE/sizeof(uint64_t))
-// This is used to copy apt offsets from linear addr and traverse page tables
-// Sign extension for msb is very important.
+
+// This is used to copy apt offsets from linear addr and
+// traverse page tables. Sign extension for msb is very important.
 #define PG_TRVRSE_BASIC_VA_ADDR 0xFFFFFF7FBFDFEFF0
-#define KERNEL_PML4_BASE_VIRTUAL 0X0
+
+// This is needed to copy over the kernel pml base to processes' pml base
+#define KERNEL_PML4_BASE_VIRTUAL 0xFFFFFF7FBFDFE000
 
 void *get_virtual_location(int order);
 
@@ -490,7 +493,7 @@ void do_paging(void* physbase, void* physfree) {
 	update_cr3(kernel_pml_base_ptr);
 }
 
-uint64_t * get_pml4_base_for_process() {
+uint64_t * get_physical_pml4_base_for_process() {
 	// copy the kernel's pml4 base frame into
 	// a new frame and return the physical address
 	// so that the task_struct can store the same
@@ -499,11 +502,12 @@ uint64_t * get_pml4_base_for_process() {
 	uint64_t *virtual_addr = (uint64_t *) get_virtual_location(1);
 	setup_page_tables_after_cr3_update((uint64_t) virtual_addr,
 			(uint64_t) process_pml_base_physical);
-	uint64_t *temp = (uint64_t *) KERNEL_PML4_BASE_VIRTUAL;
+	uint64_t *p = (uint64_t *) KERNEL_PML4_BASE_VIRTUAL;
+	uint64_t *q = virtual_addr;
 	for (int i = 0; i < NUM_UNIT64_IN_PAGE; i++) {
-		*virtual_addr = *temp;
-		virtual_addr++;
-		temp++;
+		*q = *p;
+		q++;
+		p++;
 	}
 	return process_pml_base_physical;
 }
@@ -551,11 +555,13 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 	}
 	mark_frame_used(0xb8000);
 	do_paging(physbase, physfree);
+
+	uint64_t *temp = get_physical_pml4_base_for_process();
+	update_cr3(temp);
+	printf("process_pml4: %p ", temp);
+
+
 //	manage_memory_test_suite();
-
-//	printf("\npresence:::%d", is_linear_addr_mapped(0x400000));
-
-//	uint64_t *temp = get_pml4_base_for_process();
-
+//	printf("\npresence:::%d ", is_linear_addr_mapped(0x400000));
 }
 

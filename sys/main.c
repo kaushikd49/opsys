@@ -10,6 +10,7 @@
 #include<sys/kmalloc.h>
 
 #define INITIAL_STACK_SIZE 4096
+
 extern char video_buffer[4096];
 struct smap_t {
 	uint64_t base, length;
@@ -203,6 +204,10 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	add_custom_interrupt();
 	init_keyboard_map();
 	keyboard_init();
+
+	// cause page fault
+//	uint64_t * p = (uint64_t *)0x1000;
+//	printf("causing fault..%x ", *p);
 //	load_elf_trial();
 
 
