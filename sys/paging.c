@@ -550,7 +550,7 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 		mark_frame_used((uint64_t) free_list_location + i * (0x1000));
 	}
 	mark_frame_used(0xb8000);
-//	do_paging(physbase, physfree);
+	do_paging(physbase, physfree);
 //	manage_memory_test_suite();
 
 //	printf("\npresence:::%d", is_linear_addr_mapped(0x400000));
