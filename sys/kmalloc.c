@@ -89,9 +89,15 @@ void *get_mem_alloc(int order){
 void *get_pages_directly(int order){
 	void *free_frame = (void *)get_free_frames(order);
 	void *virtual_addr = (void *)get_virtual_location(order);
+	void *return_addr = virtual_addr;
 	//****** map virtual to physical ***********
-	setup_page_tables_after_cr3_update((uint64_t)virtual_addr, (uint64_t)free_frame);
-	return virtual_addr;
+	for(uint64_t i = 0; i < (1<<order); i++){
+//		printf("%d  ",order);
+		setup_page_tables_after_cr3_update((uint64_t)virtual_addr, (uint64_t)free_frame);
+		virtual_addr = (void *)((uint64_t)virtual_addr + 0x1000);
+		free_frame = (void *)((uint64_t)free_frame + 0x1000);
+	}
+	return return_addr;
 }
 void *allocate_in_cache(int order){
 	int cache_location = order - 5;

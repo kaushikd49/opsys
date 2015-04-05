@@ -3,7 +3,7 @@
 
 #define NULL ((void*)0)
 
-typedef unsigned long  uint64_t;
+typedef unsigned long uint64_t;
 typedef          long   int64_t;
 typedef unsigned int   uint32_t;
 typedef          int    int32_t;
@@ -58,4 +58,6 @@ struct lidtr_t { //initializing ldtr register
 	uint16_t size;
 	uint64_t base;
 }__attribute__((packed));
+#define align(size, alignment) (size + (alignment - 1)) & ~(alignment - 1)
+#define TARFS_ALIGNMENT 512
 #endif

@@ -6,4 +6,5 @@ uint64_t extract_bits(uint64_t from, int fstart_bit, int fend_bit, uint64_t to, 
 void manage_memory(void* physbase, void* physfree, uint32_t* modulep);
 void pagingTests(void* physbase, void* physfree, uint32_t* modulep) ;
 void setup_page_tables_after_cr3_update(uint64_t linear_addr,uint64_t physical_addr);
+int is_linear_addr_mapped(uint64_t linear_addr);
 #endif
