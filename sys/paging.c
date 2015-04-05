@@ -354,23 +354,6 @@ void invalidate_addresses_with_page(uint64_t * virtual_addr) {
 		invalidate_tlb((uint64_t *) addr);
 	}
 }
-int is_linear_addr_mapped(uint64_t linear_addr){
-	uint64_t * pml4e_virtual_addr = virtual_addr_pml4e(linear_addr);
-	if (!is_entry_not_created((uint64_t *) pml4e_virtual_addr)) {
-		uint64_t * pdir_ptre_virtual_addr = virtual_addr_pdirptre(linear_addr);
-
-		if (!is_entry_not_created((uint64_t *) pdir_ptre_virtual_addr)) {
-			uint64_t * pdire_virtual_addr = virtual_addr_pdire(linear_addr);
-
-			if (is_entry_not_created((uint64_t *) pdire_virtual_addr)) {
-				uint64_t * pte_virtual_addr = virtual_addr_pte(linear_addr);
-				int is_pte_present = !(is_entry_not_created((uint64_t *) pte_virtual_addr));
-				return is_pte_present;
-			}
-		}
-	}
-	return 0;
-}
 void setup_page_tables_after_cr3_update(uint64_t linear_addr,
 		uint64_t physical_addr) {
 	// derive paging entities from linear address and update their target
