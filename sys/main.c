@@ -8,9 +8,9 @@
 #include <sys/initkeyboard.h>
 #include <sys/printtime.h>
 #include <sys/kmalloc.h>
-#include <sys/paging_process.h>
 #include <sys/process.h>
 #define INITIAL_STACK_SIZE 4096
+
 extern char video_buffer[4096];
 struct smap_t {
 	uint64_t base, length;
@@ -195,11 +195,19 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 		}
 	}
 	printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
+
+	//	printf("%x", pml_base_ptr_process);
+
 	// kernel starts here
 	manage_memory(physbase, physfree, modulep);
+//	pagingTests(physbase, physfree, modulep);
+	/*	should be invoked without manage_memory above.
+		todo: this is failing as freelist is returning 0x0 as the free page
+		pagingTests(physbase, physfree, modulep);
+	*/
+
 	init_caches();
 	//traverse_linked_list();
-
 	init_init_IDT();
 	config_PIC();
 	add_custom_interrupt();
@@ -209,8 +217,13 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	test_process_switch();
 //	printf("\n presence: %d", is_linear_addr_mapped(0x4000))
 //	load_executable("bin/hello");
+
+	// cause page fault
+//	uint64_t * p = (uint64_t *)0x1000;
+//	printf("causing fault..%x ", *p);
 //	load_elf_trial();
-//	pagingTests(physbase, physfree, modulep);
+
+
 }
 void boot(void) {
 	// note: function changes rsp, local stack variables can't be practically used

@@ -2,17 +2,23 @@
 #include <sys/sbunix.h>
 #include <sys/pagingglobals.h>
 #include <sys/freelist.h>
+#include <sys/kmalloc.h>
 
-#define NUM_UNIT64_IN_PAGE PAGE_SIZE/sizeof(uint64_t)
+#define NUM_UNIT64_IN_PAGE (PAGE_SIZE/sizeof(uint64_t))
 
-// This is used to copy apt offsets from linear addr and traverse page tables
-// The key is usage of all 1's to make use of self-referential trick.
-#define PG_TRVRSE_BASIC_VA_ADDR 0x0000000000000000
+// This is used to copy apt offsets from linear addr and
+// traverse page tables. Sign extension for msb is very important.
+#define PG_TRVRSE_BASIC_VA_ADDR 0xFFFFFF7FBFDFEFF0
+
+// This is needed to copy over the kernel pml base to processes' pml base
+#define KERNEL_PML4_BASE_VIRTUAL 0xFFFFFF7FBFDFE000
+
+void *get_virtual_location(int order);
 
 // todo: duplicated smap definition from main.
 uint64_t virtual_physfree = 0; // will be set later
 uint64_t virtual_physbase = (uint64_t) VIRTUAL_PHYSBASE;
-uint64_t * pml_base_ptr = NULL; // equivalent to CR3
+uint64_t * kernel_pml_base_ptr = NULL; // physical address
 //end of free page management
 uint64_t set_bit(uint64_t ele, int bit_num, int bit_val) {
 	uint64_t bit_in_uint64 = ULONG_ONE << bit_num;
@@ -100,8 +106,8 @@ uint64_t* next_entity_entry(uint64_t* entity_entry, int offset) {
 // Status for each would be indicated by 1,2,3,4 respectively
 // If all are present, then return 0.
 // Also sets the deepest entity base.
-int page_lookup(uint64_t linear_addr, uint64_t* deepest_entity,
-		uint64_t* deepest_entity_base) {
+int page_lookup(uint64_t *pml_base_ptr, uint64_t linear_addr,
+		uint64_t* deepest_entity, uint64_t* deepest_entity_base) {
 	struct paging_entities pe;
 	get_paging_entity_indexes(&pe, linear_addr);
 
@@ -109,7 +115,7 @@ int page_lookup(uint64_t linear_addr, uint64_t* deepest_entity,
 	*deepest_entity = *deepest_entity_base = 0;
 
 	if (pml_base_ptr == NULL) {
-//		printf("Error: pml_base_ptr is NULL");
+		printf("Error: pml_base_ptr is NULL");
 		return -1;
 	}
 	uint64_t *pml = pml_base_ptr + pe.pml_index;
@@ -197,12 +203,13 @@ void create_ptable(const struct paging_entities* pe, uint64_t physical_addr,
 	*(ptable_base + pe->table_index) = get_ptable_entry(physical_addr);
 }
 
-void setup_page_tables(uint64_t linear_addr, uint64_t physical_addr) {
+void setup_page_tables(uint64_t **pml_base_dbl_ptr, uint64_t linear_addr,
+		uint64_t physical_addr) {
 	struct paging_entities pe;
 	get_paging_entity_indexes(&pe, linear_addr);
 
-	if (pml_base_ptr == NULL)
-		pml_base_ptr = get_free_frame();
+	if (*pml_base_dbl_ptr == NULL)
+		*pml_base_dbl_ptr = get_free_frame();
 
 	// USE OF THE LOCAL VARS BELOW IS VERY IMPOROTANT.
 	// USED NULL TO INITIALIZE PTRS BELOW AND CHANGE
@@ -211,11 +218,12 @@ void setup_page_tables(uint64_t linear_addr, uint64_t physical_addr) {
 	uint64_t def = 2;
 	uint64_t * deepest_entity = &abc;
 	uint64_t * deepest_entity_base = &def;
-	int res = page_lookup(linear_addr, deepest_entity, deepest_entity_base);
+	int res = page_lookup(*pml_base_dbl_ptr, linear_addr, deepest_entity,
+			deepest_entity_base);
 
 	if (res == 1) {
 		// No entities are present for this linear address
-		create_all_paging_entities(&pe, physical_addr, pml_base_ptr);
+		create_all_paging_entities(&pe, physical_addr, *pml_base_dbl_ptr);
 	} else if (res == 2) {
 		// only pml is present for this linear address
 		create_all_but_pml(&pe, physical_addr, deepest_entity_base);
@@ -238,7 +246,8 @@ void setup_page_tables(uint64_t linear_addr, uint64_t physical_addr) {
 	}
 }
 
-void map_kernel_address(void* physbase, void* physfree) {
+void map_kernel_address(uint64_t **pml_base_dbl_ptr, void* physbase,
+		void* physfree) {
 	virtual_physfree = VIRTUAL_PHYSFREE_OFFSET + (uint64_t) physfree;
 	uint64_t linear_addr = virtual_physbase;
 	uint64_t physical_addr = (uint64_t) physbase;
@@ -248,22 +257,22 @@ void map_kernel_address(void* physbase, void* physfree) {
 	for (int i = 0; i < numIters; i++) {
 //		if (i == 35)
 //			printf("accessing %p ", linear_addr);
-		setup_page_tables(linear_addr, physical_addr);
+		setup_page_tables(pml_base_dbl_ptr, linear_addr, physical_addr);
 		linear_addr += 4096;
 		physical_addr += 4096;
 	}
 //	printf("fianlly mapped %p to %p", linear_addr, physfree);
 }
 
-void map_video_address() {
-	setup_page_tables(VIRTUAL_ADDR_VIDMEM, 0xb8000);
+void map_video_address(uint64_t **pml_base_dbl_ptr) {
+	setup_page_tables(pml_base_dbl_ptr, VIRTUAL_ADDR_VIDMEM, 0xb8000);
 	uint64_t abc = 1;
 	uint64_t def = 2;
 	uint64_t * deepest_entity = &abc;
 	uint64_t * deepest_entity_base = &def;
 
-	int res = page_lookup(VIRTUAL_ADDR_VIDMEM, deepest_entity,
-			deepest_entity_base);
+	int res = page_lookup(*pml_base_dbl_ptr, VIRTUAL_ADDR_VIDMEM,
+			deepest_entity, deepest_entity_base);
 	printf("res:%d", res);
 	BASE_CURSOR_POS = VIRTUAL_ADDR_VIDMEM;
 	TIMER_LOC = VIRTUAL_ADDR_TIMER_LOC;
@@ -334,7 +343,6 @@ static inline void invalidate_tlb(uint64_t* m) {
 	__asm__ __volatile__ ( "invlpg (%0)" : : "b"(m) : "memory" );
 }
 
-
 void invalidate_addresses_with_page(uint64_t * virtual_addr) {
 	uint64_t temp = extract_bits((uint64_t) virtual_addr, 12, 63, ULONG_ZERO,
 			12, 63);
@@ -343,7 +351,7 @@ void invalidate_addresses_with_page(uint64_t * virtual_addr) {
 	for (uint64_t i = 0; i < PAGE_SIZE; i++) {
 		uint64_t addr = extract_bits(i, 0, 11, temp, 0, 11);
 //		printf("clearing %p ", addr);
-		invalidate_tlb((uint64_t *)addr);
+		invalidate_tlb((uint64_t *) addr);
 	}
 }
 int is_linear_addr_mapped(uint64_t linear_addr){
@@ -406,42 +414,46 @@ void setup_page_tables_after_cr3_update(uint64_t linear_addr,
 }
 
 // IMPORTANT - do not use virtual addresses corresponding to 0 PML offset
-void map_page_tables_adress() {
+void map_page_tables_adress(uint64_t **pml_base_dbl_ptr) {
+	uint64_t *pml_base_ptr = *pml_base_dbl_ptr;
 	// Make the first entry of pml4 point to the itself
-	*pml_base_ptr = get_pml4_entry((uint64_t) pml_base_ptr);
+//	*pml_base_ptr = get_pml4_entry((uint64_t) pml_base_ptr);
+	uint64_t * temp = pml_base_ptr + 510;
+	*temp = get_pml4_entry((uint64_t) pml_base_ptr);
 //	printf("*pml_base_ptr is %p\n", *pml_base_ptr);
 }
 
-void map_other_addresses() {
+void map_other_addresses(uint64_t **pml_base_dbl_ptr) {
 	//mapping the free list
 	uint64_t virtual_free_list = VIRTUAL_PHYSFREE_OFFSET + (uint64_t) free_list;
 	uint64_t free_list_temp = (uint64_t) free_list;
 	for (int i = 0; i < 3; i++) {	//free pages is 3 pages long
-		setup_page_tables(virtual_free_list, free_list_temp);
+		setup_page_tables(pml_base_dbl_ptr, virtual_free_list, free_list_temp);
 		virtual_free_list += 4096;
 		free_list_temp += 4096;
 	}
 
 	free_list = (page_t *) (VIRTUAL_PHYSFREE_OFFSET + (uint64_t) free_list);//change the free_list address from physical to virtual
 }
-void map_tarfs_addresses(){
+void map_tarfs_addresses(uint64_t **pml_base_dbl_ptr) {
 	uint64_t virtual_addr = 0xffffffff8020c000;
 	uint64_t physical_addr = 0x20c000;
-	for(int i =0;i<37;i++){
-		setup_page_tables(virtual_addr, physical_addr);
+	for (int i = 0; i < 37; i++) {
+		setup_page_tables(pml_base_dbl_ptr, virtual_addr, physical_addr);
 		virtual_addr = virtual_addr + 0x1000;
 		physical_addr = physical_addr + 0x1000;
 	}
 }
-void map_linear_addresses(void* physbase, void* physfree) {
-	map_kernel_address(physbase, physfree);
-	map_video_address();
-	map_other_addresses();//this function maps other random addresses we might randomly map after physfree. Example: freelist
-	map_page_tables_adress();
+void map_linear_addresses(uint64_t **pml_base_dbl_ptr, void* physbase,
+		void* physfree) {
+	map_kernel_address(pml_base_dbl_ptr, physbase, physfree);
+	map_video_address(pml_base_dbl_ptr);
+	map_other_addresses(pml_base_dbl_ptr);//this function maps other random addresses we might randomly map after physfree. Example: freelist
+	map_page_tables_adress(pml_base_dbl_ptr);
 	//map_tarfs_addresses();
 }
 
-void update_cr3() {
+void update_cr3(uint64_t * pml_base_ptr) {
 	uint64_t pml_base_40bits = update40bit_addr(ULONG_ZERO,
 			(uint64_t) pml_base_ptr);
 //	printf("pre cr3 update");
@@ -454,21 +466,20 @@ void update_cr3() {
 //	printf("post cr3 update");
 }
 void manage_memory_test_suite() {
-//	printf("cr3 mapped\n");
 	uint64_t *ret = get_free_frames(0);
 //	printf("\nans1: %p", ret);
 	uint64_t virtual_test_addr = VIRTUAL_PHYSFREE_OFFSET + (uint64_t) ret;
 	uint64_t test_addr = (uint64_t) ret;
 	setup_page_tables_after_cr3_update(virtual_test_addr, test_addr);
 	*((uint64_t *) virtual_test_addr) = 0xb00b;
-//	printf("\nmem access after ptable-setup %x",
-//			*((uint64_t *) virtual_test_addr));
+	printf("\nmem access after ptable-setup %x\n",
+			*((uint64_t *) virtual_test_addr));
 	setup_page_tables_after_cr3_update(virtual_test_addr, test_addr + 5000);
-//	printf(" mem access after ptable-setup %x",
-//			*((uint64_t *) virtual_test_addr));
+	printf("diff mem access after ptable-setup %x\n",
+			*((uint64_t *) virtual_test_addr));
 	setup_page_tables_after_cr3_update(0x1234455355, test_addr);
-//	printf(" newwww mem access after ptable-setup %x",
-//			*((uint64_t *) 0x1234455355));
+	printf("another mem access after ptable-setup %x\n",
+			*((uint64_t *) 0x1234455355));
 
 	//	struct page_t *test = (struct page_t *)virtual_test_addr;
 //	test[0].is_free = 0;
@@ -492,9 +503,48 @@ void manage_memory_test_suite() {
 //	printf("\n%x", ret2);
 }
 
+// Kernel paging
 void do_paging(void* physbase, void* physfree) {
-	map_linear_addresses(physbase, physfree);
-	update_cr3();
+	map_linear_addresses(&kernel_pml_base_ptr, physbase, physfree);
+	update_cr3(kernel_pml_base_ptr);
+}
+
+uint64_t * get_physical_pml4_base_for_process() {
+	// copy the kernel's pml4 base frame into
+	// a new frame and return the physical address
+	// so that the task_struct can store the same
+
+	uint64_t *process_pml_base_physical = get_free_frame();
+	uint64_t *virtual_addr = (uint64_t *) get_virtual_location(1);
+	setup_page_tables_after_cr3_update((uint64_t) virtual_addr,
+			(uint64_t) process_pml_base_physical);
+	uint64_t *p = (uint64_t *) KERNEL_PML4_BASE_VIRTUAL;
+	uint64_t *q = virtual_addr;
+	for (int i = 0; i < NUM_UNIT64_IN_PAGE; i++) {
+		*q = *p;
+		q++;
+		p++;
+	}
+	return process_pml_base_physical;
+}
+
+int is_linear_addr_mapped(uint64_t linear_addr) {
+	uint64_t * pml4e_virtual_addr = virtual_addr_pml4e(linear_addr);
+	if (!is_entry_not_created((uint64_t *) pml4e_virtual_addr)) {
+		uint64_t * pdir_ptre_virtual_addr = virtual_addr_pdirptre(linear_addr);
+
+		if (!is_entry_not_created((uint64_t *) pdir_ptre_virtual_addr)) {
+			uint64_t * pdire_virtual_addr = virtual_addr_pdire(linear_addr);
+
+			if (is_entry_not_created((uint64_t *) pdire_virtual_addr)) {
+				uint64_t * pte_virtual_addr = virtual_addr_pte(linear_addr);
+				int is_pte_present = !(is_entry_not_created(
+						(uint64_t *) pte_virtual_addr));
+				return is_pte_present;
+			}
+		}
+	}
+	return 0;
 }
 
 void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
@@ -521,6 +571,13 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 	}
 	mark_frame_used(0xb8000);
 	do_paging(physbase, physfree);
+
+	uint64_t *temp = get_physical_pml4_base_for_process();
+	update_cr3(temp);
+	printf("process_pml4: %p ", temp);
+
+
 //	manage_memory_test_suite();
+//	printf("\npresence:::%d ", is_linear_addr_mapped(0x400000));
 }
 
