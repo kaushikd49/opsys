@@ -147,6 +147,19 @@ void elf_mem_copy(char *virtual_addr, char *elf_addr, uint64_t size){
 		elf_current++;
 	}
 }
+void elf_zerod_copy(char *virtual_addr, uint64_t size){
+	char *current = virtual_addr;
+	char *limit = (char *)((uint64_t)virtual_addr + (uint64_t)size);
+	while(current < limit){
+		if(is_linear_addr_mapped((uint64_t)current) == 0){
+			void *free_frame = (void *)get_free_frames(0);
+			setup_page_tables_after_cr3_update((uint64_t)current, (uint64_t)free_frame);
+			*current = 0;
+		}
+
+		current++;
+	}
+}
 //when processes are ready, I would like to make this a procedure where given the mem_desc I can load the executable into the memstruct
 void load_executable(char *str){
 	struct posix_header_ustar *current = (struct posix_header_ustar *)&_binary_tarfs_start;
@@ -155,11 +168,12 @@ void load_executable(char *str){
 	elf_sec_info_t *rodata_info = NULL;
 	elf_sec_info_t *data_info = NULL;
 	elf_sec_info_t *bss_info = NULL;
+	Elf64_Ehdr *temp = NULL;
 	while((uint64_t)current<(uint64_t)(&_binary_tarfs_end)){
 		if(strcmp(current->name,str) == 0){
 			printf("%s", current->name);
 			uint64_t next = (uint64_t)((uint64_t)current + (uint64_t)sizeof(struct posix_header_ustar));
-			Elf64_Ehdr *temp = (Elf64_Ehdr *)(next);
+			temp = (Elf64_Ehdr *)(next);
 			text_info = find_text_elf(temp);
 			rodata_info = find_rodata_elf(temp);
 			data_info = find_data_elf(temp);
@@ -177,27 +191,30 @@ void load_executable(char *str){
 	if(text_info!=NULL){
 		section_offset = (uint64_t)current + (uint64_t)text_info->sh_offset;
 		printf("text:  %x  %x  %x\n",text_info->sh_addr, section_offset, text_info->sh_size );
-		//elf_mem_copy((char *)(text_info->sh_addr), (char *)section_offset, (text_info->sh_size));
+		elf_mem_copy((char *)(text_info->sh_addr), (char *)section_offset, (text_info->sh_size));
 	}
 	if(rodata_info!=NULL){
 		section_offset = (uint64_t)current + (uint64_t)rodata_info->sh_offset;
 		printf("rodata:  %x  %x  %x\n",rodata_info->sh_addr, section_offset, rodata_info->sh_size );
-		//elf_mem_copy((char *)(rodata_info->sh_addr), (char *)section_offset,(rodata_info->sh_size));
+		elf_mem_copy((char *)(rodata_info->sh_addr), (char *)section_offset,(rodata_info->sh_size));
 	}
 	if(data_info!=NULL){
 		section_offset = (uint64_t)current + (uint64_t)data_info->sh_offset;
 		printf("data:  %x  %x  %x\n",data_info->sh_addr, section_offset, data_info->sh_size );
-		//elf_mem_copy((char *)(data_info->sh_addr), (char *)section_offset, data_info->sh_size);
+		elf_mem_copy((char *)(data_info->sh_addr), (char *)section_offset, data_info->sh_size);
 	}
 	if(bss_info != NULL){
 		section_offset = (uint64_t)current + (uint64_t)data_info->sh_offset;
 		printf("bss:  %x  %x  %x\n",bss_info->sh_addr, section_offset, bss_info->sh_size );
-		//elf_mem_copy((char *)(bss_info->sh_addr), (char *)section_offset, data_info->sh_size);
+		elf_zerod_copy((char *)(bss_info->sh_addr), data_info->sh_size);
 	}
+
 	kfree(text_info);
 	kfree(rodata_info);
 	kfree(data_info);
 	kfree(bss_info);
+
+	tasktwo.state.rip = (uint64_t)(temp->e_entry);
 	//add code to initialize stack
 	//heap
 }

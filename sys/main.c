@@ -207,12 +207,14 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	*/
 
 	init_caches();
-	//traverse_linked_list();
+//	load_executable("bin/hello");
+//	traverse_linked_list();
 	init_init_IDT();
 	config_PIC();
 	add_custom_interrupt();
 	init_keyboard_map();
 	keyboard_init();
+
 	kernel_process_init();
 	test_process_switch();
 //	printf("\n presence: %d", is_linear_addr_mapped(0x4000))

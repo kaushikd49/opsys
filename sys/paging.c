@@ -3,16 +3,15 @@
 #include <sys/pagingglobals.h>
 #include <sys/freelist.h>
 #include <sys/kmalloc.h>
-
+#include <sys/process.h>
 #define NUM_UNIT64_IN_PAGE (PAGE_SIZE/sizeof(uint64_t))
-
 // This is used to copy apt offsets from linear addr and
 // traverse page tables. Sign extension for msb is very important.
 #define PG_TRVRSE_BASIC_VA_ADDR 0xFFFFFF7FBFDFEFF0
 
 // This is needed to copy over the kernel pml base to processes' pml base
 #define KERNEL_PML4_BASE_VIRTUAL 0xFFFFFF7FBFDFE000
-
+int is_linear_addr_mapped(uint64_t linear_addr);
 void *get_virtual_location(int order);
 
 // todo: duplicated smap definition from main.
@@ -555,10 +554,10 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 	mark_frame_used(0xb8000);
 	do_paging(physbase, physfree);
 
-	uint64_t *temp = get_physical_pml4_base_for_process();
-	update_cr3(temp);
-	printf("process_pml4: %p ", temp);
-
+//	uint64_t *temp = get_physical_pml4_base_for_process();
+//	update_cr3(temp);
+//	printf("process_pml4: %p ", temp);
+	printf("fasaf");
 
 //	manage_memory_test_suite();
 //	printf("\npresence:::%d ", is_linear_addr_mapped(0x400000));
