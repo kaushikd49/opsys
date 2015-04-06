@@ -518,7 +518,7 @@ int is_linear_addr_mapped(uint64_t linear_addr) {
 		if (!is_entry_not_created((uint64_t *) pdir_ptre_virtual_addr)) {
 			uint64_t * pdire_virtual_addr = virtual_addr_pdire(linear_addr);
 
-			if (is_entry_not_created((uint64_t *) pdire_virtual_addr)) {
+			if (!is_entry_not_created((uint64_t *) pdire_virtual_addr)) {
 				uint64_t * pte_virtual_addr = virtual_addr_pte(linear_addr);
 				int is_pte_present = !(is_entry_not_created(
 						(uint64_t *) pte_virtual_addr));
@@ -560,6 +560,6 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 	printf("fasaf");
 
 //	manage_memory_test_suite();
-//	printf("\npresence:::%d ", is_linear_addr_mapped(0x400000));
+//	printf("\npresence:::%d ", is_linear_addr_mapped(0xFFFFFF7FBFDFEFF0));
 }
 
