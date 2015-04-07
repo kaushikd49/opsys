@@ -46,7 +46,7 @@ void init_caches() {
 	uint64_t *cache_list_physical = get_free_frames(0);
 	cache_t *cache_list = (cache_t *) BASE_MEMORY_MANAGER; // this is the first hardcoded virtual address, we can make it a global variable we should do so.
 	//*******add code to map the linear to virtual************
-	setup_page_tables_after_cr3_update((uint64_t) cache_list,
+	setup_kernel_page_tables((uint64_t) cache_list,
 			(uint64_t) cache_list_physical);
 	cache_info.head = cache_list; // this marks the beginning of cache_list it is a global variables. needed to access specific cache information.
 	cache_info.current_virtual = (void *) (BASE_MEMORY_MANAGER + 0x10000); //arbitrarily starting the actual virtual addresses at 10 pages apart. We can change it if something comes up
@@ -96,7 +96,7 @@ void *get_pages_directly(int order){
 	//****** map virtual to physical ***********
 	for(uint64_t i = 0; i < (1<<order); i++){
 //		printf("%d  ",order);
-		setup_page_tables_after_cr3_update((uint64_t)virtual_addr, (uint64_t)free_frame);
+		setup_kernel_page_tables((uint64_t)virtual_addr, (uint64_t)free_frame);
 		virtual_addr = (void *)((uint64_t)virtual_addr + 0x1000);
 		free_frame = (void *)((uint64_t)free_frame + 0x1000);
 	}
@@ -110,7 +110,7 @@ void *allocate_in_cache(int order) {
 			void *free_frame = (void *) get_free_frames(0); //allocating 1 free frame since we only get pages one at a time and max size allocated by this method is 2048
 			void *virtual_addr = (void *) get_virtual_location(0);
 			//*******add code to map the linear to virtual************
-			setup_page_tables_after_cr3_update((uint64_t) virtual_addr,
+			setup_kernel_page_tables((uint64_t) virtual_addr,
 					(uint64_t) free_frame);
 			prepare_page(order, virtual_addr); // this function will add headers to each location in the page. free_t
 			return get_mem_alloc(order);

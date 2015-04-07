@@ -202,7 +202,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	manage_memory(physbase, physfree, modulep);
 //	pagingTests(physbase, physfree, modulep);
 	/*	should be invoked without manage_memory above.
-		todo: this is failing as freelist is returning 0x0 as the free page
+		and do_padding in it shud not be done.
 		pagingTests(physbase, physfree, modulep);
 	*/
 
@@ -223,6 +223,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	// cause page fault
 //	uint64_t * p = (uint64_t *)0x1000;
 //	printf("causing fault..%x ", *p);
+
 //	load_elf_trial();
 
 
