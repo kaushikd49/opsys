@@ -140,7 +140,7 @@ void elf_mem_copy(char *virtual_addr, char *elf_addr, uint64_t size){
 	while(current < limit){
 		if(!(is_linear_addr_mapped((uint64_t)current))){
 			void *free_frame = (void *)get_free_frames(0);
-			setup_page_tables_after_cr3_update((uint64_t)current, (uint64_t)free_frame);
+			setup_kernel_page_tables((uint64_t)current, (uint64_t)free_frame);
 		}
 		*current = *elf_current;
 		current++;
@@ -153,7 +153,7 @@ void elf_zerod_copy(char *virtual_addr, uint64_t size){
 	while(current < limit){
 		if(!(is_linear_addr_mapped((uint64_t)current))){
 			void *free_frame = (void *)get_free_frames(0);
-			setup_page_tables_after_cr3_update((uint64_t)current, (uint64_t)free_frame);
+			setup_kernel_page_tables((uint64_t)current, (uint64_t)free_frame);
 			*current = 0;
 		}
 
