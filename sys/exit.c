@@ -5,7 +5,7 @@ void exit(int code){
 	uint64_t result;
 
 	__asm__ __volatile__ (
-		"syscall"
+		"int $0x80"
 		:"=a"(result)
 		:"0"(n),"D"(code));
 	

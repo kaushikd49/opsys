@@ -34,6 +34,7 @@ extern void trap_twentyeight();
 extern void trap_twentynine();
 extern void trap_thirty();
 extern void trap_thirtyone();
+extern void isr_syscall();
 int write_char_to_vid_mem(char c, uint64_t pos);
 void write_to_video_memory(const char* str, uint64_t position);
 
@@ -177,4 +178,6 @@ void add_custom_interrupt() {
 						0x08);
 	add_int_handler((uint64_t) lidtr.base, 31, (uint64_t) trap_thirtyone, 0xEF,
 						0x08);
+	add_int_handler((uint64_t) lidtr.base, 0x80, (uint64_t) isr_syscall, 0xEE, 0x08);
+
 }

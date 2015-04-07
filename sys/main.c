@@ -207,7 +207,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	*/
 
 	init_caches();
-//	load_executable("bin/hello");
+	load_executable("bin/hello");
 //	traverse_linked_list();
 	init_init_IDT();
 	config_PIC();

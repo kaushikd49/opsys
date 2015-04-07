@@ -3,6 +3,7 @@
 #include <sys/sbunix.h>
 #include <sys/gdt.h>
 #include <sys/tarfs.h>
+#include<sys/process.h>
 void isrhandler_default(){
 //	__asm__ __volatile__(
 //	"movq $0xb8000, %rax\n\t"
@@ -109,5 +110,8 @@ void traphandler_thirty(){
 }
 void traphandler_thirtyone(){
 	printf("trap thirtyone");
+}
+void isrhandler_syscall(){
+	preempt();
 }
 #endif

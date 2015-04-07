@@ -36,6 +36,7 @@
 .global trap_twentynine
 .global trap_thirty
 .global trap_thirtyone
+.global isr_syscall
 .align 4
 
 isr_default:
@@ -1089,6 +1090,44 @@ isr_keyboard:
 	sti
 	iretq
 
+
+.text
+
+isr_syscall:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	#inb $0x60, %al
+	#movq $0xb8000, %rbx
+	#movb %al, (%rbx)
+	movq $60, %rbx
+	cmp %rax, %rbx
+	jne q2
+	call isrhandler_syscall
+ q2:popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+	popq %rax
+	movb $0x20, %al
+	outb %al, $0x20
+	sti
+	iretq
 #init steps mentioned in http://wiki.osdev.org/%228042%22_PS/2_Controller#Translation
 keyboard_init:
 	cli

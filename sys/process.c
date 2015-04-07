@@ -138,7 +138,7 @@ void elf_mem_copy(char *virtual_addr, char *elf_addr, uint64_t size){
 	char *elf_current = elf_addr;
 	char *limit = (char *)((uint64_t)virtual_addr + (uint64_t)size);
 	while(current < limit){
-		if(is_linear_addr_mapped((uint64_t)current) == 0){
+		if(!(is_linear_addr_mapped((uint64_t)current))){
 			void *free_frame = (void *)get_free_frames(0);
 			setup_page_tables_after_cr3_update((uint64_t)current, (uint64_t)free_frame);
 		}
@@ -151,7 +151,7 @@ void elf_zerod_copy(char *virtual_addr, uint64_t size){
 	char *current = virtual_addr;
 	char *limit = (char *)((uint64_t)virtual_addr + (uint64_t)size);
 	while(current < limit){
-		if(is_linear_addr_mapped((uint64_t)current) == 0){
+		if(!(is_linear_addr_mapped((uint64_t)current))){
 			void *free_frame = (void *)get_free_frames(0);
 			setup_page_tables_after_cr3_update((uint64_t)current, (uint64_t)free_frame);
 			*current = 0;
@@ -189,22 +189,22 @@ void load_executable(char *str){
 	}
 	uint64_t section_offset;
 	if(text_info!=NULL){
-		section_offset = (uint64_t)current + (uint64_t)text_info->sh_offset;
+		section_offset = (uint64_t)temp + (uint64_t)text_info->sh_offset;
 		printf("text:  %x  %x  %x\n",text_info->sh_addr, section_offset, text_info->sh_size );
 		elf_mem_copy((char *)(text_info->sh_addr), (char *)section_offset, (text_info->sh_size));
 	}
 	if(rodata_info!=NULL){
-		section_offset = (uint64_t)current + (uint64_t)rodata_info->sh_offset;
+		section_offset = (uint64_t)temp + (uint64_t)rodata_info->sh_offset;
 		printf("rodata:  %x  %x  %x\n",rodata_info->sh_addr, section_offset, rodata_info->sh_size );
 		elf_mem_copy((char *)(rodata_info->sh_addr), (char *)section_offset,(rodata_info->sh_size));
 	}
 	if(data_info!=NULL){
-		section_offset = (uint64_t)current + (uint64_t)data_info->sh_offset;
+		section_offset = (uint64_t)temp + (uint64_t)data_info->sh_offset;
 		printf("data:  %x  %x  %x\n",data_info->sh_addr, section_offset, data_info->sh_size );
 		elf_mem_copy((char *)(data_info->sh_addr), (char *)section_offset, data_info->sh_size);
 	}
 	if(bss_info != NULL){
-		section_offset = (uint64_t)current + (uint64_t)data_info->sh_offset;
+		section_offset = (uint64_t)temp + (uint64_t)data_info->sh_offset;
 		printf("bss:  %x  %x  %x\n",bss_info->sh_addr, section_offset, bss_info->sh_size );
 		elf_zerod_copy((char *)(bss_info->sh_addr), data_info->sh_size);
 	}
@@ -320,7 +320,7 @@ void kernel_create_process(task_struct_t *task, void (*main)(), uint64_t flags, 
 	task->state.rbx = 0;
 	task->state.rcx = 0;
 	task->state.rdx = 0;
-	task->state.rip = (uint64_t) main;
+//	task->state.rip = (uint64_t) main;
 	task->state.rbp = 0;
 	task->state.rdi = 0;
 	task->state.rsi = 0;
