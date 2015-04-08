@@ -254,9 +254,10 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 //	printf("\n presence: %d", is_linear_addr_mapped(0x4000))
 //	load_executable("bin/hello");
 
-	// cause page fault
-//	uint64_t * p = (uint64_t *)0x1000;
-//	printf("causing fault..%x ", *p);
+//	 cause page fault
+	uint64_t * p = (uint64_t *)0x1000;
+	printf(" causing fault..%x ", *p);
+	printf(" alive after fault %x", *p);
 
 //	load_elf_trial();
 
