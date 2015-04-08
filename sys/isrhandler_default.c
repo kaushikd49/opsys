@@ -58,7 +58,7 @@ void traphandler_twelve() {
 	printf("trap twelve");
 }
 void traphandler_thirteen() {
-//	printf("trap thirteen");
+	printf("trap thirteen");
 }
 void traphandler_fourteen() {
 	printf("trap fourteen");
