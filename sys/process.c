@@ -9,7 +9,8 @@
 #define VM_READ 1<<0
 #define VM_WRITE 1<<1
 #define VM_EXEX 1<<2
-
+#define USER_CODE (3<<3 | 3)
+#define USER_DATA (4<<3 | 3)
 static task_struct_t *currenttask;
 static task_struct_t taskone;
 static task_struct_t tasktwo;
@@ -22,6 +23,7 @@ typedef struct elf_section_info{
  * elf reference functions
  */
 extern void process_switch(process_state *, process_state *);
+extern void process_switch_user(process_state *, process_state *);
 uint64_t convert_ocatalstr_todecimal(char octal[10]){
 	int i = 0;
 	uint64_t number = 0;
@@ -140,7 +142,7 @@ void elf_mem_copy(char *virtual_addr, char *elf_addr, uint64_t size){
 	while(current < limit){
 		if(!(is_linear_addr_mapped((uint64_t)current))){
 			void *free_frame = (void *)get_free_frames(0);
-			setup_kernel_page_tables((uint64_t)current, (uint64_t)free_frame);
+			setup_process_page_tables((uint64_t)current, (uint64_t)free_frame);
 		}
 		*current = *elf_current;
 		current++;
@@ -153,7 +155,7 @@ void elf_zerod_copy(char *virtual_addr, uint64_t size){
 	while(current < limit){
 		if(!(is_linear_addr_mapped((uint64_t)current))){
 			void *free_frame = (void *)get_free_frames(0);
-			setup_kernel_page_tables((uint64_t)current, (uint64_t)free_frame);
+			setup_process_page_tables((uint64_t)current, (uint64_t)free_frame);
 			*current = 0;
 		}
 
@@ -304,10 +306,12 @@ void kernel_create_process(task_struct_t *task, void (*main)(), uint64_t flags, 
 	task->mem_map =NULL;
 	task->pid = get_next_pid();
 	task->ppid = 1;//this need to be more involved.
-	task->state.cs = 0; // for a user level process these 4 registers will matter but we will worry when we get there
-	task->state.ds = 0;
-	task->state.es = 0;
-	task->state.ss = 0;
+	task->state.cs = USER_CODE; // for a user level process these 4 registers will matter but we will worry when we get there
+	task->state.ds = USER_DATA;
+	task->state.es = USER_DATA;
+	task->state.ss = USER_DATA;
+	task->state.gs = USER_DATA;
+	task->state.fs = USER_DATA;
 	task->state.r10 = 0;
 	task->state.r11 = 0;
 	task->state.r12 = 0;
@@ -327,11 +331,13 @@ void kernel_create_process(task_struct_t *task, void (*main)(), uint64_t flags, 
 	task->state.cr3 = (uint64_t)pagedir;
 	task->state.flags = (uint64_t)flags;
 	// need to assign a new stack and since it grows down, we need to change taht to the end of the page too.
-	uint64_t *stacktop = (uint64_t *)kmalloc(0x1000);
+	uint64_t stack_page = 0x7000000;
+	void *free_frame = (void *)get_free_frames(0);
+	setup_process_page_tables((uint64_t)stack_page, (uint64_t)free_frame);
 //	uint64_t *temp = (uint64_t *)((uint64_t)stacktop + 0x1000);
 //	*temp = 5;
 //	printf("%x", *temp);
-	task->state.rsp = (uint64_t)stacktop + 0x1000;
+	task->state.rsp = (uint64_t)stack_page + 0x1000;
 	task->next = NULL;
 }
 
@@ -339,5 +345,5 @@ void preempt(){
 	task_struct_t *last = currenttask;
 	currenttask = currenttask->next;
 
-	process_switch(&last->state, &currenttask->state);
+	process_switch_user(&last->state, &currenttask->state);
 }

@@ -66,6 +66,8 @@ typedef struct process_state{
 	uint64_t cs;
 	uint64_t ds;
 	uint64_t es;
+	uint64_t fs;
+	uint64_t gs;
 	uint64_t ss;
 }process_state;
 typedef struct task_struct{

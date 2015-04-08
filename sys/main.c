@@ -10,7 +10,7 @@
 #include <sys/kmalloc.h>
 #include <sys/process.h>
 #define INITIAL_STACK_SIZE 4096
-
+extern void _jump_usermode();
 extern char video_buffer[4096];
 struct smap_t {
 	uint64_t base, length;
@@ -180,6 +180,39 @@ void test_process_switch(){
 	preempt();
 	printf("\n we are back");
 }
+void stack_ring_three(){
+	uint64_t stack_kernel = (uint64_t)kmalloc(0x1000);
+	tss.rsp0 = (uint64_t)(stack_kernel + 0x1000);
+	__asm__ __volatile__("movw $0x2B,%%ax\n\t"
+						 "ltr %%ax"
+						:::"rax"
+						);
+
+}
+void switch_user_mode(){
+	__asm__ __volatile__ (
+					"cli\n\t"
+					"movw $0x23, %ax\n\t"
+					"movw %ax, %ds\n\t"
+					"movw %ax, %es\n\t"
+					"movw %ax, %fs\n\t"
+					"movw %ax, %gs\n\t"
+					"movq %rsp, %rax\n\t"
+					"pushq $0x23\n\t"
+					"pushq %rax\n\t"
+					"pushf\n\t"
+					"popq %rax\n\t"
+					"orq $0x200, %rax\n\t"
+					"pushq %rax\n\t"
+					"pushq $0x1B\n\t"
+					"push $0x4000e8\n\t"
+					"iretq\n\t"
+	);
+
+}
+void test_user_function(){
+	while(1);
+}
 void start(uint32_t* modulep, void* physbase, void* physfree) {
 	while (modulep[0] != 0x9001) {
 		modulep += modulep[1] + 2;
@@ -214,7 +247,9 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	add_custom_interrupt();
 	init_keyboard_map();
 	keyboard_init();
-
+	stack_ring_three();
+//	switch_user_mode();
+//	_jump_usermode();
 	kernel_process_init();
 	test_process_switch();
 //	printf("\n presence: %d", is_linear_addr_mapped(0x4000))
@@ -228,6 +263,8 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 
 
 }
+
+
 void boot(void) {
 	// note: function changes rsp, local stack variables can't be practically used
 	//register char *s;
