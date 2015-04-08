@@ -12,8 +12,8 @@
 #define USER_CODE (3<<3 | 3)
 #define USER_DATA (4<<3 | 3)
 static task_struct_t *currenttask;
+static task_struct_t *lasttask;
 static task_struct_t taskone;
-static task_struct_t tasktwo;
 typedef struct elf_section_info{
 	Elf64_Addr sh_addr;
 	Elf64_Off sh_offset;
@@ -216,7 +216,11 @@ void load_executable(char *str){
 	kfree(data_info);
 	kfree(bss_info);
 
-	tasktwo.state.rip = (uint64_t)(temp->e_entry);
+	currenttask->state.rip = (uint64_t)(temp->e_entry);
+	uint64_t stack_page = 0x7000000;
+	void *free_frame = (void *)get_free_frames(0);
+	setup_process_page_tables((uint64_t)stack_page, (uint64_t)free_frame);
+	currenttask->state.rsp = (uint64_t)stack_page + 0x1000;
 	//add code to initialize stack
 	//heap
 }
@@ -256,19 +260,6 @@ void map_process_vm(task_struct_t *task){
  * Kernel space is flagged in the page tables as exclusive to privileged code (ring 2 or lower), hence a page fault is triggered
  * if user-mode programs try to touch it
  */
-void create_process(){
-	if(init_task == NULL){
-		task_struct_t *init_task = kmalloc(sizeof(struct task_struct));
-		init_task->pid = get_next_pid();
-		init_task->ppid = 0;//no parent pid for parent
-//		init_task->prev = NULL;
-		init_task->next = NULL;
-		//call init_process_state
-		//call mm_map init for the process after we have assigned the page tables.
-
-	}
-
-};
 
 void process_init(){
 
@@ -279,7 +270,27 @@ void maintasktwo(){
 }
 //this needs to be referenced for sure idea taken from here
 //idea taken from here: http://wiki.osdev.org/Kernel_Multitasking
-
+void create_process(char *executable, uint64_t ppid){
+	task_struct_t *task = kmalloc(sizeof(task_struct_t));
+	task_struct_t *temp_start = currenttask->next;
+	task_struct_t *parent_task = NULL;
+	while(temp_start != currenttask && temp_start->pid != ppid ){
+		temp_start = temp_start->next;
+	}
+	//assumption here is that the process has a parent, then the parent is found, have to handle zombie process somehow need to know how.
+	parent_task = temp_start;
+	//add the process to the end of list
+	if(parent_task->next == parent_task){
+		parent_task->next = task;
+		task->next = parent_task;
+		lasttask = task;
+	}
+	else{
+		task->next = lasttask->next;
+		lasttask->next = task;
+		lasttask = task;}
+	kernel_create_process(task, parent_task,executable);
+}
 void kernel_process_init(){
 	//this function just stores the current cr3 as the processes page table since we are doing kernel preemption that is fine. For user process this will be a bit involved
 	__asm__ __volatile__("movq %%cr3, %%rax\n\t"
@@ -295,17 +306,27 @@ void kernel_process_init(){
 						 :
 						 :"%rax");
 	//creating a secon process and that process has the same globals as the init process
-	kernel_create_process(&tasktwo, maintasktwo, taskone.state.flags, (uint64_t *)taskone.state.cr3);
-	taskone.next = &tasktwo;
-	tasktwo.next = &taskone;
 	currenttask = &taskone;
-}
+	currenttask->next = currenttask;
+	currenttask->pid = 1;
+	create_process("bin/hello", 1);
+	create_process("bin/hello2", 1);
 
-void kernel_create_process(task_struct_t *task, void (*main)(), uint64_t flags, uint64_t *pagedir){
+}
+char *strcpy(char *dst, char *src) {
+	uint64_t len = 0;
+	while (src[len] != '\0') {
+		dst[len] = src[len];
+		len++;
+	}
+	dst[len] = '\0';
+	return dst;
+}
+void kernel_create_process(task_struct_t *task, task_struct_t *parent_task, char *executable){
 	//using the user level process struct it is fine for now
 	task->mem_map =NULL;
 	task->pid = get_next_pid();
-	task->ppid = 1;//this need to be more involved.
+	task->ppid = parent_task->pid;//this need to be more involved.
 	task->state.cs = USER_CODE; // for a user level process these 4 registers will matter but we will worry when we get there
 	task->state.ds = USER_DATA;
 	task->state.es = USER_DATA;
@@ -328,22 +349,26 @@ void kernel_create_process(task_struct_t *task, void (*main)(), uint64_t flags, 
 	task->state.rbp = 0;
 	task->state.rdi = 0;
 	task->state.rsi = 0;
-	task->state.cr3 = (uint64_t)pagedir;
-	task->state.flags = (uint64_t)flags;
+
+	task->state.flags = parent_task->state.flags;
 	// need to assign a new stack and since it grows down, we need to change taht to the end of the page too.
-	uint64_t stack_page = 0x7000000;
-	void *free_frame = (void *)get_free_frames(0);
-	setup_process_page_tables((uint64_t)stack_page, (uint64_t)free_frame);
-//	uint64_t *temp = (uint64_t *)((uint64_t)stacktop + 0x1000);
-//	*temp = 5;
-//	printf("%x", *temp);
-	task->state.rsp = (uint64_t)stack_page + 0x1000;
-	task->next = NULL;
+	strcpy((*task).executable,executable);
 }
 
 void preempt(){
+	printf("\nswitching");
 	task_struct_t *last = currenttask;
 	currenttask = currenttask->next;
+	//adding the load of executable here, it should not be here..
+	uint64_t *temp = get_physical_pml4_base_for_process();
 
+	update_cr3(temp);
+	__asm__ __volatile__("movq %%cr3, %%rax\n\t"
+							 "movq %%rax, %0\n\t"
+				   	   	     :"=m"(currenttask->state.cr3)
+							 :
+							 :"%rax");
+
+	load_executable(currenttask->executable);
 	process_switch_user(&last->state, &currenttask->state);
 }

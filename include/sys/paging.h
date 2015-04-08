@@ -8,4 +8,5 @@ void pagingTests(void* physbase, void* physfree, uint32_t* modulep) ;
 void setup_process_page_tables(uint64_t linear_addr,uint64_t physical_addr);
 void setup_kernel_page_tables(uint64_t linear_addr,uint64_t physical_addr);
 int is_linear_addr_mapped(uint64_t linear_addr);
+void update_cr3(uint64_t * pml_base_ptr);
 #endif

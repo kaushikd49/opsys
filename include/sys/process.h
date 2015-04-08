@@ -69,6 +69,7 @@ typedef struct process_state{
 	uint64_t fs;
 	uint64_t gs;
 	uint64_t ss;
+
 }process_state;
 typedef struct task_struct{
 	uint64_t pid;
@@ -76,9 +77,10 @@ typedef struct task_struct{
 	process_state state;
 	struct task_struct *next;
 	struct mem_desc *mem_map;
+	char executable[100];
 }task_struct_t;
 void load_executable(char *str);
 void preempt();
-void kernel_create_process(task_struct_t *task, void (*main)(), uint64_t flags, uint64_t *pagedir);
+void kernel_create_process(task_struct_t *task, task_struct_t *parent_task, char *executable);
 void kernel_process_init();
 #endif
