@@ -412,7 +412,7 @@ void setup_page_tables_after_cr3_update(uint64_t linear_addr,
 void setup_process_page_tables(uint64_t linear_addr,
 		uint64_t physical_addr) {
 	setup_page_tables_after_cr3_update(linear_addr, physical_addr, 1, 1,
-			1);
+			0);
 }
 
 void setup_kernel_page_tables(uint64_t linear_addr,
@@ -422,14 +422,12 @@ void setup_kernel_page_tables(uint64_t linear_addr,
 }
 
 
-// IMPORTANT - do not use virtual addresses corresponding to 0 PML offset
+// IMPORTANT - do not use virtual addresses corresponding to 510 PML offset
 void map_page_tables_adress(uint64_t **pml_base_dbl_ptr, int p, int rw, int us) {
 	uint64_t *pml_base_ptr = *pml_base_dbl_ptr;
-	// Make the first entry of pml4 point to the itself
-//	*pml_base_ptr = get_pml4_entry((uint64_t) pml_base_ptr);
 	uint64_t * temp = pml_base_ptr + 510;
 	*temp = get_pml4_entry((uint64_t) pml_base_ptr,p, rw, us);
-//	printf("*pml_base_ptr is %p\n", *pml_base_ptr);
+	printf("*pml_base_ptr is %p\n", *pml_base_ptr);
 }
 
 void map_other_addresses(uint64_t **pml_base_dbl_ptr, int p, int rw, int us) {
@@ -461,7 +459,7 @@ void map_linear_addresses(uint64_t **pml_base_dbl_ptr, void* physbase,
 	map_video_address(pml_base_dbl_ptr, p, rw, us);
 	map_other_addresses(pml_base_dbl_ptr, p, rw, us);//this function maps other random addresses we might randomly map after physfree. Example: freelist
 	map_page_tables_adress(pml_base_dbl_ptr, p, rw, us);
-	//map_tarfs_addresses();
+//	map_tarfs_addresses(pml_base_dbl_ptr, p, rw, us);
 }
 
 void update_cr3(uint64_t * pml_base_ptr) {
@@ -552,6 +550,11 @@ uint64_t * get_physical_pml4_base_for_process() {
 //			*qtr = 0;
 //			qtr++;
 //	}
+
+	// self referencing of the page table
+	uint64_t * temp = virtual_addr + 510;
+	*temp = get_pml4_entry((uint64_t) process_pml_base_physical,1, 1, 0);
+
 	return process_pml_base_physical;
 }
 
@@ -602,9 +605,26 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 //	uint64_t *temp = get_physical_pml4_base_for_process();
 //	update_cr3(temp);
 //	printf("process_pml4: %p ", temp);
+//	uint64_t * q = (uint64_t *) 0x400038;
+//	setup_process_page_tables((uint64_t)q, (uint64_t)get_free_frame());
+//	*q = 0xf00d;
+//	printf("new var: %p ", *q);
 //	printf("fasaf");
 
 //	manage_memory_test_suite();
 //	printf("\npresence:::%d ", is_linear_addr_mapped(0xFFFFFF7FBFDFEFF0));
+}
+
+void process_stuff() {
+	printf("testing new process' pml set and variable setting\n");
+	uint64_t* temp = get_physical_pml4_base_for_process();
+	update_cr3(temp);
+	printf("process_pml4: %p ", temp);
+	uint64_t* q = (uint64_t*) 0x400038;
+	setup_process_page_tables((uint64_t) q, (uint64_t) get_free_frame());
+
+	printf("ismapped %d \n", is_linear_addr_mapped((uint64_t)q));
+	*q = 0xf00d;
+	printf("new var: %p \n", *q);
 }
 

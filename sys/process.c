@@ -220,7 +220,7 @@ void load_executable(char *str){
 	uint64_t stack_page = 0x7000000;
 	void *free_frame = (void *)get_free_frames(0);
 	setup_process_page_tables((uint64_t)stack_page, (uint64_t)free_frame);
-	currenttask->state.rsp = (uint64_t)stack_page + 0x1000;
+	currenttask->state.rsp = (uint64_t)stack_page + 0x500;
 	//add code to initialize stack
 	//heap
 }
@@ -364,12 +364,13 @@ void preempt(){
 	uint64_t *temp = get_physical_pml4_base_for_process();
 //
 	update_cr3((uint64_t *)(temp));
-//	__asm__ __volatile__("movq %%cr3, %%rax\n\t"
-//							 "movq %%rax, %0\n\t"
-//				   	   	     :"=m"(currenttask->state.cr3)
-//							 :
-//							 :"%rax");
-	currenttask->state.cr3 = (uint64_t)temp;
+	__asm__ __volatile__("movq %%cr3, %%rax\n\t"
+							 "movq %%rax, %0\n\t"
+				   	   	     :"=m"(currenttask->state.cr3)
+							 :
+							 :"%rax");
+//	currenttask->state.cr3 = (uint64_t)temp;
+
 	if(currenttask->executable[0] != '\0')
 		load_executable(currenttask->executable);
 	process_switch_user(&last->state, &currenttask->state);

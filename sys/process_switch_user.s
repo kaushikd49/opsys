@@ -127,6 +127,10 @@ process_switch_user:
 	movw 176(%rax), %fs
 	movw 184(%rax), %gs
 	pushq %rax
+	movq 136(%rax), %rax # the big stuff the cr3 is loaded into rax
+	movq %rax, %cr3
+	popq %rax
+	pushq %rax
 	push 192(%rax)
 	pushq (%rax)
 	movq 144(%rax), %rax
