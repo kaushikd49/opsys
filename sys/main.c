@@ -20,11 +20,11 @@ char stack[INITIAL_STACK_SIZE];
 uint32_t* loader_stack;
 extern char kernmem, physbase;
 struct tss_t tss;
-struct node{
+struct node {
 	int data;
 	struct node *next;
 };
-struct bignode{
+struct bignode {
 	long data1;
 	long data2;
 	long data3;
@@ -32,25 +32,25 @@ struct bignode{
 	long data5;
 	struct bignode *next;
 };
-struct node *createnode(int data,int print){
+struct node *createnode(int data, int print) {
 	struct node *ret = kmalloc(sizeof(struct node));
-	if(print == 1)
+	if (print == 1)
 		printf("%p   ", ret);
 	ret->data = data;
 	ret->next = NULL;
 	return ret;
 }
-void traverse_linked_list(){
-	struct node *head = createnode(5,0);
+void traverse_linked_list() {
+	struct node *head = createnode(5, 0);
 //	printf("head: %p\n", head);
 	int i = 0;
 	struct node *current, *new;
 	current = head;
-	while(i<200){
+	while (i < 200) {
 
-		new = createnode(i,0);
-		if(i %10 == 0)
-					printf("%p  ", new);
+		new = createnode(i, 0);
+		if (i % 10 == 0)
+			printf("%p  ", new);
 		current->next = new;
 		current = current->next;
 		i++;
@@ -70,11 +70,11 @@ void traverse_linked_list(){
 	new1->data5 = 5;
 	new1->next = NULL;
 	printf("new data:%p ", new1);
-	int counter =0;
+	int counter = 0;
 	struct node* temp;
 	current = head;
-	while(counter!=3){
-		printf("deleting data: %p     ",current);
+	while (counter != 3) {
+		printf("deleting data: %p     ", current);
 		temp = current;
 		current = current->next;
 		kfree(temp);
@@ -82,18 +82,17 @@ void traverse_linked_list(){
 	}
 	head = current;
 	current = head;
-	while(current->next!=NULL){//todo: very important to deal with this null pointer exception we need to handle
+	while (current->next != NULL) { //todo: very important to deal with this null pointer exception we need to handle
 		current = current->next;
 	}
-	current->next = createnode(100,1);
+	current->next = createnode(100, 1);
 	current = current->next;
 	printf("node: %p %d", current, current->data);
-	struct node *cur = createnode(200,1);
-		printf("\ncur: %p  %d", cur,cur->data);
-		struct node *cur2 = createnode(200,1);
-				printf("\ncur: %p  %d", cur2,cur2->data);
+	struct node *cur = createnode(200, 1);
+	printf("\ncur: %p  %d", cur, cur->data);
+	struct node *cur2 = createnode(200, 1);
+	printf("\ncur: %p  %d", cur2, cur2->data);
 }
-
 
 //Function idea taken from OSDevWiki http://wiki.osdev.org/ELF_Tutorial
 //Its obvious once you know how but still referenced :p
@@ -175,56 +174,59 @@ void traverse_linked_list(){
 //
 //	}
 //}
-void test_process_switch(){
+void test_process_switch() {
 	printf("\n we going to process switch now");
 	preempt();
 	printf("\n we are back");
 }
-void stack_ring_three(){
-	uint64_t stack_kernel = (uint64_t)kmalloc(0x1000);
-	tss.rsp0 = (uint64_t)(stack_kernel + 0x1000);
+void stack_ring_three() {
+	uint64_t stack_kernel = (uint64_t) kmalloc(0x1000);
+	tss.rsp0 = (uint64_t) (stack_kernel + 0x1000);
 	__asm__ __volatile__("movw $0x2B,%%ax\n\t"
-						 "ltr %%ax"
-						:::"rax"
-						);
-
-}
-void switch_user_mode(){
-	__asm__ __volatile__ (
-					"cli\n\t"
-					"movw $0x23, %ax\n\t"
-					"movw %ax, %ds\n\t"
-					"movw %ax, %es\n\t"
-					"movw %ax, %fs\n\t"
-					"movw %ax, %gs\n\t"
-					"movq %rsp, %rax\n\t"
-					"pushq $0x23\n\t"
-					"pushq %rax\n\t"
-					"pushf\n\t"
-					"popq %rax\n\t"
-					"orq $0x200, %rax\n\t"
-					"pushq %rax\n\t"
-					"pushq $0x1B\n\t"
-					"push $0x4000e8\n\t"
-					"iretq\n\t"
+			"ltr %%ax"
+			:::"rax"
 	);
 
 }
-void test_user_function(){
-	while(1);
+void switch_user_mode() {
+	__asm__ __volatile__ (
+			"cli\n\t"
+			"movw $0x23, %ax\n\t"
+			"movw %ax, %ds\n\t"
+			"movw %ax, %es\n\t"
+			"movw %ax, %fs\n\t"
+			"movw %ax, %gs\n\t"
+			"movq %rsp, %rax\n\t"
+			"pushq $0x23\n\t"
+			"pushq %rax\n\t"
+			"pushf\n\t"
+			"popq %rax\n\t"
+			"orq $0x200, %rax\n\t"
+			"pushq %rax\n\t"
+			"pushq $0x1B\n\t"
+			"push $0x4000e8\n\t"
+			"iretq\n\t"
+	);
+
 }
+void test_user_function() {
+	while (1)
+		;
+}
+
+
 void start(uint32_t* modulep, void* physbase, void* physfree) {
 	while (modulep[0] != 0x9001) {
 		modulep += modulep[1] + 2;
 	};
-	printf("physbase:physfree\n %p %p ",physbase, physfree);
+	printf("physbase:physfree\n %p %p ", physbase, physfree);
 	for (smap = (struct smap_t*) (modulep + 2);
 			smap < (struct smap_t*) ((char*) modulep + modulep[1] + 2 * 4);
 			++smap) {
 		if (smap->type == 1 /* memory */&& smap->length != 0) {
 			printf("Length of memory:%d\n", smap->length);
-				printf("Available Physical Memory [%x-%x]\n", smap->base,
-						smap->base + smap->length);
+			printf("Available Physical Memory [%x-%x]\n", smap->base,
+					smap->base + smap->length);
 		}
 	}
 	printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
@@ -235,9 +237,12 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	manage_memory(physbase, physfree, modulep);
 //	pagingTests(physbase, physfree, modulep);
 	/*	should be invoked without manage_memory above.
-		and do_padding in it shud not be done.
-		pagingTests(physbase, physfree, modulep);
-	*/
+	 and do_padding in it shud not be done.
+	 pagingTests(physbase, physfree, modulep);
+	 */
+
+//	process_stuff(); // <<<<<<------------- works fine here
+
 
 	init_caches();
 //	traverse_linked_list();
@@ -246,24 +251,26 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	add_custom_interrupt();
 	init_keyboard_map();
 	keyboard_init();
+
+	process_stuff(); // <<<<<<------------- here it faults, but not before init_caches()
 	stack_ring_three();
 //	switch_user_mode();
 //	_jump_usermode();
 	kernel_process_init();
-	test_process_switch();
+
+//	test_process_switch();
+
 //	printf("\n presence: %d", is_linear_addr_mapped(0x4000))
 //	load_executable("bin/hello");
 
 //	 cause page fault
-	uint64_t * p = (uint64_t *)0x1000;
-	printf(" causing fault..%x ", *p);
-	printf(" alive after fault %x", *p);
+//	uint64_t * p = (uint64_t *) 0x1000;
+//	printf(" causing fault..%x ", *p);
+//	printf(" alive after fault %x", *p);
 
 //	load_elf_trial();
 
-
 }
-
 
 void boot(void) {
 	// note: function changes rsp, local stack variables can't be practically used
