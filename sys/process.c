@@ -192,22 +192,22 @@ void load_executable(char *str){
 	uint64_t section_offset;
 	if(text_info!=NULL){
 		section_offset = (uint64_t)temp + (uint64_t)text_info->sh_offset;
-		printf("text:  %x  %x  %x\n",text_info->sh_addr, section_offset, text_info->sh_size );
+//		printf("text:  %x  %x  %x\n",text_info->sh_addr, section_offset, text_info->sh_size );
 		elf_mem_copy((char *)(text_info->sh_addr), (char *)section_offset, (text_info->sh_size));
 	}
 	if(rodata_info!=NULL){
 		section_offset = (uint64_t)temp + (uint64_t)rodata_info->sh_offset;
-		printf("rodata:  %x  %x  %x\n",rodata_info->sh_addr, section_offset, rodata_info->sh_size );
+//		printf("rodata:  %x  %x  %x\n",rodata_info->sh_addr, section_offset, rodata_info->sh_size );
 		elf_mem_copy((char *)(rodata_info->sh_addr), (char *)section_offset,(rodata_info->sh_size));
 	}
 	if(data_info!=NULL){
 		section_offset = (uint64_t)temp + (uint64_t)data_info->sh_offset;
-		printf("data:  %x  %x  %x\n",data_info->sh_addr, section_offset, data_info->sh_size );
+//		printf("data:  %x  %x  %x\n",data_info->sh_addr, section_offset, data_info->sh_size );
 		elf_mem_copy((char *)(data_info->sh_addr), (char *)section_offset, data_info->sh_size);
 	}
 	if(bss_info != NULL){
 		section_offset = (uint64_t)temp + (uint64_t)data_info->sh_offset;
-		printf("bss:  %x  %x  %x\n",bss_info->sh_addr, section_offset, bss_info->sh_size );
+//		printf("bss:  %x  %x  %x\n",bss_info->sh_addr, section_offset, bss_info->sh_size );
 		elf_zerod_copy((char *)(bss_info->sh_addr), data_info->sh_size);
 	}
 
@@ -274,7 +274,7 @@ void create_process(char *executable, uint64_t ppid){
 	task_struct_t *task = kmalloc(sizeof(task_struct_t));
 	task_struct_t *temp_start = currenttask->next;
 	task_struct_t *parent_task = NULL;
-	while(temp_start != currenttask && temp_start->pid != ppid ){
+	while(temp_start->pid != ppid ){
 		temp_start = temp_start->next;
 	}
 	//assumption here is that the process has a parent, then the parent is found, have to handle zombie process somehow need to know how.
@@ -307,6 +307,7 @@ void kernel_process_init(){
 						 :"%rax");
 	//creating a secon process and that process has the same globals as the init process
 	currenttask = &taskone;
+	currenttask->executable[0] = '\0';
 	currenttask->next = currenttask;
 	currenttask->pid = 1;
 	create_process("bin/hello", 1);
@@ -349,7 +350,7 @@ void kernel_create_process(task_struct_t *task, task_struct_t *parent_task, char
 	task->state.rbp = 0;
 	task->state.rdi = 0;
 	task->state.rsi = 0;
-
+	task->state.cr3 = parent_task->state.cr3;
 	task->state.flags = parent_task->state.flags;
 	// need to assign a new stack and since it grows down, we need to change taht to the end of the page too.
 	strcpy((*task).executable,executable);
@@ -361,14 +362,15 @@ void preempt(){
 	currenttask = currenttask->next;
 	//adding the load of executable here, it should not be here..
 	uint64_t *temp = get_physical_pml4_base_for_process();
-
-	update_cr3(temp);
-	__asm__ __volatile__("movq %%cr3, %%rax\n\t"
-							 "movq %%rax, %0\n\t"
-				   	   	     :"=m"(currenttask->state.cr3)
-							 :
-							 :"%rax");
-
-	load_executable(currenttask->executable);
+//
+	update_cr3((uint64_t *)(temp));
+//	__asm__ __volatile__("movq %%cr3, %%rax\n\t"
+//							 "movq %%rax, %0\n\t"
+//				   	   	     :"=m"(currenttask->state.cr3)
+//							 :
+//							 :"%rax");
+	currenttask->state.cr3 = (uint64_t)temp;
+	if(currenttask->executable[0] != '\0')
+		load_executable(currenttask->executable);
 	process_switch_user(&last->state, &currenttask->state);
 }

@@ -9,6 +9,8 @@
 #include <sys/printtime.h>
 #include <sys/kmalloc.h>
 #include <sys/process.h>
+uint64_t * get_physical_pml4_base_for_process();
+uint64_t * get_free_frame();
 #define INITIAL_STACK_SIZE 4096
 extern void _jump_usermode();
 extern char video_buffer[4096];
@@ -240,27 +242,40 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	*/
 
 	init_caches();
+
 //	traverse_linked_list();
 	init_init_IDT();
 	config_PIC();
 	add_custom_interrupt();
 	init_keyboard_map();
 	keyboard_init();
+	__asm__ __volatile("cli");
 	stack_ring_three();
 //	switch_user_mode();
 //	_jump_usermode();
+
 	kernel_process_init();
-	test_process_switch();
+		test_process_switch();
+
 //	printf("\n presence: %d", is_linear_addr_mapped(0x4000))
 //	load_executable("bin/hello");
 
-//	 cause page fault
-	uint64_t * p = (uint64_t *)0x1000;
-	printf(" causing fault..%x ", *p);
-	printf(" alive after fault %x", *p);
+	// cause page fault
+//	uint64_t * p = (uint64_t *)0x1000;
+//	printf("causing fault..%x ", *p);
 
 //	load_elf_trial();
-
+//		uint64_t *temp = get_physical_pml4_base_for_process();
+//		update_cr3((uint64_t *)(temp));
+		uint64_t *temp = get_physical_pml4_base_for_process();
+						update_cr3((uint64_t *)(temp));
+					uint64_t *p = (uint64_t *)0x400000;
+					uint64_t *process_physical = (uint64_t *)get_free_frame();
+					setup_kernel_page_tables((uint64_t) p,
+									(uint64_t) process_physical);
+					*p = 23;
+					printf("fsfsdf %d",(int)(*p));
+			__asm__ __volatile__("sti");
 
 }
 
