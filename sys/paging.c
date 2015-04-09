@@ -412,7 +412,7 @@ void setup_page_tables_after_cr3_update(uint64_t linear_addr,
 void setup_process_page_tables(uint64_t linear_addr,
 		uint64_t physical_addr) {
 	setup_page_tables_after_cr3_update(linear_addr, physical_addr, 1, 1,
-			0);
+			1);
 }
 
 void setup_kernel_page_tables(uint64_t linear_addr,

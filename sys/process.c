@@ -373,5 +373,5 @@ void preempt(){
 
 	if(currenttask->executable[0] != '\0')
 		load_executable(currenttask->executable);
-	process_switch_user(&last->state, &currenttask->state);
+	process_switch_user(&(last->state), &(currenttask->state));
 }
