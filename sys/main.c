@@ -273,12 +273,12 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	kernel_process_init();
 //		test_process_switch();
 
-//	test_process_switch();
+	test_process_switch();
 
 //	printf("\n presence: %d", is_linear_addr_mapped(0x4000))
 //	load_executable("bin/hello");
 
-	pagefault_tests();
+//	pagefault_tests();
 //	load_elf_trial();
 //		uint64_t *temp = get_physical_pml4_base_for_process();
 //		update_cr3((uint64_t *)(temp));

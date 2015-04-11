@@ -254,7 +254,12 @@ void init_text_vm() {
 
 }
 void init_vm(struct mem_desc *mem_map) {
-//	create
+	vma_t * vma_ptr = kmalloc(sizeof(struct vma));
+	// head vma of kernel
+	vma_ptr->my_mem_desc = mem_map;
+	vma_ptr->vma_start = 0;
+	vma_ptr->vma_end = 0;
+	mem_map->vma_list = vma_ptr;
 }
 void map_process_vm(task_struct_t *task) {
 	task->mem_map = kmalloc(sizeof(struct mem_desc));
@@ -362,6 +367,7 @@ void kernel_create_process(task_struct_t *task, task_struct_t *parent_task,
 	task->state.flags = parent_task->state.flags;
 	// need to assign a new stack and since it grows down, we need to change taht to the end of the page too.
 	strcpy((*task).executable, executable);
+	map_process_vm(task);
 }
 
 void preempt() {
