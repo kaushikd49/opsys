@@ -483,13 +483,6 @@ trap_thirteen:
 
 trap_fourteen:
 	cli
-	// Pop the stack top to clear the errorcode
-	// Need to do this for interrupts that push
-	// errorcodes before call to handler, else
-	// GeneralProtectionFault happens
-	xchg (%rsp), %rax
-	popq %rax
-
 	pushq %rax
 	pushq %rbx
 	pushq %rcx
@@ -513,6 +506,14 @@ trap_fourteen:
 	popq %rcx
 	popq %rbx
 	popq %rax
+
+	// Pop the stack top to clear the errorcode
+	// Need to do this for interrupts that push
+	// errorcodes before call to handler, else
+	// GeneralProtectionFault happens
+	xchg (%rsp), %rax
+	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
 	sti

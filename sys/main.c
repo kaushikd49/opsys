@@ -262,7 +262,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 //	_jump_usermode();
 
 	kernel_process_init();
-		test_process_switch();
+//		test_process_switch();
 
 //	test_process_switch();
 
@@ -270,8 +270,8 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 //	load_executable("bin/hello");
 
 	// cause page fault
-//	uint64_t * p = (uint64_t *)0x1000;
-//	printf("causing fault..%x ", *p);
+	uint64_t * p = (uint64_t *)0x1000;
+	printf("causing fault..%x ", *p);
 
 //	load_elf_trial();
 //		uint64_t *temp = get_physical_pml4_base_for_process();
