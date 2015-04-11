@@ -7,6 +7,12 @@ typedef struct mem_desc {
 	int mm_count; // total number of users (can be anything
 	int num_vma;  //number of memory regions
 	struct mem_desc *mem_desc_head; //lets optimize later, for now it is the init process
+
+	// addresses in ELF to read from and load to mem during demand paging
+	char *text_elf_addr;
+	char *rodata_elf_addr;
+	char *data_elf_addr;
+
 	uint64_t start_code;
 	uint64_t end_code;
 	uint64_t start_data;

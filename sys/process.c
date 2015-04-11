@@ -165,30 +165,74 @@ void elf_zerod_copy(char *virtual_addr, uint64_t size) {
 	}
 }
 
-void load_from_elf(elf_sec_info_t* text_info, Elf64_Ehdr* temp,
-		elf_sec_info_t* rodata_info, elf_sec_info_t* data_info,
-		elf_sec_info_t* bss_info) {
+void add_vma(uint64_t vma_start, uint64_t vma_end, int type,
+		mem_desc_t* mem_desc_ptr) {
+	mem_desc_ptr->num_vma += 1;
+	vma_t* vma_ptr = kmalloc(sizeof(struct vma));
+	vma_ptr->my_mem_desc = mem_desc_ptr;
+	vma_ptr->vma_next = NULL;
+	vma_ptr->vma_start = vma_start;
+	vma_ptr->vma_end = vma_end;
+	vma_ptr->type = type;
+	if (mem_desc_ptr->vma_list == NULL) {
+		mem_desc_ptr->vma_list = vma_ptr;
+	} else {
+		vma_t* temp = mem_desc_ptr->vma_list;
+		while (temp->vma_next != NULL)
+			temp = temp->vma_next;
+		temp->vma_next = vma_ptr;
+	}
+}
+
+void load_from_elf(task_struct_t *task, elf_sec_info_t* text_info,
+		Elf64_Ehdr* temp, elf_sec_info_t* rodata_info,
+		elf_sec_info_t* data_info, elf_sec_info_t* bss_info) {
 	uint64_t section_offset;
+
+	mem_desc_t * mem_desc_ptr = kmalloc(sizeof(struct mem_desc));
+	mem_desc_ptr->num_vma = 0;
+	mem_desc_ptr->vma_list = NULL;
+	task->mem_map = mem_desc_ptr;
+
 	if (text_info != NULL) {
 		section_offset = (uint64_t) temp + (uint64_t) text_info->sh_offset;
+		mem_desc_ptr->text_elf_addr = (char*) section_offset;
+		uint64_t vma_start = (uint64_t) text_info->sh_addr;
+		uint64_t vma_end = vma_start + (uint64_t) text_info->sh_size;
+		add_vma(vma_start, vma_end, 0, mem_desc_ptr);
 		//		printf("text:  %x  %x  %x\n",text_info->sh_addr, section_offset, text_info->sh_size );
 		elf_mem_copy((char*) (text_info->sh_addr), (char*) section_offset,
 				(text_info->sh_size));
 	}
 	if (rodata_info != NULL) {
 		section_offset = (uint64_t) temp + (uint64_t) rodata_info->sh_offset;
+		mem_desc_ptr->rodata_elf_addr = (char*) section_offset;
+		uint64_t vma_start = (uint64_t) rodata_info->sh_addr;
+		uint64_t vma_end = vma_start + (uint64_t) rodata_info->sh_size;
+		add_vma(vma_start, vma_end, 1, mem_desc_ptr);
+
+
 		//		printf("rodata:  %x  %x  %x\n",rodata_info->sh_addr, section_offset, rodata_info->sh_size );
 		elf_mem_copy((char*) (rodata_info->sh_addr), (char*) section_offset,
 				(rodata_info->sh_size));
 	}
 	if (data_info != NULL) {
 		section_offset = (uint64_t) temp + (uint64_t) data_info->sh_offset;
+		mem_desc_ptr->data_elf_addr = (char*) section_offset;
+		uint64_t vma_start = (uint64_t) data_info->sh_addr;
+		uint64_t vma_end = vma_start + (uint64_t) data_info->sh_size;
+		add_vma(vma_start, vma_end, 2, mem_desc_ptr);
+
 		//		printf("data:  %x  %x  %x\n",data_info->sh_addr, section_offset, data_info->sh_size );
 		elf_mem_copy((char*) (data_info->sh_addr), (char*) section_offset,
 				data_info->sh_size);
 	}
 	if (bss_info != NULL) {
 		section_offset = (uint64_t) temp + (uint64_t) data_info->sh_offset;
+		uint64_t vma_start = (uint64_t) bss_info->sh_addr;
+		uint64_t vma_end = vma_start + (uint64_t) data_info->sh_size;
+		add_vma(vma_start, vma_end, 3, mem_desc_ptr);
+
 		//		printf("bss:  %x  %x  %x\n",bss_info->sh_addr, section_offset, bss_info->sh_size );
 		elf_zerod_copy((char*) (bss_info->sh_addr), data_info->sh_size);
 	}
@@ -227,7 +271,8 @@ void load_executable(task_struct_t *currenttask) {
 		i++;
 
 	}
-	load_from_elf(text_info, temp, rodata_info, data_info, bss_info);
+	load_from_elf(currenttask, text_info, temp, rodata_info, data_info,
+			bss_info);
 
 	kfree(text_info);
 	kfree(rodata_info);
