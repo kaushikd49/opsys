@@ -216,6 +216,15 @@ void test_user_function() {
 		;
 }
 
+void pagefault_tests(){
+	// cause page fault
+	uint64_t * p = (uint64_t *)0x1000;
+	printf("causing fault..%x ", *p);
+
+//	p = (uint64_t *)0xffffffffffffffff;
+//	printf("causing fault..%x ", *p);
+
+}
 
 void start(uint32_t* modulep, void* physbase, void* physfree) {
 	while (modulep[0] != 0x9001) {
@@ -269,10 +278,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 //	printf("\n presence: %d", is_linear_addr_mapped(0x4000))
 //	load_executable("bin/hello");
 
-	// cause page fault
-	uint64_t * p = (uint64_t *)0x1000;
-	printf("causing fault..%x ", *p);
-
+	pagefault_tests();
 //	load_elf_trial();
 //		uint64_t *temp = get_physical_pml4_base_for_process();
 //		update_cr3((uint64_t *)(temp));

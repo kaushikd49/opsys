@@ -628,3 +628,11 @@ void process_stuff() {
 	printf("new var: %p \n", *q);
 }
 
+int do_pmls_clash(uint64_t addr1, uint64_t addr2) {
+	struct paging_entities pe1;
+	struct paging_entities pe2;
+	get_paging_entity_indexes(&pe1, addr1);
+	get_paging_entity_indexes(&pe2, addr2);
+	return pe1.pml_index == pe2.pml_index;
+}
+
