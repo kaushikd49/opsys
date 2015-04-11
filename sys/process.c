@@ -11,7 +11,7 @@
 #define VM_EXEX 1<<2
 #define USER_CODE (3<<3 | 3)
 #define USER_DATA (4<<3 | 3)
-static task_struct_t *currenttask;
+//static task_struct_t *currenttask; //todo: initialize
 static task_struct_t *lasttask;
 static task_struct_t taskone;
 typedef struct elf_section_info {
@@ -135,13 +135,11 @@ elf_sec_info_t *find_bss_elf(Elf64_Ehdr *current) {
 	}
 	return NULL;
 }
-void elf_mem_copy(char *virtual_addr, char *elf_addr, uint64_t size) {
-	char *current = virtual_addr;
-	char *elf_current = elf_addr;
-	char *limit = (char *) ((uint64_t) virtual_addr + (uint64_t) size);
+
+void copy_from_elf(char* current, char* limit, char* elf_current) {
 	while (current < limit) {
 		if (!(is_linear_addr_mapped((uint64_t) current))) {
-			void *free_frame = (void *) get_free_frames(0);
+			void* free_frame = (void*) get_free_frames(0);
 			setup_process_page_tables((uint64_t) current,
 					(uint64_t) free_frame);
 		}
@@ -150,19 +148,30 @@ void elf_mem_copy(char *virtual_addr, char *elf_addr, uint64_t size) {
 		elf_current++;
 	}
 }
-void elf_zerod_copy(char *virtual_addr, uint64_t size) {
+
+void elf_mem_copy(char *virtual_addr, char *elf_addr, uint64_t size) {
 	char *current = virtual_addr;
+	char *elf_current = elf_addr;
 	char *limit = (char *) ((uint64_t) virtual_addr + (uint64_t) size);
+	copy_from_elf(current, limit, elf_current);
+}
+
+void copy_zero_for_range(char* current, char* limit) {
 	while (current < limit) {
 		if (!(is_linear_addr_mapped((uint64_t) current))) {
-			void *free_frame = (void *) get_free_frames(0);
+			void* free_frame = (void*) get_free_frames(0);
 			setup_process_page_tables((uint64_t) current,
 					(uint64_t) free_frame);
 			*current = 0;
 		}
-
 		current++;
 	}
+}
+
+void elf_zerod_copy(char *virtual_addr, uint64_t size) {
+	char *current = virtual_addr;
+	char *limit = (char *) ((uint64_t) virtual_addr + (uint64_t) size);
+	copy_zero_for_range(current, limit);
 }
 
 void add_vma(uint64_t vma_start, uint64_t vma_end, int type,
@@ -201,8 +210,8 @@ void load_from_elf(task_struct_t *task, elf_sec_info_t* text_info,
 		uint64_t vma_end = vma_start + (uint64_t) text_info->sh_size;
 		add_vma(vma_start, vma_end, 0, mem_desc_ptr);
 		//		printf("text:  %x  %x  %x\n",text_info->sh_addr, section_offset, text_info->sh_size );
-		elf_mem_copy((char*) (text_info->sh_addr), (char*) section_offset,
-				(text_info->sh_size));
+//		elf_mem_copy((char*) (text_info->sh_addr), (char*) section_offset,
+//				(text_info->sh_size));
 	}
 	if (rodata_info != NULL) {
 		section_offset = (uint64_t) temp + (uint64_t) rodata_info->sh_offset;
@@ -213,8 +222,8 @@ void load_from_elf(task_struct_t *task, elf_sec_info_t* text_info,
 
 
 		//		printf("rodata:  %x  %x  %x\n",rodata_info->sh_addr, section_offset, rodata_info->sh_size );
-		elf_mem_copy((char*) (rodata_info->sh_addr), (char*) section_offset,
-				(rodata_info->sh_size));
+//		elf_mem_copy((char*) (rodata_info->sh_addr), (char*) section_offset,
+//				(rodata_info->sh_size));
 	}
 	if (data_info != NULL) {
 		section_offset = (uint64_t) temp + (uint64_t) data_info->sh_offset;
@@ -224,8 +233,8 @@ void load_from_elf(task_struct_t *task, elf_sec_info_t* text_info,
 		add_vma(vma_start, vma_end, 2, mem_desc_ptr);
 
 		//		printf("data:  %x  %x  %x\n",data_info->sh_addr, section_offset, data_info->sh_size );
-		elf_mem_copy((char*) (data_info->sh_addr), (char*) section_offset,
-				data_info->sh_size);
+//		elf_mem_copy((char*) (data_info->sh_addr), (char*) section_offset,
+//				data_info->sh_size);
 	}
 	if (bss_info != NULL) {
 		section_offset = (uint64_t) temp + (uint64_t) data_info->sh_offset;
@@ -234,7 +243,7 @@ void load_from_elf(task_struct_t *task, elf_sec_info_t* text_info,
 		add_vma(vma_start, vma_end, 3, mem_desc_ptr);
 
 		//		printf("bss:  %x  %x  %x\n",bss_info->sh_addr, section_offset, bss_info->sh_size );
-		elf_zerod_copy((char*) (bss_info->sh_addr), data_info->sh_size);
+//		elf_zerod_copy((char*) (bss_info->sh_addr), data_info->sh_size);
 	}
 }
 
@@ -281,6 +290,9 @@ void load_executable(task_struct_t *currenttask) {
 
 	currenttask->state.rip = (uint64_t) (temp->e_entry);
 	uint64_t stack_page = 0x7000000;
+	add_vma(stack_page, stack_page + 4096, 4, currenttask->mem_map); // stack vma mapping
+	//todo: test stack demand paging by using apt user program
+
 	void *free_frame = (void *) get_free_frames(0);
 	setup_process_page_tables((uint64_t) stack_page, (uint64_t) free_frame);
 	currenttask->state.rsp = (uint64_t) stack_page + 0x500;
@@ -425,7 +437,7 @@ void kernel_create_process(task_struct_t *task, task_struct_t *parent_task,
 }
 
 void preempt() {
-	printf("\nswitching");
+	printf("\n--switching--");
 	task_struct_t *last = currenttask;
 	currenttask = currenttask->next;
 	//adding the load of executable here, it should not be here..

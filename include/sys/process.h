@@ -1,5 +1,6 @@
 #ifndef _PROCESS_H
 #define _PROCESS_H
+
 typedef struct mem_desc {
 	struct vma *vma_list; //list of the memory regions as a linked list
 	struct vma *vma_cache; // last memory region used
@@ -36,7 +37,7 @@ typedef struct vma {
 	uint64_t vma_start;
 	uint64_t vma_end; //no overlap in the areas.
 	int vm_perm; //0: read, 1: write
-	int type; // 0: text,1: rodata, 2: data, 3: bss
+	int type; // 0: text,1: rodata, 2: data, 3: bss, 4: stack
 	struct vma *vma_next;
 
 } vma_t;
@@ -85,6 +86,9 @@ typedef struct task_struct {
 	struct mem_desc *mem_map;
 	char executable[100];
 } task_struct_t;
+
+task_struct_t *currenttask;
+
 void load_executable(task_struct_t *currenttask);
 void preempt();
 void kernel_create_process(task_struct_t *task, task_struct_t *parent_task,

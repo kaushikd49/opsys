@@ -13,5 +13,5 @@ void setup_process_page_tables(uint64_t linear_addr,uint64_t physical_addr) ;
 void process_stuff();
 void update_cr3(uint64_t * pml_base_ptr);
 int do_pmls_clash(uint64_t addr1,uint64_t addr2);
-
+int get_bit(uint64_t num, int bit_num) ;
 #endif

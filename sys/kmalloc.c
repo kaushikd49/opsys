@@ -64,7 +64,7 @@ void *get_virtual_location(int order) {
 }
 //this fucntion will add free_t header to the beginning of every memory location in a page that has been allocated
 void prepare_page(int order, void *address) { //order max 11
-	printf("preparing page..\n");
+//	printf("preparing page..\n");
 	int i;
 	uint64_t num_memory_slots = PAGE_SIZE / (1 << order);
 	for (i = 0; i < num_memory_slots - 1; i++) {
