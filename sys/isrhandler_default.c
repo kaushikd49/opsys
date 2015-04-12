@@ -126,7 +126,7 @@ void traphandler_thirty() {
 void traphandler_thirtyone() {
 	printf("trap thirtyone");
 }
-void isrhandler_syscall(){
-	preempt();
-}
+//void isrhandler_syscall(){
+//	preempt();
+//}
 #endif

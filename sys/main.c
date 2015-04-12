@@ -176,20 +176,20 @@ void traverse_linked_list() {
 //
 //	}
 //}
-void test_process_switch() {
-	printf("\n we going to process switch now");
-	preempt();
-	printf("\n we are back");
-}
-void stack_ring_three() {
-	uint64_t stack_kernel = (uint64_t) kmalloc(0x1000);
-	tss.rsp0 = (uint64_t) (stack_kernel + 0x1000);
-	__asm__ __volatile__("movw $0x2B,%%ax\n\t"
-			"ltr %%ax"
-			:::"rax"
-	);
-
-}
+//void test_process_switch() {
+//	printf("\n we going to process switch now");
+//	preempt();
+//	printf("\n we are back");
+//}
+//void stack_ring_three() {
+//	uint64_t stack_kernel = (uint64_t) kmalloc(0x1000);
+//	tss.rsp0 = (uint64_t) (stack_kernel + 0x1000);
+//	__asm__ __volatile__("movw $0x2B,%%ax\n\t"
+//			"ltr %%ax"
+//			:::"rax"
+//	);
+//
+//}
 void switch_user_mode() {
 	__asm__ __volatile__ (
 			"cli\n\t"
@@ -254,15 +254,16 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	add_custom_interrupt();
 	init_keyboard_map();
 	keyboard_init();
-//	__asm__ __volatile("cli");
+	__asm__ __volatile("cli");
 
 //	process_stuff(); // <<<<<<------------- here it faults, but not before init_caches()
-	stack_ring_three();
+//	stack_ring_three();
 //	switch_user_mode();
 //	_jump_usermode();
 
 	kernel_process_init();
-		test_process_switch();
+	printf("done");
+//		test_process_switch();
 
 //	test_process_switch();
 
