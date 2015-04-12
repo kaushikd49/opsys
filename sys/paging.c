@@ -39,6 +39,9 @@ uint64_t extract_bits(uint64_t from, int fstart_bit, int fend_bit, uint64_t to,
 	return to;
 }
 
+int get_bit(uint64_t num, int bit_num) {
+	return (int) extract_bits(num, bit_num, bit_num, ULONG_ZERO, 0, 0);
+}
 uint64_t update40bit_addr(uint64_t entry, uint64_t extract_from) {
 	// 51:12 fill 40 bit address
 	entry = extract_bits(extract_from, 12, 51, entry, 12, 51);
@@ -169,8 +172,10 @@ void create_all_paging_entities(const struct paging_entities* pe,
 	uint64_t* pdir_ptr = get_free_frame();
 	uint64_t* pdir = get_free_frame();
 	uint64_t* ptable = get_free_frame();
-	*(pml_base_ptr + pe->pml_index) = get_pml4_entry((uint64_t) pdir_ptr, p, rw, us);
-	*(pdir_ptr + pe->pdir_ptr_index) = get_pdpt_entry((uint64_t) pdir, p, rw, us);
+	*(pml_base_ptr + pe->pml_index) = get_pml4_entry((uint64_t) pdir_ptr, p, rw,
+			us);
+	*(pdir_ptr + pe->pdir_ptr_index) = get_pdpt_entry((uint64_t) pdir, p, rw,
+			us);
 	*(pdir + pe->dir_index) = get_pd_entry((uint64_t) ptable, p, rw, us);
 	*(ptable + pe->table_index) = get_ptable_entry(physical_addr, p, rw, us);
 }
@@ -409,24 +414,19 @@ void setup_page_tables_after_cr3_update(uint64_t linear_addr,
 //			*pte_virtual_addr);
 }
 
-void setup_process_page_tables(uint64_t linear_addr,
-		uint64_t physical_addr) {
-	setup_page_tables_after_cr3_update(linear_addr, physical_addr, 1, 1,
-			1);
+void setup_process_page_tables(uint64_t linear_addr, uint64_t physical_addr) {
+	setup_page_tables_after_cr3_update(linear_addr, physical_addr, 1, 1, 1);
 }
 
-void setup_kernel_page_tables(uint64_t linear_addr,
-		uint64_t physical_addr) {
-	setup_page_tables_after_cr3_update(linear_addr, physical_addr, 1, 1,
-			0);
+void setup_kernel_page_tables(uint64_t linear_addr, uint64_t physical_addr) {
+	setup_page_tables_after_cr3_update(linear_addr, physical_addr, 1, 1, 0);
 }
-
 
 // IMPORTANT - do not use virtual addresses corresponding to 510 PML offset
 void map_page_tables_adress(uint64_t **pml_base_dbl_ptr, int p, int rw, int us) {
 	uint64_t *pml_base_ptr = *pml_base_dbl_ptr;
 	uint64_t * temp = pml_base_ptr + 510;
-	*temp = get_pml4_entry((uint64_t) pml_base_ptr,p, rw, us);
+	*temp = get_pml4_entry((uint64_t) pml_base_ptr, p, rw, us);
 	printf("*pml_base_ptr is %p\n", *pml_base_ptr);
 }
 
@@ -540,20 +540,12 @@ uint64_t * get_physical_pml4_base_for_process() {
 	setup_kernel_page_tables((uint64_t) virtual_addr,
 			(uint64_t) process_pml_base_physical);
 	uint64_t *ptr = (uint64_t *) KERNEL_PML4_BASE_VIRTUAL;
-	uint64_t *qtr = virtual_addr;
-	for (int i = 0; i < NUM_UNIT64_IN_PAGE; i++) {
-		*qtr = *ptr;
-		qtr++;
-		ptr++;
-	}
-//	for (int i = 0; i < NUM_UNIT64_IN_PAGE/2; i++) {
-//			*qtr = 0;
-//			qtr++;
-//	}
+	// kernel addresses only lie in pml 511, so just copy that pml4e
+	*(virtual_addr + 511) = *(ptr + 511);
 
 	// self referencing of the page table
 	uint64_t * temp = virtual_addr + 510;
-	*temp = get_pml4_entry((uint64_t) process_pml_base_physical,1, 1, 0);
+	*temp = get_pml4_entry((uint64_t) process_pml_base_physical, 1, 1, 0);
 
 	return process_pml_base_physical;
 }
@@ -623,8 +615,16 @@ void process_stuff() {
 	uint64_t* q = (uint64_t *) 0x400038;
 	setup_process_page_tables((uint64_t) q, (uint64_t) get_free_frame());
 
-	printf("ismapped %d \n", is_linear_addr_mapped((uint64_t)q));
+	printf("ismapped %d \n", is_linear_addr_mapped((uint64_t) q));
 	*q = 0xf00d;
 	printf("new var: %p \n", *q);
+}
+
+int do_pmls_clash(uint64_t addr1, uint64_t addr2) {
+	struct paging_entities pe1;
+	struct paging_entities pe2;
+	get_paging_entity_indexes(&pe1, addr1);
+	get_paging_entity_indexes(&pe2, addr2);
+	return pe1.pml_index == pe2.pml_index;
 }
 

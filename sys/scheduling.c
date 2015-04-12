@@ -111,3 +111,6 @@ void move_process_runq_to_waitq(uint64_t pid){
 	if(temp!=NULL)
 		add_process_waitq(temp);
 }
+
+
+

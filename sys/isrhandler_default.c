@@ -4,8 +4,23 @@
 #include <sys/gdt.h>
 #include <sys/tarfs.h>
 #include<sys/process.h>
-#include <sys/freelist.h>
-#include <sys/paging.h>
+#include<sys/pagefault_handler.h>
+
+typedef struct {
+	uint64_t r11;
+	uint64_t r10;
+	uint64_t r9;
+	uint64_t r8;
+	uint64_t rbp;
+	uint64_t rsi;
+	uint64_t rdi;
+	uint64_t rdx;
+	uint64_t rcx;
+	uint64_t rbx;
+	uint64_t rax;
+	uint64_t error_code;
+} regs_pushd_t;
+
 
 void isrhandler_default() {
 //	__asm__ __volatile__(
@@ -60,20 +75,9 @@ void traphandler_twelve() {
 void traphandler_thirteen() {
 	printf("trap thirteen");
 }
-void traphandler_fourteen() {
+void traphandler_fourteen(regs_pushd_t regs) {
 	printf("trap fourteen");
-	uint64_t* frame = get_free_frame();
-	uint64_t virtual_addr = 0;
-	__asm__ __volatile(
-			"movq %%cr2,%0"
-			:"=a"(virtual_addr)
-			:
-	);
-
-	//todo :what if kernel page faults??
-	setup_process_page_tables((uint64_t) virtual_addr,
-			(uint64_t) frame);
-
+	do_handle_pagefault(regs.error_code);
 }
 void traphandler_fifteen() {
 	printf("trap fifteen");

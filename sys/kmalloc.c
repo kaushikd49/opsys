@@ -1,3 +1,4 @@
+
 #include<sys/defs.h>
 #include<sys/sbunix.h>
 #include<sys/paging.h>
@@ -7,6 +8,8 @@
 cache_t *cache_list = NULL;
 cache_init cache_info = { NULL, NULL };
 uint64_t BASE_MEMORY_MANAGER = 0xffffffffb0000000; //********** fill this up
+// todo: change this base addr so that kernel addr space is well utilized
+
 void init_caches();
 void init_cache_list();
 void *get_virtual_location(int order);
@@ -61,7 +64,7 @@ void *get_virtual_location(int order) {
 }
 //this fucntion will add free_t header to the beginning of every memory location in a page that has been allocated
 void prepare_page(int order, void *address) { //order max 11
-	printf("preparing page..\n");
+//	printf("preparing page..\n");
 	int i;
 	uint64_t num_memory_slots = PAGE_SIZE / (1 << order);
 	for (i = 0; i < num_memory_slots - 1; i++) {
@@ -180,3 +183,9 @@ void kfree(void *addr) {
 	header->order = 0;
 	dealloc_in_cache(order, (void *) header);
 }
+
+
+int is_kernel_addr(uint64_t addr) {
+	return do_pmls_clash(addr,BASE_MEMORY_MANAGER);
+}
+

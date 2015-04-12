@@ -10,5 +10,5 @@ void *allocate_in_cache(int order);
 void dealloc_in_cache(int order, void *ptr);
 void *kmalloc(uint64_t size);
 void kfree(void *addr);
-
+int is_kernel_addr(uint64_t addr);
 #endif

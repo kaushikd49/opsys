@@ -216,6 +216,15 @@ void test_user_function() {
 		;
 }
 
+void pagefault_tests(){
+	// cause page fault
+	uint64_t * p = (uint64_t *)0x1000;
+	printf("causing fault..%x ", *p);
+
+//	p = (uint64_t *)0xffffffffffffffff;
+//	printf("causing fault..%x ", *p);
+
+}
 
 void start(uint32_t* modulep, void* physbase, void* physfree) {
 	while (modulep[0] != 0x9001) {
@@ -246,34 +255,29 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 //	process_stuff(); // <<<<<<------------- works fine here
 
 
-	init_caches();
+init_caches();
 
 //	traverse_linked_list();
-	init_init_IDT();
-	config_PIC();
-	add_custom_interrupt();
-	init_keyboard_map();
-	keyboard_init();
-	__asm__ __volatile("cli");
+init_init_IDT();
+config_PIC();
+add_custom_interrupt();
+init_keyboard_map();
+keyboard_init();
+__asm__ __volatile("cli");
 
 //	process_stuff(); // <<<<<<------------- here it faults, but not before init_caches()
 //	stack_ring_three();
 //	switch_user_mode();
 //	_jump_usermode();
 
-	kernel_process_init();
-	printf("done");
+kernel_process_init();
 //		test_process_switch();
 
-//	test_process_switch();
 
 //	printf("\n presence: %d", is_linear_addr_mapped(0x4000))
 //	load_executable("bin/hello");
 
-	// cause page fault
-//	uint64_t * p = (uint64_t *)0x1000;
-//	printf("causing fault..%x ", *p);
-
+//	pagefault_tests();
 //	load_elf_trial();
 //		uint64_t *temp = get_physical_pml4_base_for_process();
 //		update_cr3((uint64_t *)(temp));
@@ -285,7 +289,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 //									(uint64_t) process_physical);
 //					*p = 23;
 //					printf("fsfsdf %d",(int)(*p));
-			__asm__ __volatile__("sti");
+		__asm__ __volatile__("sti");
 //	 cause page fault
 //	uint64_t * p = (uint64_t *) 0x1000;
 //	printf(" causing fault..%x ", *p);
@@ -296,21 +300,21 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 }
 
 void boot(void) {
-	// note: function changes rsp, local stack variables can't be practically used
-	//register char *s;
-	__asm__(
-			"movq %%rsp, %0;"
-			"movq %1, %%rsp;"
-			:"=g"(loader_stack)
-			:"r"(&stack[INITIAL_STACK_SIZE])
-	);
-	reload_gdt();
-	setup_tss();
-	__asm__ __volatile__("cli");
-	start(
-			(uint32_t*) ((char*) (uint64_t) loader_stack[3]
-					+ (uint64_t) &kernmem - (uint64_t) &physbase), &physbase,
-			(void*) (uint64_t) loader_stack[4]);
-	while (1)
-		;
+// note: function changes rsp, local stack variables can't be practically used
+//register char *s;
+__asm__(
+		"movq %%rsp, %0;"
+		"movq %1, %%rsp;"
+		:"=g"(loader_stack)
+		:"r"(&stack[INITIAL_STACK_SIZE])
+);
+reload_gdt();
+setup_tss();
+__asm__ __volatile__("cli");
+start(
+		(uint32_t*) ((char*) (uint64_t) loader_stack[3]
+				+ (uint64_t) &kernmem - (uint64_t) &physbase), &physbase,
+		(void*) (uint64_t) loader_stack[4]);
+while (1)
+	;
 }
