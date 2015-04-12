@@ -71,7 +71,7 @@ void do_demand_paging(uint64_t virtual_addr) {
 }
 
 void do_page_fault(uint64_t addr) {
-	printf("DO PAGE FAULT");
+	printf("DO PAGE FAULT\n");
 }
 
 void do_handle_pagefault(uint64_t error_code) {
@@ -85,18 +85,18 @@ void do_handle_pagefault(uint64_t error_code) {
 		if (us == 1) {
 			if (kernel_addr) {
 				//trying to access kernel data
-				printf(" Kernel access by user");
+				printf(" Kernel access by user\n");
 				do_page_fault(addr);
 			} else {
-				printf(" Demand paging for addr %p", addr);
+				printf(" Demand paging for addr %p\n", addr);
 				do_demand_paging(addr);
 			}
 		} else {
-			printf(" Kernel page fault. Do not reach here unless testing ");
+			printf(" Kernel page fault. Do not reach here unless testing \n");
 			page_alloc(addr);
 		}
 	} else {
-		printf(" must be illegal access p:rw:us %d:%d:%d", present, rw, us);
+		printf(" must be illegal access p:rw:us %d:%d:%d\n", present, rw, us);
 		do_page_fault(addr);
 	}
 

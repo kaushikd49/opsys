@@ -7,7 +7,6 @@
 
 extern task_struct_t *currenttask;//points to the head of the running list
 //extern static task_struct_t *waitingtask;//
-static task_struct_t *waitingtask;// this is the head to the elements in the wait queue
 void add_process_waitq(task_struct_t *waiting_process){
 	if(waitingtask == NULL){
 		waitingtask = waiting_process;//both links of the waiting process point to itself

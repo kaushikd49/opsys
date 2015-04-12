@@ -93,6 +93,11 @@ void preempt(uint64_t stack_top);
 void kernel_create_process(task_struct_t *task, task_struct_t *parent_task, char *executable);
 
 task_struct_t *currenttask;
+task_struct_t *waitingtask;// this is the head to the elements in the wait queue
 
 void kernel_process_init();
+
+void kernel_init_process(task_struct_t *task, task_struct_t *parent, void (*main)());
+void create_kernel_process(void (*main)(),uint64_t ppid);
+
 #endif
