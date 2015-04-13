@@ -37,3 +37,31 @@ Following non-displayable chars are printed as below
 TEAM:
 Muthukumar Suresh
 Kaushik Devarajaiah
+Project done by
+1) Muthukumar Suresh (109835938)
+2) Kaushik Devarajaiah (109889142)
+
+How to use
+1.) Run make clean ; make from the project root directory
+2.) Run ./rootfs/bin/sbush from the project root directory
+3.) To execute commands in the shell, please provide a single
+ space separation between commands. Same holds for pipes too. 
+Ex:
+ls
+pwd
+date
+ls | less
+ls | sort | less | grep a --color=auto
+
+4.) Handling scripts - comments in scripts can only appear at the start of a line.
+5.) Format to set environment variables - setenv VAR_NAME VAR_VALUE
+6.) Format to get environment variables - getenv VAR_NAME
+7.) setenv does not support variable substitution, only text values are allowed. 
+Example it will not replace /bin:${PATH} to the full value.
+8.) To set PS1 use - setenv PS1 my_favorite_prompt>>
+9.) To run an sbush script from outside, use sbush <script_name>
+10.) To run an sbush script within the shell, just use <path of the script>.
+11.) Limit on shell input commands' total length is 1000 characters.
+
+
+

@@ -1,4 +1,4 @@
-Copyright (c) 2014-2015 by Muthukumar Suresh and Kaushik Devarajaiah.
+Copyright (c) 2014-2015 by Muthukumar Suresh and Kaushik Devarajaiah. 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
@@ -12,8 +12,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
-.Unrestricted rights are granted to instructor Mike Ferdman and
+
+Unrestricted rights are granted to instructor Mike Ferdman and
 TA for CSE 506 from Stony Brook University.
+
+FILES MODIFIED UNDER GPLV2:
+ INCLUDE/errno.h ONLY. WE HAVE ONLY TAKEN
+ERROR NUMBERS FOR INTERPRETING ERROR VALUES.
 
 Copyright (c) 2013-2015 by Mike Ferdman.  All rights reserved.
 	Unrestricted rights are granted to instructors and students of CSE506 class

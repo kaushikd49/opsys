@@ -78,7 +78,7 @@ void repeat_chars_into_buffer(char c, int num) {
 	update_buffer_ptrs(r);
 }
 
-int strlen(const char *str) {
+int mystrlen(const char *str) {
 	int i = 0;
 	for (; *str; str++, i++)
 		;
@@ -87,7 +87,7 @@ int strlen(const char *str) {
 
 char* handle_oversized_str(const char* s) {
 	char *str = (char *) s;
-	int len = strlen(str);
+	int len = mystrlen(str);
 	if (len > MAX_CHARS_IN_VID_BUFFER) {
 		// truncate str to accommodate it to the vid buffer
 		str += len - MAX_CHARS_IN_VID_BUFFER;

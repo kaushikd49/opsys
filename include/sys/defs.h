@@ -9,6 +9,7 @@ typedef unsigned int   uint32_t;
 typedef          int    int32_t;
 typedef unsigned short uint16_t;
 typedef          short  int16_t;
+
 typedef unsigned long Elf64_Addr;
 typedef unsigned long Elf64_Off;
 typedef unsigned short Elf64_Half;
@@ -60,4 +61,11 @@ struct lidtr_t { //initializing ldtr register
 }__attribute__((packed));
 #define align(size, alignment) (size + (alignment - 1)) & ~(alignment - 1)
 #define TARFS_ALIGNMENT 512
+
+typedef int32_t pid_t;
+typedef int64_t ssize_t;
+typedef uint64_t size_t;
+typedef uint64_t off_t; //todo: was clashing with the system library  include/sys/tarfs.h
+typedef int64_t time_t;
+
 #endif
