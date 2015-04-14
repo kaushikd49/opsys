@@ -90,6 +90,8 @@ typedef struct task_struct {
 }task_struct_t;
 void load_executable(task_struct_t *	);
 void preempt(uint64_t stack_top);
+uint64_t temp_preempt(uint64_t);
+uint64_t temp_preempt_exit(uint64_t);
 void kernel_create_process(task_struct_t *task, task_struct_t *parent_task, char *executable);
 
 task_struct_t *currenttask;
@@ -99,5 +101,11 @@ void kernel_process_init();
 
 void kernel_init_process(task_struct_t *task, task_struct_t *parent, void (*main)());
 void create_kernel_process(void (*main)(),uint64_t ppid);
+void temp_create_user_process(char *executable, uint64_t ppid);
+void temp_init_user_state(task_struct_t *task, task_struct_t *parent_task, char *executable);
+void temp_init_user_stack(uint64_t rsp, task_struct_t *task);
+void temp_create_kernel_process(void (*main)(), uint64_t ppid);
+void temp_init_kernel_state(task_struct_t *task, task_struct_t *parent_task, void (*main)());
+void temp_init_kernel_stack(uint64_t rsp, task_struct_t *task);
 
 #endif

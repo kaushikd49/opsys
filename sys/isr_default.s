@@ -1062,7 +1062,8 @@ isr_timer:
 	movq %gs, %rax
 	pushq %rax
 	movq %rsp, %rdi
-	call print_time
+	call temp_print_time
+	movq %rax, %rsp
 	popq %rax
 	movq %rax, %gs
 	popq %rax
@@ -1168,7 +1169,8 @@ isr_syscall:
 	movq $60, %rbx
 	cmp %rax, %rbx
 	jne q2
-	call preempt_exit
+	call temp_preempt_exit
+	movq %rax, %rsp
 	popq %rax
 	movq %rax, %gs
 	popq %rax
