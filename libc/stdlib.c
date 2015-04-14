@@ -18,9 +18,9 @@ struct blockHeader {
 
 };
 //does not have an errno to set accouring to gnu standard: http://www.gnu.org/software/libc/manual/html_node/Exit-Status.html
-void exit(int status) {
-	syscall_1(SYS_exit, status);
-}
+//void exit(int status) {
+//	syscall_1(SYS_exit, status);
+//}
 
 ssize_t read(int fd, void *buf, size_t count) {
 	size_t size = syscall_4_write(SYS_read, fd, buf, count); //we could change this to use the generic syscall_4 but why break the code.
