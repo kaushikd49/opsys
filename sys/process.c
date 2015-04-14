@@ -428,13 +428,13 @@ void kernel_process_init() {
 	stack_ring_three(currenttask);
 	tss.rsp0 = (uint64_t) (currenttask->state.kernel_rsp);
 
-	//temp_create_kernel_process(test_main,1);
+	temp_create_kernel_process(test_main,1);
 	temp_create_user_process("bin/hello", 1);
 	temp_create_user_process("bin/hello2", 1);
 
-	//temp_create_user_process("bin/hello", 1);
-	//temp_create_kernel_process(test_main,1);
-	//temp_create_user_process("bin/hello2", 1);
+	temp_create_user_process("bin/hello", 1);
+	temp_create_kernel_process(test_main,1);
+	temp_create_user_process("bin/hello2", 1);
 	__asm__ __volatile("sti");
 	printf("here");
 	while(1){
@@ -550,6 +550,7 @@ uint64_t temp_preempt(uint64_t stack_top){
 //						:"r"(currenttask->state.kernel_rsp)
 //						:"%rsp");
 //	printf("%p", tss.rsp0);
+	update_cr3((uint64_t *)(currenttask->state.cr3));
 	return (currenttask->state.kernel_rsp);
 
 	//	printf("%p ", tss.rsp0);
@@ -585,6 +586,7 @@ uint64_t temp_preempt_exit(uint64_t stack_top){
 //							:
 //							:"r"(currenttask->state.kernel_rsp)
 //							:"%rsp");
+	update_cr3((uint64_t *)(currenttask->state.cr3));
 	return (currenttask->state.kernel_rsp);
 }
 
