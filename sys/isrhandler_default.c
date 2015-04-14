@@ -76,7 +76,7 @@ void traphandler_thirteen() {
 	printf("trap thirteen");
 }
 void traphandler_fourteen(regs_pushd_t regs) {
-	printf("trap fourteen");
+//	printf("trap fourteen");
 	do_handle_pagefault(regs.error_code);
 }
 void traphandler_fifteen() {
@@ -130,7 +130,7 @@ void traphandler_thirty() {
 void traphandler_thirtyone() {
 	printf("trap thirtyone");
 }
-void isrhandler_syscall() {
-	preempt();
-}
+//void isrhandler_syscall(){
+//	preempt();
+//}
 #endif

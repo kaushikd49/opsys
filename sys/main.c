@@ -176,20 +176,20 @@ void traverse_linked_list() {
 //
 //	}
 //}
-void test_process_switch() {
-	printf("\n we going to process switch now");
-	preempt();
-	printf("\n we are back");
-}
-void stack_ring_three() {
-	uint64_t stack_kernel = (uint64_t) kmalloc(0x1000);
-	tss.rsp0 = (uint64_t) (stack_kernel + 0x1000);
-	__asm__ __volatile__("movw $0x2B,%%ax\n\t"
-			"ltr %%ax"
-			:::"rax"
-	);
-
-}
+//void test_process_switch() {
+//	printf("\n we going to process switch now");
+//	preempt();
+//	printf("\n we are back");
+//}
+//void stack_ring_three() {
+//	uint64_t stack_kernel = (uint64_t) kmalloc(0x1000);
+//	tss.rsp0 = (uint64_t) (stack_kernel + 0x1000);
+//	__asm__ __volatile__("movw $0x2B,%%ax\n\t"
+//			"ltr %%ax"
+//			:::"rax"
+//	);
+//
+//}
 void switch_user_mode() {
 	__asm__ __volatile__ (
 			"cli\n\t"
@@ -230,17 +230,17 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 	while (modulep[0] != 0x9001) {
 		modulep += modulep[1] + 2;
 	};
-	printf("physbase:physfree\n %p %p ", physbase, physfree);
+//	printf("physbase:physfree\n %p %p ", physbase, physfree);
 	for (smap = (struct smap_t*) (modulep + 2);
 			smap < (struct smap_t*) ((char*) modulep + modulep[1] + 2 * 4);
 			++smap) {
 		if (smap->type == 1 /* memory */&& smap->length != 0) {
-			printf("Length of memory:%d\n", smap->length);
-			printf("Available Physical Memory [%x-%x]\n", smap->base,
-					smap->base + smap->length);
+//			printf("Length of memory:%d\n", smap->length);
+//			printf("Available Physical Memory [%x-%x]\n", smap->base,
+//					smap->base + smap->length);
 		}
 	}
-	printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
+//	printf("tarfs in [%x:%x]\n", &_binary_tarfs_start, &_binary_tarfs_end);
 
 	//	printf("%x", pml_base_ptr_process);
 
@@ -255,25 +255,24 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 //	process_stuff(); // <<<<<<------------- works fine here
 
 
-	init_caches();
+init_caches();
 
 //	traverse_linked_list();
-	init_init_IDT();
-	config_PIC();
-	add_custom_interrupt();
-	init_keyboard_map();
-	keyboard_init();
-//	__asm__ __volatile("cli");
+init_init_IDT();
+config_PIC();
+add_custom_interrupt();
+init_keyboard_map();
+keyboard_init();
+__asm__ __volatile("cli");
 
 //	process_stuff(); // <<<<<<------------- here it faults, but not before init_caches()
-	stack_ring_three();
+//	stack_ring_three();
 //	switch_user_mode();
 //	_jump_usermode();
 
-	kernel_process_init();
+kernel_process_init();
 //		test_process_switch();
 
-	test_process_switch();
 
 //	printf("\n presence: %d", is_linear_addr_mapped(0x4000))
 //	load_executable("bin/hello");
@@ -290,7 +289,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 //									(uint64_t) process_physical);
 //					*p = 23;
 //					printf("fsfsdf %d",(int)(*p));
-			__asm__ __volatile__("sti");
+		__asm__ __volatile__("sti");
 //	 cause page fault
 //	uint64_t * p = (uint64_t *) 0x1000;
 //	printf(" causing fault..%x ", *p);
@@ -301,21 +300,21 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 }
 
 void boot(void) {
-	// note: function changes rsp, local stack variables can't be practically used
-	//register char *s;
-	__asm__(
-			"movq %%rsp, %0;"
-			"movq %1, %%rsp;"
-			:"=g"(loader_stack)
-			:"r"(&stack[INITIAL_STACK_SIZE])
-	);
-	reload_gdt();
-	setup_tss();
-	__asm__ __volatile__("cli");
-	start(
-			(uint32_t*) ((char*) (uint64_t) loader_stack[3]
-					+ (uint64_t) &kernmem - (uint64_t) &physbase), &physbase,
-			(void*) (uint64_t) loader_stack[4]);
-	while (1)
-		;
+// note: function changes rsp, local stack variables can't be practically used
+//register char *s;
+__asm__(
+		"movq %%rsp, %0;"
+		"movq %1, %%rsp;"
+		:"=g"(loader_stack)
+		:"r"(&stack[INITIAL_STACK_SIZE])
+);
+reload_gdt();
+setup_tss();
+__asm__ __volatile__("cli");
+start(
+		(uint32_t*) ((char*) (uint64_t) loader_stack[3]
+				+ (uint64_t) &kernmem - (uint64_t) &physbase), &physbase,
+		(void*) (uint64_t) loader_stack[4]);
+while (1)
+	;
 }

@@ -1045,7 +1045,37 @@ isr_timer:
 	pushq %r9
 	pushq %r10
 	pushq %r11
-	call print_time
+	pushq %r12
+	pushq %r13
+	pushq %r14
+	pushq %r15
+	movq $0, %rax
+	movq %ds, %rax
+	pushq %rax
+	movq $0, %rax
+	movq %es, %rax
+	pushq %rax
+	movq $0, %rax
+	movq %fs, %rax
+	pushq %rax
+	movq $0, %rax
+	movq %gs, %rax
+	pushq %rax
+	movq %rsp, %rdi
+	call temp_print_time
+	movq %rax, %rsp
+	popq %rax
+	movq %rax, %gs
+	popq %rax
+	movq %rax, %fs
+	popq %rax
+	movq %rax, %es
+	popq %rax
+	movq %rax, %ds
+	popq %r15
+	popq %r14
+	popq %r13
+	popq %r12
 	popq %r11
 	popq %r10
 	popq %r9
@@ -1114,13 +1144,45 @@ isr_syscall:
 	pushq %r9
 	pushq %r10
 	pushq %r11
+	pushq %r12
+	pushq %r13
+	pushq %r14
+	pushq %r15
+	movq %rax, %rdx
+	movq $0, %rax
+	movq %ds, %rax
+	pushq %rax
+	movq $0, %rax
+	movq %es, %rax
+	pushq %rax
+	movq $0, %rax
+	movq %fs, %rax
+	pushq %rax
+	movq $0, %rax
+	movq %gs, %rax
+	pushq %rax
+	movq %rsp, %rdi
 	#inb $0x60, %al
 	#movq $0xb8000, %rbx
 	#movb %al, (%rbx)
+	movq %rdx, %rax
 	movq $60, %rbx
 	cmp %rax, %rbx
 	jne q2
-	call isrhandler_syscall
+	call temp_preempt_exit
+	movq %rax, %rsp
+	popq %rax
+	movq %rax, %gs
+	popq %rax
+	movq %rax, %fs
+	popq %rax
+	movq %rax, %es
+	popq %rax
+	movq %rax, %ds
+	popq %r15
+	popq %r14
+	popq %r13
+	popq %r12
  q2:popq %r11
 	popq %r10
 	popq %r9

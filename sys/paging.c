@@ -612,7 +612,7 @@ void process_stuff() {
 	uint64_t* temp = get_physical_pml4_base_for_process();
 	update_cr3(temp);
 	printf("process_pml4: %p ", temp);
-	uint64_t* q = (uint64_t*) 0x400038;
+	uint64_t* q = (uint64_t *) 0x400038;
 	setup_process_page_tables((uint64_t) q, (uint64_t) get_free_frame());
 
 	printf("ismapped %d \n", is_linear_addr_mapped((uint64_t) q));
