@@ -19,7 +19,8 @@ uint64_t get_faulted_addr() {
 void page_alloc(uint64_t virtual_addr) {
 	uint64_t* frame = get_free_frame();
 	//todo :what if kernel page faults??
-	setup_process_page_tables((uint64_t) virtual_addr, (uint64_t) frame);
+	uint64_t base_virtual_addr = virtual_addr & (~0xfff);
+	setup_process_page_tables(base_virtual_addr, (uint64_t) frame);
 }
 
 void get_elf_ptr(char** elf_dptr, mem_desc_t* mem_ptr, int type) {
@@ -75,11 +76,11 @@ void do_page_fault(uint64_t addr) {
 }
 
 void do_handle_pagefault(uint64_t error_code) {
-//	printf(", error code is.. %x\n", error_code);
 	int present = get_bit(error_code, 0);
 	int rw = get_bit(error_code, 1);
 	int us = get_bit(error_code, 2);
 	uint64_t addr = get_faulted_addr();
+//	printf(" page fault at %p, error_code: %x ", addr, error_code);
 	if (present == 0) {
 		int kernel_addr = is_kernel_addr(addr);
 		if (us == 1) {
@@ -92,7 +93,7 @@ void do_handle_pagefault(uint64_t error_code) {
 				do_demand_paging(addr);
 			}
 		} else {
-			printf(" Kernel page fault. Do not reach here unless testing \n");
+			printf(" Kernel page fault. Do not reach here unless testing.page fault at %p, error_code: %x  \n", addr, error_code);
 			page_alloc(addr);
 		}
 	} else {
