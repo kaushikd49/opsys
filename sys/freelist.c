@@ -63,6 +63,7 @@ void create_free_list_test(uint32_t* modulep, page_t *free_list, void *physbase,
 			free_list[index].frame_addr = current_addr;
 			free_list[index].is_free = 1; //the page is free
 			free_list[index].ref_count = 0;
+//			blank_space_baby(current_addr);
 		}
 		else{
 			free_list[index].frame_addr = current_addr;
@@ -71,11 +72,16 @@ void create_free_list_test(uint32_t* modulep, page_t *free_list, void *physbase,
 		}
 
 	}
+//	int i = 0;
 	for(current_addr = min_memory_address; current_addr < start_linked_list; index++, current_addr += PAGE_SIZE){
 		if ( check_physical_frame(current_addr, test, num_physical_regions, (uint64_t)physbase, (uint64_t)physfree) == 1){
 			free_list[index].frame_addr = current_addr;
 			free_list[index].is_free = 1; //the page is free
 			free_list[index].ref_count = 0;
+//			if( i <63 || i>65)
+//				blank_space_baby(current_addr);
+//			if(i == 63 || i == 64 || i == 65)
+//				printf("current_addr %x", current_addr);
 		}
 		else{
 			free_list[index].frame_addr = current_addr;
@@ -83,6 +89,7 @@ void create_free_list_test(uint32_t* modulep, page_t *free_list, void *physbase,
 			free_list[index].ref_count = 1;//something is occupying, now kernel
 		}
 	}
+//	printf("iiiii %d \n", i);
 	MAX_NUMBER_PAGES = index;
 }
 uint64_t get_free_page(page_t *free_list) {
@@ -179,7 +186,25 @@ void return_page(uint64_t page, page_t *free_list) {
 		}
 	}
 }
-
+void clear_space(uint64_t page){
+	uint64_t *current = (uint64_t *)page;
+	while((uint64_t)(current) < (page+PAGE_SIZE)){
+		*(current)= 0;
+		current++;
+	}
+}
+void blank_space_baby(page_t *free_list) {
+	uint64_t i;
+	for(i = 0; i < MAX_NUMBER_PAGES; i++){
+		if(free_list[i].is_free == 1 && (free_list[i].frame_addr != 0x3f000 && free_list[i].frame_addr != 0x40000 &&free_list[i].frame_addr != 0x41000 )){
+			clear_space(free_list[i].frame_addr);
+		}
+		else if(free_list[i].frame_addr == 0x3f000 || free_list[i].frame_addr == 0x40000 || free_list[i].frame_addr == 0x41000){
+			printf("hello: %d", i);
+		}
+	}
+	//printf("\n this frame: %p  ",free_list[i].frame_addr);
+}
 //no checks done, programmer care required.
 void return_pages(uint64_t page, page_t *free_list, int order){
 	uint64_t limit = 1<<order;

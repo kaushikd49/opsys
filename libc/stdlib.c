@@ -36,16 +36,16 @@ ssize_t read(int fd, void *buf, size_t count) {
 }
 
 size_t write(int fd, const void *buf, size_t count) {
-
-	size_t size = syscall_4_write(SYS_write, fd, buf, count);
-	if (size == 0xFFFFFFFFFFFFFFF7) {
-		errno = EBADF;
-		return -1;
-	} else if ((signed long) size < 0) {
-		errno = WRITEERR;
-		return -1;
-	}
-	return size;
+	return 0;
+//	size_t size = syscall_4_write(SYS_write, fd, buf, count);
+//	if (size == 0xFFFFFFFFFFFFFFF7) {
+//		errno = EBADF;
+//		return -1;
+//	} else if ((signed long) size < 0) {
+//		errno = WRITEERR;
+//		return -1;
+//	}
+//	return size;
 }
 //no errors for strlen
 size_t strlen(const char *str) {

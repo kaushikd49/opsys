@@ -1,6 +1,9 @@
 #ifndef _PROCESS_H
 #define _PROCESS_H
-
+#define USER_CODE (3<<3 | 3)
+#define USER_DATA (4<<3 | 3)
+#define KERNEL_CODE (1<<3|0)
+#define KERNEL_DATA (2<<3|0)
 typedef struct mem_desc {
 	struct vma *vma_list; //list of the memory regions as a linked list
 	struct vma *vma_cache; // last memory region used

@@ -215,16 +215,53 @@ void test_user_function() {
 	while (1)
 		;
 }
-
 void pagefault_tests(){
-	// cause page fault
-	uint64_t * p = (uint64_t *)0x1000;
-	printf("causing fault..%x ", *p);
+        uint64_t * p = (uint64_t *)0x1000;
+        printf("causing fault..%x ", *p);
 
-//	p = (uint64_t *)0xffffffffffffffff;
-//	printf("causing fault..%x ", *p);
+      p = (uint64_t *)0xffffffffffffffff;
+      printf("causing fault..%x ", *p);
 
 }
+uint64_t read_msr(uint64_t msr_id){
+      uint64_t msr_value;
+      __asm__ __volatile__("rdmsr":"=A"(msr_value) : "c"(msr_id));
+      return msr_value;
+}
+void write_msr(uint64_t msr_value, uint64_t msr_id){
+      __asm__ __volatile__ ("wrmsr" : : "c"(msr_id), "A"(msr_value));
+}
+void test_syscall_rip(){
+	__asm__ __volatile__("movq %0, %%rsp"
+						 :
+						 :"a"(currenttask->state.kernel_rsp)
+						  :"rbx", "rcx", "rdx","rdi", "rsi", "rbp", "r8","r9","r10","r11","r12","r13","r14","r15");
+	temp_preempt_exit(currenttask->state.kernel_rsp);
+
+}
+
+
+void enable_syscall(){
+      //stack pointers for syscall/sysret is not specified through MSR
+      //need to program RFLAGS but syscall/sysret saves/restores RFLAGS
+      //RFLAGS is stored in R11 and RIP in RCX
+      uint64_t msr_id = 0xC0000080;
+      uint64_t msr_value;
+      msr_value = read_msr(msr_id);
+      printf("MSR: %x\n", msr_value);
+      msr_value |= 1;
+      write_msr(msr_value,msr_id);
+      msr_value = read_msr(msr_id);
+      printf("MSR: %x\n", msr_value);
+      uint64_t STAR = 0; //Target code segment — Reads a non-NULL selector from IA32_STAR[47:32].
+      uint64_t kern_code = KERNEL_CODE;
+      uint64_t user_code = USER_CODE;
+      STAR = ((kern_code<<32) | (user_code<<48));
+      write_msr(STAR, 0xC0000081);
+      write_msr((uint64_t)test_syscall_rip, 0xC0000082);
+
+}
+
 
 void start(uint32_t* modulep, void* physbase, void* physfree) {
 	while (modulep[0] != 0x9001) {
@@ -256,7 +293,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 
 
 init_caches();
-
+enable_syscall();
 //	traverse_linked_list();
 init_init_IDT();
 config_PIC();

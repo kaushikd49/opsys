@@ -76,6 +76,7 @@ uint64_t * get_free_frame();
 uint64_t set_bit(uint64_t ele, int bit_num, int bit_val);
 uint64_t * get_physical_pml4_base_for_process();
 uint64_t update40bit_addr(uint64_t entry, uint64_t extract_from);
+void blank_space_baby(page_t *free_list);
 // We will be using self-referential pages trick, so the entry 0 of PML will map to entry 0.
 // This implies we cannot use PMLE # 0 for general purpose mapping. Corresponding bits are
 // bits [39:47] which cannot be 000000000. At min, they can be 000000001 and this

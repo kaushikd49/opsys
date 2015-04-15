@@ -584,6 +584,7 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 		free_list = (page_t *) (free_list_location);
 	}
 	create_free_list_test(modulep, free_list, physbase, physfree);
+	printf("PHYSBASE:%p PHYSFREE: %p\n", physbase, physfree);
 	//can write a better check below. Your wish
 	uint64_t number_pages_free_list = (MAX_NUMBER_PAGES * sizeof(struct page_t))
 			/ PAGE_SIZE + 1; //potentially wasting a page if it exactly page sizes here but thats fine and rare
@@ -592,6 +593,7 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 		mark_frame_used((uint64_t) free_list_location + i * (0x1000));
 	}
 	mark_frame_used(0xb8000);
+	blank_space_baby(free_list);
 	do_paging(physbase, physfree, 1, 1, 0);
 
 //	uint64_t *temp = get_physical_pml4_base_for_process();

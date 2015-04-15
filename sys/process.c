@@ -11,10 +11,7 @@
 #define VM_READ 1<<0
 #define VM_WRITE 1<<1
 #define VM_EXEX 1<<2
-#define USER_CODE (3<<3 | 3)
-#define USER_DATA (4<<3 | 3)
-#define KERNEL_CODE (1<<3|0)
-#define KERNEL_DATA (2<<3|0)
+
 //static task_struct_t *currenttask; //todo: initialize
 static task_struct_t *lasttask;
 static task_struct_t taskone;
@@ -288,10 +285,10 @@ void load_executable(task_struct_t *currenttask) {
 	load_from_elf(currenttask, text_info, temp, rodata_info, data_info,
 			bss_info);
 
-	kfree(text_info);
-	kfree(rodata_info);
-	kfree(data_info);
-	kfree(bss_info);
+//	kfree(text_info);
+//	kfree(rodata_info);
+//	kfree(data_info);
+//	kfree(bss_info);
 
 	currenttask->state.rip = (uint64_t) (temp->e_entry);
 	uint64_t stack_page = 0x7000000;
@@ -567,7 +564,7 @@ void preempt_exit(uint64_t stack_top){
 		prev= prev->next;
 	}
 	prev->next = last->next;
-	kfree(last);
+//	kfree(last);
 }
 uint64_t temp_preempt_exit(uint64_t stack_top){
 	printf("\n inside preempt exit");
@@ -580,7 +577,7 @@ uint64_t temp_preempt_exit(uint64_t stack_top){
 		prev= prev->next;
 	}
 	prev->next = last->next;
-	kfree(last);
+//	kfree(last);
 	tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp) + 192);
 //	__asm__ __volatile__("movq %0, %%rsp"
 //							:
