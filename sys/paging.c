@@ -373,6 +373,13 @@ void invalidate_addresses_with_page(uint64_t * virtual_addr) {
 	}
 }
 
+void zero_out_using_virtual_addr(uint64_t linear_addr) {
+	uint64_t* addr_base = (uint64_t*) (linear_addr & (~0xfff));
+	for (int i = 0; i < NUM_UNIT64_IN_PAGE; i++) {
+		*(addr_base + i) = 0;
+	}
+}
+//**** DO-NOT CALL THIS DIRECTLY. USE OTHER SETUP_PAGE_TABLE.. FUNCS ***
 void setup_page_tables_after_cr3_update(uint64_t linear_addr,
 		uint64_t physical_addr, int p, int rw, int us) {
 	// derive paging entities from linear address and update their target
@@ -413,14 +420,22 @@ void setup_page_tables_after_cr3_update(uint64_t linear_addr,
 	}
 //	printf("\npte_virtual_addr:%p, value:%p\n", pte_virtual_addr,
 //			*pte_virtual_addr);
+
 }
 
 void setup_process_page_tables(uint64_t linear_addr, uint64_t physical_addr) {
+	setup_page_tables_after_cr3_update(linear_addr, physical_addr, 1, 1, 1);
+	zero_out_using_virtual_addr(linear_addr);
+}
+
+// will be needed for COW where processes share target physical pages
+void setup_process_page_tables_without_zeroing(uint64_t linear_addr, uint64_t physical_addr) {
 	setup_page_tables_after_cr3_update(linear_addr, physical_addr, 1, 1, 1);
 }
 
 void setup_kernel_page_tables(uint64_t linear_addr, uint64_t physical_addr) {
 	setup_page_tables_after_cr3_update(linear_addr, physical_addr, 1, 1, 0);
+	zero_out_using_virtual_addr(linear_addr);
 }
 
 // IMPORTANT - do not use virtual addresses corresponding to 510 PML offset
