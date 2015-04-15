@@ -4,6 +4,7 @@
 //#include <stdlib.h>
 #include <stdarg.h>
 #include <errno.h>
+#include<stdio.h>
 #define ALIGNMENT 16
 #define DEFAULT_MODE 00744
 struct blockHeader **head2 = NULL;
@@ -129,51 +130,52 @@ int printHexInt(int n) {
 	return count + 2;
 }
 
-int printf(const char *format, ...) {
-	va_list val;
-	int printed = 0;
-
-	va_start(val, format);
-
-	while (*format && *(format + 1)) {
-		if (*format == '%') {
-			format++;
-			char character = *format;
-
-			if (character == 'd') {
-				int tempd = va_arg(val, int);
-				int count = printInteger(tempd);
-				printed = printed + count;
-			} else if (character == 'x') {
-				int tempd = va_arg(val, int);
-				int count = printHexInt(tempd);
-				printed = printed + count;
-			} else if (character == 's') {
-				char *temps = va_arg(val, char *);
-				int length = strlen(temps);
-				write(1, temps, length);
-				printed = printed + length;
-			} else if (character == 'c') {
-				// char promoted to int in va_arg
-				char tempc = va_arg(val, int);
-				write(1, &tempc, 1);
-				printed++;
-			}
-		} else {
-			write(1, format, 1);
-			printed++;
-		}
-		format++;
-	}
-
-	while (*format) {
-		write(1, format, 1);
-		printed++;
-		format++;
-	}
-	va_end(val);
-	return printed;
-}
+//int printf(const char *format, ...) {
+//	va_list val;
+//	int printed = 0;
+//
+//	va_start(val, format);
+//
+//	while (*format && *(format + 1)) {
+//		if (*format == '%') {
+//			format++;
+//			char character = *format;
+//
+//			if (character == 'd') {
+//				int tempd = va_arg(val, int);
+//				int count = printInteger(tempd);
+//				printed = printed + count;
+//			} else if (character == 'x') {
+//				int tempd = va_arg(val, int);
+//				int count = printHexInt(tempd);
+//				printed = printed + count;
+//			} else if (character == 's') {
+//				char *temps = va_arg(val, char *);
+//				int length = strlen(temps);
+//				write(1, temps, length);
+//				printed = printed + length;
+//			} else if (character == 'c') {
+//				// char promoted to int in va_arg
+//				char tempc = va_arg(val, int);
+//				write(1, &tempc, 1);
+//				printed++;
+//			}
+//		} else {
+//			write(1, format, 1);
+//			printed++;
+//		}
+//		format++;
+//	}
+//
+//	while (*format) {
+//		write(1, format, 1);
+//		printed++;
+//		format++;
+//	}
+//	va_end(val);
+//	return printed;
+//	return 0;
+//}
 
 int is_int(char c) {
 	int ascii = c - '0';
