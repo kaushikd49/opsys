@@ -183,11 +183,13 @@ void add_vma(uint64_t vma_start, uint64_t vma_end, int type,
 		mem_desc_t* mem_desc_ptr) {
 	mem_desc_ptr->num_vma += 1;
 	vma_t* vma_ptr = kmalloc(sizeof(struct vma));
+
 	vma_ptr->my_mem_desc = mem_desc_ptr;
 	vma_ptr->vma_next = NULL;
 	vma_ptr->vma_start = vma_start;
 	vma_ptr->vma_end = vma_end;
 	vma_ptr->type = type;
+
 	if (mem_desc_ptr->vma_list == NULL) {
 		mem_desc_ptr->vma_list = vma_ptr;
 	} else {
