@@ -100,13 +100,14 @@ int is_entry_not_created(uint64_t* entry) {
 	return *entry == 0; //todo: check this logic
 }
 
-uint64_t* next_entity_base(uint64_t* entity_entry) {
+uint64_t* next_entity_base(uint64_t* entity_entry, void * dont_care) {
 	return (uint64_t *) update40bit_addr(ULONG_ZERO, *entity_entry);
 }
 
-uint64_t* next_entity_entry(uint64_t* entity_entry, int offset) {
-	return next_entity_base(entity_entry) + offset;
-}
+//uint64_t* next_entity_entry(uint64_t* entity_entry, int offset,
+//		uint64_t* (*next_entity_base_func)(uint64_t*, void *), void * pv_map) {
+//	return next_entity_base_func(entity_entry) + offset;
+//}
 
 // Entity - pml, pdir_ptr, pdir or ptable
 // Return whether pml, pdir_ptr, pdir or ptable is not present
@@ -114,7 +115,8 @@ uint64_t* next_entity_entry(uint64_t* entity_entry, int offset) {
 // If all are present, then return 0.
 // Also sets the deepest entity base.
 int page_lookup(uint64_t *pml_base_ptr, uint64_t linear_addr,
-		uint64_t* deepest_entity, uint64_t* deepest_entity_base) {
+		uint64_t* deepest_entity, uint64_t* deepest_entity_base,
+		uint64_t* (*next_entity_base_func)(uint64_t*, void *), void * pv_map) {
 	struct paging_entities pe;
 	get_paging_entity_indexes(&pe, linear_addr);
 
@@ -134,8 +136,9 @@ int page_lookup(uint64_t *pml_base_ptr, uint64_t linear_addr,
 		*deepest_entity = (uint64_t) pml;
 		// pml entry is there but its child entry is not,
 		// so set its child frame's base as deepest_base
-		*deepest_entity_base = (uint64_t) next_entity_base(pml);
-		uint64_t* pdir_ptr = next_entity_entry(pml, pe.pdir_ptr_index);
+		*deepest_entity_base = (uint64_t) next_entity_base_func(pml, pv_map);
+		uint64_t* pdir_ptr = next_entity_base_func(pml, pv_map)
+				+ pe.pdir_ptr_index;
 //		printf("pdir_ptr lookup %p, deepentity:%p\n", pdir_ptr,
 //				*deepest_entity);
 
@@ -143,23 +146,27 @@ int page_lookup(uint64_t *pml_base_ptr, uint64_t linear_addr,
 			return 2;
 		} else {
 			*deepest_entity = (uint64_t) pdir_ptr;
-			*deepest_entity_base = (uint64_t) next_entity_base(pdir_ptr);
-			uint64_t* pdir = next_entity_entry(pdir_ptr, pe.dir_index);
+			*deepest_entity_base = (uint64_t) next_entity_base_func(pdir_ptr,
+					pv_map);
+			uint64_t* pdir = next_entity_base_func(pdir_ptr, pv_map) + pe.dir_index;
 //			printf("pdir lookup %p, deepentity:%p\n", pdir, *deepest_entity);
 
 			if (is_entry_not_created(pdir)) {
 				return 3;
 			} else {
 				*deepest_entity = (uint64_t) pdir;
-				*deepest_entity_base = (uint64_t) next_entity_base(pdir);
-				uint64_t* ptable = next_entity_entry(pdir, pe.table_index);
+				*deepest_entity_base = (uint64_t) next_entity_base_func(pdir,
+						pv_map);
+				uint64_t* ptable = next_entity_base_func(pdir, pv_map)
+						+ pe.table_index;
 //				printf("ptable lookup %p, deepentity:%p\n", ptable,
 //						*deepest_entity);
 				if (is_entry_not_created(ptable)) {
 					return 4;
 				} else {
 					*deepest_entity = (uint64_t) ptable;
-					*deepest_entity_base = (uint64_t) next_entity_base(pdir);
+					*deepest_entity_base = (uint64_t) next_entity_base_func(
+							pdir, pv_map);
 					return 0;
 				}
 			}
@@ -216,11 +223,11 @@ void create_ptable(const struct paging_entities* pe, uint64_t physical_addr,
 			us);
 }
 
-void setup_page_tables(uint64_t **pml_base_dbl_ptr, uint64_t linear_addr,
-		uint64_t physical_addr, int p, int rw, int us) {
+void setup_page_table_from_outside(uint64_t linear_addr, uint64_t physical_addr,
+		int p, int rw, int us, uint64_t** pml_base_dbl_ptr,
+		uint64_t* (*next_entity_base_func)(uint64_t*, void *), void * pv_map) {
 	struct paging_entities pe;
 	get_paging_entity_indexes(&pe, linear_addr);
-
 	if (*pml_base_dbl_ptr == NULL)
 		*pml_base_dbl_ptr = get_free_frame();
 
@@ -229,11 +236,10 @@ void setup_page_tables(uint64_t **pml_base_dbl_ptr, uint64_t linear_addr,
 	// OF VALUE OF ONE AFFECTED ANOTHER!
 	uint64_t abc = 1;
 	uint64_t def = 2;
-	uint64_t * deepest_entity = &abc;
-	uint64_t * deepest_entity_base = &def;
+	uint64_t* deepest_entity = &abc;
+	uint64_t* deepest_entity_base = &def;
 	int res = page_lookup(*pml_base_dbl_ptr, linear_addr, deepest_entity,
-			deepest_entity_base);
-
+			deepest_entity_base, next_entity_base_func, pv_map);
 	if (res == 1) {
 		// No entities are present for this linear address
 		create_all_paging_entities(&pe, physical_addr, *pml_base_dbl_ptr, p, rw,
@@ -249,17 +255,20 @@ void setup_page_tables(uint64_t **pml_base_dbl_ptr, uint64_t linear_addr,
 		// pml, pdir_ptr and pdir are present for this linear address, but not ptable
 		create_ptable(&pe, physical_addr, deepest_entity_base, p, rw, us);
 	} else {
-		uint64_t* pt_base = (uint64_t *) (*deepest_entity_base);
-
-//		printf("found page with PTE:%p, pt base:%p\n",
-//				*(pt_base + pe.table_index), pt_base);
-
+		uint64_t* pt_base = (uint64_t*) (*deepest_entity_base);
+		//		printf("found page with PTE:%p, pt base:%p\n",
+		//				*(pt_base + pe.table_index), pt_base);
 		*(pt_base + pe.table_index) = get_ptable_entry(physical_addr, p, rw,
 				us);
-
-//		printf("phys addr given:%p, after re-updation %p\n", physical_addr,
-//				*(pt_base + pe.table_index));
+		//		printf("phys addr given:%p, after re-updation %p\n", physical_addr,
+		//				*(pt_base + pe.table_index));
 	}
+}
+
+void setup_page_tables(uint64_t **pml_base_dbl_ptr, uint64_t linear_addr,
+		uint64_t physical_addr, int p, int rw, int us) {
+	setup_page_table_from_outside(linear_addr, physical_addr, p, rw, us,
+			pml_base_dbl_ptr, next_entity_base, NULL);
 }
 
 void map_kernel_address(uint64_t **pml_base_dbl_ptr, void* physbase,
@@ -284,14 +293,14 @@ void map_kernel_address(uint64_t **pml_base_dbl_ptr, void* physbase,
 void map_video_address(uint64_t **pml_base_dbl_ptr, int p, int rw, int us) {
 	setup_page_tables(pml_base_dbl_ptr, VIRTUAL_ADDR_VIDMEM, 0xb8000, p, rw,
 			us);
-	uint64_t abc = 1;
-	uint64_t def = 2;
-	uint64_t * deepest_entity = &abc;
-	uint64_t * deepest_entity_base = &def;
+//	uint64_t abc = 1;
+//	uint64_t def = 2;
+//	uint64_t * deepest_entity = &abc;
+//	uint64_t * deepest_entity_base = &def;
 
-	int res = page_lookup(*pml_base_dbl_ptr, VIRTUAL_ADDR_VIDMEM,
-			deepest_entity, deepest_entity_base);
-	printf("res:%d", res);
+//	int res = page_lookup(*pml_base_dbl_ptr, VIRTUAL_ADDR_VIDMEM,
+//			deepest_entity, deepest_entity_base);
+//	printf("res:%d", res);
 	BASE_CURSOR_POS = VIRTUAL_ADDR_VIDMEM;
 	TIMER_LOC = VIRTUAL_ADDR_TIMER_LOC;
 	glyph_pos = VIRTUAL_ADDR_GLYPH_POS;
@@ -429,7 +438,8 @@ void setup_process_page_tables(uint64_t linear_addr, uint64_t physical_addr) {
 }
 
 // will be needed for COW where processes share target physical pages
-void setup_process_page_tables_without_zeroing(uint64_t linear_addr, uint64_t physical_addr) {
+void setup_process_page_tables_without_zeroing(uint64_t linear_addr,
+		uint64_t physical_addr) {
 	setup_page_tables_after_cr3_update(linear_addr, physical_addr, 1, 1, 1);
 }
 

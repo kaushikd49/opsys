@@ -110,5 +110,5 @@ void temp_init_user_stack(uint64_t rsp, task_struct_t *task);
 void temp_create_kernel_process(void (*main)(), uint64_t ppid);
 void temp_init_kernel_state(task_struct_t *task, task_struct_t *parent_task, void (*main)());
 void temp_init_kernel_stack(uint64_t rsp, task_struct_t *task);
-
+uint64_t get_next_pid();
 #endif
