@@ -547,7 +547,7 @@ uint64_t * get_physical_pml4_base_for_process() {
 
 	uint64_t *process_pml_base_physical = get_free_frame(0);
 	uint64_t *virtual_addr = (uint64_t *) get_virtual_location_cr3(0);
-	printf("va : %p\n", virtual_addr);
+//	printf("va : %p\n", virtual_addr);
 	// we are copying the kernel's address space to the process'
 	// so use setup_kernel_page_tables so that the permissions are
 	// set appropriately and not setup_processl_page_tables.

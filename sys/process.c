@@ -741,7 +741,7 @@ void temp_init_user_state(task_struct_t *task, task_struct_t *parent_task, char 
 
 void temp_init_user_stack(uint64_t rsp, task_struct_t *task){
 	uint64_t *temp = (uint64_t *)rsp;
-	printf("--task: %p\n", rsp);
+//	printf("--task: %p\n", rsp);
 	*temp =  USER_DATA;//ss
 	temp -= 1;
 	*temp = task->state.rsp; //rsp
@@ -790,7 +790,7 @@ void temp_init_user_stack(uint64_t rsp, task_struct_t *task){
 	temp -= 1;
 	*temp = USER_DATA; //gs
 	task->state.kernel_rsp = (uint64_t)temp;
-	printf("task: %p\n", task->state.kernel_rsp);
+//	printf("task: %p\n", task->state.kernel_rsp);
 }
 
 void temp_create_kernel_process(void (*main)(), uint64_t ppid){

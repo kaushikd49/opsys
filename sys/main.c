@@ -9,6 +9,9 @@
 #include <sys/printtime.h>
 #include <sys/kmalloc.h>
 #include <sys/process.h>
+static uint64_t current_syscall =0;
+static uint64_t rsp_user_syscall;
+static uint64_t rip_syscall;
 uint64_t * get_physical_pml4_base_for_process();
 uint64_t * get_free_frame();
 #define INITIAL_STACK_SIZE 4096
@@ -223,21 +226,108 @@ void pagefault_tests(){
       printf("causing fault..%x ", *p);
 
 }
-uint64_t read_msr(uint64_t msr_id){
-      uint64_t msr_value;
-      __asm__ __volatile__("rdmsr":"=A"(msr_value) : "c"(msr_id));
-      return msr_value;
+void read_msr(uint32_t msr_id, uint32_t *lo, uint32_t *hi){
+      __asm__ __volatile__("rdmsr":"=a"(*lo), "=d"(*hi) : "c"(msr_id));
 }
-void write_msr(uint64_t msr_value, uint64_t msr_id){
-      __asm__ __volatile__ ("wrmsr" : : "c"(msr_id), "A"(msr_value));
+void write_msr(uint32_t msr, uint32_t lo, uint32_t hi){
+      __asm__ __volatile__ ("wrmsr" : : "a"(lo), "d"(hi), "c"(msr));
 }
 void test_syscall_rip(){
+	__asm__ __volatile__("cli\n\t"
+						 "movq %%rax, %0"
+						:"=m"(current_syscall)
+						:
+						:"%rax","%rbx", "%rdx","%rcx","%rdi", "%rsi", "%rbp", "%r8","%r9","%r10","%r11","%r12","%r13","%r14");
+
+	__asm__ __volatile__("movq %%rsp, %0"
+						 :"=m"(rsp_user_syscall)
+						 :
+						 :"%rax","%rbx", "%rdx","%rcx","%rdi", "%rsi", "%rbp", "%r8","%r9","%r10","%r11","%r12","%r13","%r14");
+	__asm__ __volatile__("movq %%rcx, %0"
+							 :"=m"(rip_syscall)
+							 :
+							 :"%rax","%rbx", "%rdx","%rcx","%rdi", "%rsi", "%rbp", "%r8","%r9","%r10","%r11","%r12","%r13","%r14");
+
 	__asm__ __volatile__("movq %0, %%rsp"
 						 :
 						 :"a"(currenttask->state.kernel_rsp)
-						  :"rbx", "rcx", "rdx","rdi", "rsi", "rbp", "r8","r9","r10","r11","r12","r13","r14","r15");
-	temp_preempt_exit(currenttask->state.kernel_rsp);
+						  :"%rbx", "%rdx","%rcx","%rdi", "%rsi", "%rbp", "%r8","%r9","%r10","%r11","%r12","%r13","%r14","%r15");
+	//order rax ->rdi->rsi->rdx->r10->r8->r9
+	uint64_t args_list;
+	__asm__ __volatile__(
+			"pushq %%rcx\n\t"
+			"pushq %%rdi\n\t"
+			"pushq %%rsi\n\t"
+			"pushq %%rdx\n\t"
+			"pushq %%r10\n\t"
+			"pushq %%r8\n\t"
+			"pushq %%r9\n\t"
+			"movq %%rsp, %0"
+			:"=r"(args_list)
+			:
+			:"%rbx", "%rdx","%rcx","%rdi", "%rsi", "%rbp", "%r8","%r9","%r10","%r11","%r12","%r13","%r14","%r15");
+//	currenttask->current_syscall = current_syscall;
+//	currenttask->rsp_stack_syscall = rsp_user_syscall;
+	printf("\n args_list%p", args_list);
 
+//	uint32_t syscall_number = 0;
+//	__asm__ __volatile__(
+//						  "movq %%rcx, %0"
+//						 :"=m"(syscall_number)
+//						 :
+//						 :"%rax","%rbx","%rcx","%rdx","%rdi", "%rsi", "%rbp", "%r8","%r9","%r10","%r11","%r12","%r13","%r14","%r15");
+	uint64_t retvalue;
+	if(current_syscall == 60){
+		temp_preempt_exit(currenttask->state.kernel_rsp);
+		uint64_t kernel_stack = (uint64_t)(currenttask->state.kernel_rsp);
+
+		__asm__ __volatile__("movq %0, %%rsp"
+							:
+							:"m"(kernel_stack));
+		__asm__ __volatile__("popq %rax\n\t"
+							 "movq %rax, %gs\n\t"
+							 "popq %rax\n\t"
+							 "movq %rax, %fs\n\t"
+							 "popq %rax\n\t"
+							 "movq %rax, %es\n\t"
+							 "popq %rax\n\t"
+							 "movq %rax, %ds\n\t"
+							 "popq %r15\n\t"
+							 "popq %r14\n\t"
+							 "popq %r13\n\t"
+							 "popq %r12\n\t"
+							 "popq %r11\n\t"
+							 "popq %r10\n\t"
+							 "popq %r9\n\t"
+							 "popq %r8\n\t"
+							 "popq %rbp\n\t"
+							 "popq %rsi\n\t"
+							 "popq %rdi\n\t"
+							 "popq %rdx\n\t"
+							 "popq %rcx\n\t"
+							 "popq %rbx\n\t"
+							 "popq %rax\n\t"
+							 "sti\n\t"
+							 "iretq");
+	}
+	else if(current_syscall == 40){
+
+		printf("\ninside system call");
+		retvalue = 32;
+	}
+//	__asm__ __volatile__(
+//			"movq 48(%0), %rcx "
+//			:
+//			:"a"(args_list)
+//			:);
+//	uint64_t return_stack = currenttask->rsp_stack_syscall;
+	__asm__ __volatile__("movq %0,%%rsp\n\t"
+						 :
+						 :"m"(rsp_user_syscall), "a"(retvalue), "c"(rip_syscall)
+						 :);
+	__asm__ __volatile__("movq $72, %rsp\n\t"
+						 "sti\n\t"
+						 "sysret");
 }
 
 
@@ -245,21 +335,27 @@ void enable_syscall(){
       //stack pointers for syscall/sysret is not specified through MSR
       //need to program RFLAGS but syscall/sysret saves/restores RFLAGS
       //RFLAGS is stored in R11 and RIP in RCX
-      uint64_t msr_id = 0xC0000080;
-      uint64_t msr_value;
-      msr_value = read_msr(msr_id);
-      printf("MSR: %x\n", msr_value);
-      msr_value |= 1;
-      write_msr(msr_value,msr_id);
-      msr_value = read_msr(msr_id);
-      printf("MSR: %x\n", msr_value);
+      uint32_t msr_id = 0xC0000080;
+      uint32_t lo, hi;
+      read_msr(msr_id, &lo, &hi);
+//      printf("MSR: %x %x\n",hi, lo);
+      lo |= 1;
+      write_msr(msr_id, lo, hi);
+//      read_msr(msr_id, &lo, &hi);
+//      printf("0xC0000080: %x\n",hi, lo);
       uint64_t STAR = 0; //Target code segment — Reads a non-NULL selector from IA32_STAR[47:32].
-      uint64_t kern_code = KERNEL_CODE;
-      uint64_t user_code = USER_CODE;
-      STAR = ((kern_code<<32) | (user_code<<48));
-      write_msr(STAR, 0xC0000081);
-      write_msr((uint64_t)test_syscall_rip, 0xC0000082);
-
+      uint64_t kern_code = 0x0010;
+      uint64_t user_code = 0x0023;
+      STAR |= kern_code<<32;
+      STAR |= user_code<<48;
+//      printf("STAR: %p",STAR);
+      uint64_t main1 = (uint64_t)(test_syscall_rip);
+      write_msr(0xC0000081, (uint32_t)(STAR), (uint32_t)(STAR>>32));
+      write_msr(0xC0000082,(uint32_t)(main1),(uint64_t)(main1>>32));
+      read_msr(0xC0000081, &lo, &hi);
+//            printf("MSR: %x %x\n",hi, lo);
+            read_msr(0xC0000082, &lo, &hi);
+//                        printf("MSR: %x %x\n",hi, lo);
 }
 
 

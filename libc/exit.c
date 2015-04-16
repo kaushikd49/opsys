@@ -6,9 +6,10 @@
 static __inline uint64_t syscall_1(uint64_t n, uint64_t a1) {
 	uint64_t result;
 	__asm__ __volatile(
-			"syscall"
+			"int $0x80"
 			:"=&a" (result)
-			:"0"(n),"D"(a1));
+			:"0"(n),"D"(a1)
+			:"%rbx", "%rcx", "%rdx", "%rsi", "%rbp", "%r8","%r9","%r10","%r11","%r12","%r13","%r14","%r15");
 	return result;
 }
 void exit(int status) {
