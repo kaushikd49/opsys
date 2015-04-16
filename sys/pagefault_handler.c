@@ -68,17 +68,28 @@ char* zero_range(uint64_t page_virtual_addr, vma_t* temp_vma) {
 	return vaddr;
 }
 
+
+void seg_fault(uint64_t addr) {
+	printf("DO PAGE FAULT\n");
+}
+
 void do_demand_paging(uint64_t virtual_addr) {
 
 	mem_desc_t * mem_ptr = currenttask->mem_map;
 	vma_t * temp_vma = mem_ptr->vma_list;
+	int flag = 0;
 
 	if (temp_vma != NULL) {
-		page_alloc(virtual_addr);
 		uint64_t page_virtual_addr = virtual_page_base(virtual_addr);
 
 		// copy 1 page worth of stuff from addresses pointed to by vmas
 		while (temp_vma != NULL) {
+			if (!flag && virtual_addr >= temp_vma->vma_start
+					&& virtual_addr < temp_vma->vma_end) {
+				page_alloc(virtual_addr);
+				flag = 1;
+			}
+
 			// load elf for this range of linear addr
 			if (temp_vma->type >= 0 && temp_vma->type <= 3) {
 				// text or rodata or data
@@ -96,11 +107,13 @@ void do_demand_paging(uint64_t virtual_addr) {
 		printf(" ERROR: no proper vma for demand paging\n");
 	}
 
+	// no vmas contain this address
+	if(!flag){
+		seg_fault(virtual_addr);
+	}
+
 }
 
-void do_page_fault(uint64_t addr) {
-	printf("DO PAGE FAULT\n");
-}
 
 void do_handle_pagefault(uint64_t error_code) {
 	int present = get_bit(error_code, 0);
@@ -114,20 +127,20 @@ void do_handle_pagefault(uint64_t error_code) {
 			if (kernel_addr) {
 				//trying to access kernel data
 				printf(" Kernel access by user\n");
-				do_page_fault(addr);
+				seg_fault(addr);
 			} else {
 				printf(" Demand paging for addr %p\n", addr);
 				do_demand_paging(addr);
 			}
 		} else {
-			printf(
-					" Kernel page fault. Do not reach here unless testing.page fault at %p, error_code: %x  \n",
-					addr, error_code);
+			printf(" Kernel page fault. Do not reach here unless"
+					" testing.page fault at %p, error_code: %x  \n", addr,
+					error_code);
 			page_alloc(addr);
 		}
 	} else {
 		printf(" must be illegal access p:rw:us %d:%d:%d\n", present, rw, us);
-		do_page_fault(addr);
+		seg_fault(addr);
 	}
 
 }
