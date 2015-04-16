@@ -9,6 +9,7 @@
 #include <sys/printtime.h>
 #include <sys/kmalloc.h>
 #include <sys/process.h>
+#include <sys/system_calls.h>
 static uint64_t current_syscall =0;
 static uint64_t rsp_user_syscall;
 static uint64_t rip_syscall;
@@ -397,7 +398,10 @@ add_custom_interrupt();
 init_keyboard_map();
 keyboard_init();
 __asm__ __volatile("cli");
+char *buff = "this is a write \nsystem call";
+int ret = write_system_call(1, buff, 1000);
 
+printf("%d\n", ret);
 //	process_stuff(); // <<<<<<------------- here it faults, but not before init_caches()
 //	stack_ring_three();
 //	switch_user_mode();

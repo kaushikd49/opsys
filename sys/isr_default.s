@@ -1170,7 +1170,11 @@ isr_syscall:
 	cmp %rax, %rbx
 	jne q2
 	call temp_preempt_exit
-	movq %rax, %rsp
+ q2:movq $1, %rbx
+ 	cmp %rax, %rbx
+ 	jne q3
+ 	call write_system_call
+ q3:movq %rax, %rsp
 	popq %rax
 	movq %rax, %gs
 	popq %rax
@@ -1183,7 +1187,7 @@ isr_syscall:
 	popq %r14
 	popq %r13
 	popq %r12
- q2:popq %r11
+ 	popq %r11
 	popq %r10
 	popq %r9
 	popq %r8

@@ -36,16 +36,15 @@ ssize_t read(int fd, void *buf, size_t count) {
 }
 
 size_t write(int fd, const void *buf, size_t count) {
-	return 0;
-//	size_t size = syscall_4_write(SYS_write, fd, buf, count);
-//	if (size == 0xFFFFFFFFFFFFFFF7) {
-//		errno = EBADF;
-//		return -1;
-//	} else if ((signed long) size < 0) {
-//		errno = WRITEERR;
-//		return -1;
-//	}
-//	return size;
+	size_t size = syscall_4_write(SYS_write, fd, buf, count);
+	if (size == 0xFFFFFFFFFFFFFFF7) {
+		errno = EBADF;
+		return -1;
+	} else if ((signed long) size < 0) {
+		errno = WRITEERR;
+		return -1;
+	}
+	return size;
 }
 //no errors for strlen
 size_t strlen(const char *str) {
@@ -130,52 +129,52 @@ int printHexInt(int n) {
 	return count + 2;
 }
 
-//int printf(const char *format, ...) {
-//	va_list val;
-//	int printed = 0;
-//
-//	va_start(val, format);
-//
-//	while (*format && *(format + 1)) {
-//		if (*format == '%') {
-//			format++;
-//			char character = *format;
-//
-//			if (character == 'd') {
-//				int tempd = va_arg(val, int);
-//				int count = printInteger(tempd);
-//				printed = printed + count;
-//			} else if (character == 'x') {
-//				int tempd = va_arg(val, int);
-//				int count = printHexInt(tempd);
-//				printed = printed + count;
-//			} else if (character == 's') {
-//				char *temps = va_arg(val, char *);
-//				int length = strlen(temps);
-//				write(1, temps, length);
-//				printed = printed + length;
-//			} else if (character == 'c') {
-//				// char promoted to int in va_arg
-//				char tempc = va_arg(val, int);
-//				write(1, &tempc, 1);
-//				printed++;
-//			}
-//		} else {
-//			write(1, format, 1);
-//			printed++;
-//		}
-//		format++;
-//	}
-//
-//	while (*format) {
-//		write(1, format, 1);
-//		printed++;
-//		format++;
-//	}
-//	va_end(val);
-//	return printed;
-//	return 0;
-//}
+int printf(const char *format, ...) {
+	va_list val;
+	int printed = 0;
+
+	va_start(val, format);
+
+	while (*format && *(format + 1)) {
+		if (*format == '%') {
+			format++;
+			char character = *format;
+
+			if (character == 'd') {
+				int tempd = va_arg(val, int);
+				int count = printInteger(tempd);
+				printed = printed + count;
+			} else if (character == 'x') {
+				int tempd = va_arg(val, int);
+				int count = printHexInt(tempd);
+				printed = printed + count;
+			} else if (character == 's') {
+				char *temps = va_arg(val, char *);
+				int length = strlen(temps);
+				write(1, temps, length);
+				printed = printed + length;
+			} else if (character == 'c') {
+				// char promoted to int in va_arg
+				char tempc = va_arg(val, int);
+				write(1, &tempc, 1);
+				printed++;
+			}
+		} else {
+			write(1, format, 1);
+			printed++;
+		}
+		format++;
+	}
+
+	while (*format) {
+		write(1, format, 1);
+		printed++;
+		format++;
+	}
+	va_end(val);
+	return printed;
+	return 0;
+}
 
 int is_int(char c) {
 	int ascii = c - '0';
