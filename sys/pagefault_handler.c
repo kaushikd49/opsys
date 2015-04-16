@@ -68,7 +68,6 @@ char* zero_range(uint64_t page_virtual_addr, vma_t* temp_vma) {
 	return vaddr;
 }
 
-
 void seg_fault(uint64_t addr) {
 	printf("DO PAGE FAULT\n");
 }
@@ -84,23 +83,25 @@ void do_demand_paging(uint64_t virtual_addr) {
 
 		// copy 1 page worth of stuff from addresses pointed to by vmas
 		while (temp_vma != NULL) {
-			if (!flag && virtual_addr >= temp_vma->vma_start
+			if (virtual_addr >= temp_vma->vma_start
 					&& virtual_addr < temp_vma->vma_end) {
-				page_alloc(virtual_addr);
-				flag = 1;
-			}
 
-			// load elf for this range of linear addr
-			if (temp_vma->type >= 0 && temp_vma->type <= 3) {
-				// text or rodata or data
-				cp_from_elf(page_virtual_addr, temp_vma, mem_ptr);
-			} else if (temp_vma->type == 3) {
-				// bss section
-				zero_range(page_virtual_addr, temp_vma);
-			}
-			// nothing to do if type == 4 (stack demand paging),
-			// as page has been allocated on top already.
+				if (!flag) {
+					page_alloc(virtual_addr);
+					flag = 1;
+				}
 
+				// load elf for this range of linear addr
+				if (temp_vma->type >= 0 && temp_vma->type <= 3) {
+					// text or rodata or data
+					cp_from_elf(page_virtual_addr, temp_vma, mem_ptr);
+				} else if (temp_vma->type == 3) {
+					// bss section
+					zero_range(page_virtual_addr, temp_vma);
+				}
+				// nothing to do if type == 4 (stack demand paging),
+				// as page has been allocated on top already.
+			}
 			temp_vma = temp_vma->vma_next;
 		}
 	} else {
@@ -108,12 +109,12 @@ void do_demand_paging(uint64_t virtual_addr) {
 	}
 
 	// no vmas contain this address
-	if(!flag){
+	if (!flag) {
+		printf("No VMAs in this range");
 		seg_fault(virtual_addr);
 	}
 
 }
-
 
 void do_handle_pagefault(uint64_t error_code) {
 	int present = get_bit(error_code, 0);
