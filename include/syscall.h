@@ -8,7 +8,7 @@ static __inline uint64_t syscall_0(uint64_t n) {
 	uint64_t result;
 	__asm__ __volatile(
 			"xor %%rbx, %%rbx\n\t"
-			"syscall"
+			"int $0x80"
 			:"=a"(result)
 			:"0"(n)
 			:"rbx"
@@ -21,7 +21,7 @@ static __inline uint64_t syscall_1_p(uint64_t n, uint64_t size) {
 	uint64_t result;
 	__asm__ __volatile(
 			//"xor %%rbx, %%rbx\n\t"
-			"syscall"
+			"int $0x80"
 			:"=a"(result)
 			:"0"(n),"D"(size));
 	return result;
@@ -29,7 +29,7 @@ static __inline uint64_t syscall_1_p(uint64_t n, uint64_t size) {
 static __inline uint64_t syscall_1(uint64_t n, uint64_t a1) {
         uint64_t result;
         __asm__ __volatile(
-                        "syscall"
+                        "int $0x80"
                         :"=&a" (result)
                         :"0"(n),"D"(a1));
         return result;
@@ -39,7 +39,7 @@ static __inline uint64_t syscall_2_test(uint64_t n, uint64_t a1, uint64_t a2) {
 	uint64_t result;
 	__asm__ __volatile__(
 			"movq $0,%%rcx\n\t"
-			"syscall"
+			"int $0x80"
 			:"=a" (result)
 			:"0"(n), "D"(a1), "S"(a2));
 	return result;
@@ -49,7 +49,7 @@ static __inline uint64_t syscall_3(uint64_t n, uint64_t a1, uint64_t a2,
 		uint64_t a3) {
 	uint64_t result;
 	__asm__ __volatile__(
-			"syscall"
+			"int $0x80"
 			:"=a" (result)
 			:"0"(n), "D"(a1), "S"(a2), "d"(a3));
 	return result;
@@ -58,7 +58,7 @@ static __inline pid_t syscall_4_wait(uint64_t n, uint64_t a1, int *a2, int a3) {
 	uint64_t result;
 	__asm__ __volatile__(
 			"movq $0,%%rcx\n\t"
-			"syscall"
+			"int $0x80"
 			:"=a" (result)
 			:"0"(n), "D"(a1), "S"(a2), "d"(a3));
 	return result;
@@ -67,7 +67,7 @@ static __inline pid_t syscall_4(uint64_t n, uint64_t a1, uint64_t a2, uint64_t a
 	uint64_t result;
 	__asm__ __volatile__(
 			"movq $0,%%rcx\n\t"
-			"syscall"
+			"int $0x80"
 			:"=a" (result)
 			:"0"(n), "D"(a1), "S"(a2), "d"(a3));
 	return result;
@@ -76,7 +76,7 @@ static __inline size_t syscall_4_write(uint64_t n, int a1, const void *a2,
 		size_t a3) {
 	uint64_t result;
 	__asm__ __volatile__ (
-			"syscall"
+			"int $0x80"
 			:"=a" (result)
 			:"0"(n), "D"(a1),"S"(a2),"d"(a3));
 	return result;
@@ -86,7 +86,7 @@ static __inline uint64_t syscall_3_dup2(uint64_t n, int a1, int a2) {
 	uint64_t result;
 	__asm__ __volatile__(
 			"movq $0,%%rcx\n\t"
-			"syscall"
+			"int $0x80"
 			:"=a" (result)
 			:"0"(n), "D"(a1), "S"(a2));
 	return result;

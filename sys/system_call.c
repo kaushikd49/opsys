@@ -10,7 +10,8 @@ int write_system_call(int fd, const void *buff, size_t count){
 	char *print_buffer = (char *)buff;
 	int printed = 0;
 	while(printed < count && print_buffer[printed] != '\0'){
-		write_char_to_vid_mem(print_buffer[printed], 0);
+		char character = print_buffer[printed];
+		write_char_to_vid_mem(character, 0);
 		printed++;
 	}
 	return printed;

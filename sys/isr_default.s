@@ -1133,49 +1133,54 @@ isr_keyboard:
 
 isr_syscall:
 	cli
-	pushq %rax
-	pushq %rbx
-	pushq %rcx
-	pushq %rdx
-	pushq %rdi
-	pushq %rsi
-	pushq %rbp
-	pushq %r8
-	pushq %r9
-	pushq %r10
-	pushq %r11
-	pushq %r12
-	pushq %r13
-	pushq %r14
-	pushq %r15
-	movq %rax, %rdx
+	pushq %rax #144
+	pushq %rbx #136
+	pushq %rcx #128
+	pushq %rdx #120
+	pushq %rdi #112
+	pushq %rsi #104
+	pushq %rbp #96
+	pushq %r8 #88
+	pushq %r9 #80
+	pushq %r10 #72
+	pushq %r11 #64
+	pushq %r12 #56
+	pushq %r13 #48
+	pushq %r14 #40
+	pushq %r15 #32
+	movq %rax, %r15 #backing up rax
 	movq $0, %rax
 	movq %ds, %rax
-	pushq %rax
+	pushq %rax #24
 	movq $0, %rax
 	movq %es, %rax
-	pushq %rax
+	pushq %rax #16
 	movq $0, %rax
 	movq %fs, %rax
-	pushq %rax
+	pushq %rax  #8
 	movq $0, %rax
 	movq %gs, %rax
-	pushq %rax
-	movq %rsp, %rdi
+	pushq %rax  ##pushed all registers here
+	movq %rsp, %rdi #passing the top of stack to temp_preempt_kernel
 	#inb $0x60, %al
 	#movq $0xb8000, %rbx
 	#movb %al, (%rbx)
-	movq %rdx, %rax
+	movq %r15, %rax
 	movq $60, %rbx
 	cmp %rax, %rbx
-	jne q2
+	jne q2 #not a exit syscall
 	call temp_preempt_exit
+	movq %rax, %rsp
+	jmp q4 #ender- this tag should alwats point to last label
  q2:movq $1, %rbx
  	cmp %rax, %rbx
- 	jne q3
+ 	jne q4 #not a write syscall
+ 	movq 112(%rsp), %rdi #make sure to take the function parameters from stack except rsp but rsp wont be eeded anywhere
+ 	movq 104(%rsp), %rsi
+ 	movq 120(%rsp), %rdx
  	call write_system_call
- q3:movq %rax, %rsp
-	popq %rax
+ 	jmp q4 #ender- this tag should alwats point to last label
+ q4:popq %rax #add more syscalls here
 	movq %rax, %gs
 	popq %rax
 	movq %rax, %fs
