@@ -14,4 +14,6 @@ void process_stuff();
 void update_cr3(uint64_t * pml_base_ptr);
 int do_pmls_clash(uint64_t addr1,uint64_t addr2);
 int get_bit(uint64_t num, int bit_num) ;
+uint64_t * virtual_addr_pte(uint64_t linear_addr);
+uint64_t* next_entity_base(uint64_t* entity_entry);
 #endif

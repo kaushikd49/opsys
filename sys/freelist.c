@@ -180,6 +180,9 @@ void return_page(uint64_t page, page_t *free_list) {
 	for(uint64_t i = 0; i <MAX_NUMBER_PAGES; i++){
 		if(free_list[i].frame_addr == page){
 			free_list[i].ref_count -= 1;
+			if(free_list[i].ref_count < 0){
+				printf("free_page deallocation you have made a mistake here  mostly.\n");
+			}
 			if(free_list[i].ref_count == 0)
 				free_list[i].is_free = 1;
 			break;
@@ -212,11 +215,17 @@ void return_pages(uint64_t page, page_t *free_list, int order){
 	for(uint64_t i = 0; i <MAX_NUMBER_PAGES; i++){
 		if(free_list[i].frame_addr == page){
 			free_list[i].ref_count -= 1;
+			if(free_list[i].ref_count < 0){
+							printf("free_page deallocation you have made a mistake here  mostly.\n");
+						}
 			if(free_list[i].ref_count == 0)
 				free_list[i].is_free = 1;
 			index = i;
 			for(uint64_t i = index+1 ; i <index+limit; i++){
 				free_list[i].ref_count -= 1;
+				if(free_list[i].ref_count < 0){
+								printf("free_page deallocation you have made a mistake here  mostly.\n");
+							}
 				if(free_list[i].ref_count == 0)
 					free_list[i].is_free = 1;
 			}
@@ -234,4 +243,28 @@ uint64_t * get_free_frames(int order){
 	uint64_t freePage = get_free_pages(free_list, order);
 //	printf("returning freepages:%p ", freePage);
 	return (uint64_t *) freePage;
+}
+
+int get_ref_count(uint64_t physical_addr_page){
+	for(uint64_t i= 0; i < MAX_NUMBER_PAGES; i++){
+		if(free_list[i].frame_addr == physical_addr_page){
+			return free_list[i].ref_count;
+		}
+	}
+	return -1;
+}
+
+void decrease_ref_count(uint64_t physical_addr_page){
+	 return_page(physical_addr_page, free_list);
+
+}
+
+void increase_ref_count(uint64_t physical_addr_page){
+	for(uint64_t i= 0; i < MAX_NUMBER_PAGES; i++){
+			if(free_list[i].frame_addr == physical_addr_page){
+				free_list[i].ref_count += 1;
+				return;
+			}
+		}
+
 }
