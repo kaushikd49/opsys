@@ -195,7 +195,7 @@
 //	exit(0);
 //
 //}
-
+#include <stdlib.h>
 #include <stdarg.h>
 #include <sys/defs.h>
 #include <sys/syscall.h>
@@ -204,7 +204,8 @@ int arr[100];
 int b =10;
 
 int main(int argc, char* argv[], char* envp[]) {
-	printf("Hello World!\n");
+//	int pid = fork();
+	printf("Hello World!---%d\n", 0);
 //	while(1);
 	return 0;
 }

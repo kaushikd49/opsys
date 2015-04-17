@@ -21,39 +21,38 @@ void cp_executable(task_struct_t * from, task_struct_t * to) {
 
 void cp_pstate(task_struct_t * from, task_struct_t * to) {
 	process_state fstate = from->state;
-	process_state tstate = to->state;
 
-	tstate.rsp = fstate.rsp;
-	tstate.rip = fstate.rip;
+	to->state.rsp = fstate.rsp;
+	to->state.rip = fstate.rip;
 	//general registers
-	tstate.rax = fstate.rax;
-	tstate.rbx = fstate.rbx;
-	tstate.rcx = fstate.rcx;
-	tstate.rdx = fstate.rdx;
-	tstate.rdi = fstate.rdi;
-	tstate.rsi = fstate.rsi;
-	tstate.rbp = fstate.rbp;
-	tstate.r8 = fstate.r8;
-	tstate.r9 = fstate.r9;
-	tstate.r10 = fstate.r10;
-	tstate.r11 = fstate.r11;
-	tstate.r12 = fstate.r12;
-	tstate.r13 = fstate.r13;
-	tstate.r14 = fstate.r14;
-	tstate.r15 = fstate.r15;
+	to->state.rax = fstate.rax;
+	to->state.rbx = fstate.rbx;
+	to->state.rcx = fstate.rcx;
+	to->state.rdx = fstate.rdx;
+	to->state.rdi = fstate.rdi;
+	to->state.rsi = fstate.rsi;
+	to->state.rbp = fstate.rbp;
+	to->state.r8 = fstate.r8;
+	to->state.r9 = fstate.r9;
+	to->state.r10 = fstate.r10;
+	to->state.r11 = fstate.r11;
+	to->state.r12 = fstate.r12;
+	to->state.r13 = fstate.r13;
+	to->state.r14 = fstate.r14;
+	to->state.r15 = fstate.r15;
 
 	//not copying cr3
 
 	//flags
-	tstate.flags = fstate.flags;
+	to->state.flags = fstate.flags;
 	//segment registers
-	tstate.cs = fstate.cs;
-	tstate.ds = fstate.ds;
-	tstate.es = fstate.es;
-	tstate.fs = fstate.fs;
-	tstate.gs = fstate.gs;
-	tstate.ss = fstate.ss;
-	tstate.kernel_rsp = tstate.kernel_rsp;
+	to->state.cs = fstate.cs;
+	to->state.ds = fstate.ds;
+	to->state.es = fstate.es;
+	to->state.fs = fstate.fs;
+	to->state.gs = fstate.gs;
+	to->state.ss = fstate.ss;
+	add_kernel_stack(to);
 }
 
 void cp_vma(vma_t* from, vma_t* to, mem_desc_t *mem_map) {
@@ -132,9 +131,11 @@ void cp_mem_desc(task_struct_t * from, task_struct_t * to) {
 // pte which contains the page that contains
 // virtual_addr is marked as read only
 void set_pte_as_read(uint64_t virtual_addr) {
-	uint64_t * pte = virtual_addr_pte(virtual_addr);
-	*pte = set_bit(*pte, 1, 0); // bit 1 as 0
-	invalidate_addresses_with_page((uint64_t *)virtual_addr);
+	if (is_linear_addr_mapped(virtual_addr)){
+		uint64_t * pte = virtual_addr_pte(virtual_addr);
+		*pte = set_bit(*pte, 1, 0); // bit 1 as 0
+		invalidate_addresses_with_page((uint64_t *)virtual_addr);
+	}
 }
 
 // mark pages of parent process as read only
@@ -225,10 +226,12 @@ void cp_ptables_for(uint64_t page_base, pv_map_t* pv_map_node,
 	// page table before cr3 update - climb down others' page tables
 	// and update page table entries.
 
-	// since it is COW, page is marked present, read only and user mode
-	setup_page_table_from_outside(page_base, page_phys_addr, 1, 0, 1,
+	// since page tables need to be accesible for the kernel setting
+	// present, write, supervisor
+	setup_page_table_from_outside(page_base, page_phys_addr, 1, 1, 0,
 			chld_pml4_base_dbl_ptr, next_entity_virtual_base, pv_map_node);
-
+	// since it is COW, page is read only
+	set_pte_as_read(page_base);
 }
 
 void cp_page_tables(task_struct_t * from, task_struct_t * to) {
@@ -254,7 +257,6 @@ void cp_page_tables(task_struct_t * from, task_struct_t * to) {
 void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to) {
 	to->pid = pid;
 	to->ppid = from->pid;
-	to->state = from->state;
 	cp_executable(from, to);
 	cp_pstate(from, to);
 	cp_mem_desc(from, to);
@@ -268,8 +270,9 @@ void copy_process(uint64_t pid) {
 	copy_tsk(pid, currenttask, task);
 }
 
-void do_fork() {
+int do_fork() {
 	uint64_t pid = get_next_pid();
 	copy_process(pid);
+	return (int) pid;
 }
 

@@ -43,14 +43,17 @@ typedef struct {
 	uint64_t rbx;
 	uint64_t rax;
 
-}regs_syscall_t;
-uint64_t handle_exit(regs_syscall_t regs){
-	uint64_t stack_top = (uint64_t)(&(regs.gs));
+} regs_syscall_t;
+uint64_t handle_exit(regs_syscall_t regs) {
+	uint64_t stack_top = (uint64_t) (&(regs.gs));
 	return temp_preempt_exit(stack_top);
 }
-uint64_t handle_syscall(regs_syscall_t regs){
-	if(regs.rax == 1){
-		return write_system_call((int)regs.rdi, (const void *)regs.rsi, (size_t)regs.rdx);
+uint64_t handle_syscall(regs_syscall_t regs) {
+	if (regs.rax == 1) {
+		return write_system_call((int) regs.rdi, (const void *) regs.rsi,
+				(size_t) regs.rdx);
+	} else if (regs.rax == 57) {
+		return fork_sys_call();
 	}
 	return 0;
 }

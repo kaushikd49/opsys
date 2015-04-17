@@ -1,4 +1,3 @@
-
 #include<sys/defs.h>
 #include<sys/sbunix.h>
 #include<sys/paging.h>
@@ -62,7 +61,8 @@ void *get_virtual_location(int order) {
 	cache_info.current_virtual += (0x1000) * (1 << order); //shifting by those many pages.
 	return return_loc;
 }
-//this fucntion will add free_t header to the beginning of every memory location in a page that has been allocated
+//this fucntion will add free_t header to the beginning of every
+// memory location in a page that has been allocated
 void prepare_page(int order, void *address) { //order max 11
 //	printf("preparing page..\n");
 	int i;
@@ -82,7 +82,8 @@ void prepare_page(int order, void *address) { //order max 11
 	cache_t *cache = cache_info.head + sizeof(cache_t) * (order - 5);
 	cache->free = address;
 }
-// this function gets the actual address of the memory location. It assumes that there are actually free slots in the memory location.
+// this function gets the actual address of the memory location.
+// It assumes that there are actually free slots in the memory location.
 void *get_mem_alloc(int order) {
 	cache_t *cache = cache_info.head + sizeof(cache_t) * (order - 5);
 	void *return_addr = (void *) (cache->free);
@@ -92,16 +93,17 @@ void *get_mem_alloc(int order) {
 	return return_addr;
 }
 // if the page size if greater than 2048 bytes then get the page directly.
-void *get_pages_directly(int order){
-	void *free_frame = (void *)get_free_frames(order);
-	void *virtual_addr = (void *)get_virtual_location(order);
+void *get_pages_directly(int order) {
+	void *free_frame = (void *) get_free_frames(order);
+	void *virtual_addr = (void *) get_virtual_location(order);
 	void *return_addr = virtual_addr;
 	//****** map virtual to physical ***********
-	for(uint64_t i = 0; i < (1<<order); i++){
+	for (uint64_t i = 0; i < (1 << order); i++) {
 //		printf("%d  ",order);
-		setup_kernel_page_tables((uint64_t)virtual_addr, (uint64_t)free_frame);
-		virtual_addr = (void *)((uint64_t)virtual_addr + 0x1000);
-		free_frame = (void *)((uint64_t)free_frame + 0x1000);
+		setup_kernel_page_tables((uint64_t) virtual_addr,
+				(uint64_t) free_frame);
+		virtual_addr = (void *) ((uint64_t) virtual_addr + 0x1000);
+		free_frame = (void *) ((uint64_t) free_frame + 0x1000);
 	}
 	return return_addr;
 }
@@ -184,8 +186,7 @@ void kfree(void *addr) {
 	dealloc_in_cache(order, (void *) header);
 }
 
-
 int is_kernel_addr(uint64_t addr) {
-	return do_pmls_clash(addr,BASE_MEMORY_MANAGER);
+	return do_pmls_clash(addr, BASE_MEMORY_MANAGER);
 }
 

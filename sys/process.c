@@ -449,6 +449,13 @@ char *strcpy(char *dst, char *src) {
 	dst[len] = '\0';
 	return dst;
 }
+
+void add_kernel_stack(task_struct_t* task) {
+	//giving the process a new kernel stack
+	uint64_t stack_kernel = (uint64_t) kmalloc(0x1000);
+	task->state.kernel_rsp = (uint64_t) (stack_kernel + 0xfff);
+}
+
 //named kernel_create_process but actually creates user process, we need to change all this to name it properly once we both have a stable merge
 void kernel_create_process(task_struct_t *task, task_struct_t *parent_task, char *executable){
 	//using the user level process struct it is fine for now
@@ -501,9 +508,7 @@ void kernel_create_process(task_struct_t *task, task_struct_t *parent_task, char
 	if(task->executable[0] != '\0')
 		load_executable(task);
 	update_cr3((uint64_t *)(oldcr3));
-	//giving the process a new kernel stack
-	uint64_t stack_kernel = (uint64_t) kmalloc(0x1000);
-	task->state.kernel_rsp = (uint64_t) (stack_kernel+0xfff);
+	add_kernel_stack(task);
 }
 
 
