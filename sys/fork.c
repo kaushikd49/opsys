@@ -2,7 +2,7 @@
 #include <sys/kmalloc.h>
 #include <sys/sbunix.h>
 #include <sys/process.h>
-
+#include <sys/scheduling.h>
 extern task_struct_t *currenttask;
 
 void cp_prev_next(task_struct_t* from, task_struct_t* to) {
@@ -249,7 +249,6 @@ void cp_page_tables(task_struct_t * from, task_struct_t * to) {
 			cp_ptables_for(page_base, pv_map_node, &child_pml_virtual_ptr);
 		}
 	}
-
 }
 
 void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to) {
