@@ -423,6 +423,7 @@ init_keyboard_map();
 keyboard_init();
 __asm__ __volatile("cli");
 test_free_pages();
+//find_file_tarfs();
 char *buff = "this is a write \nsystem call";
 int ret = write_system_call(1, buff, 1000);
 
