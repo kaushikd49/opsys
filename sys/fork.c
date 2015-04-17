@@ -131,10 +131,10 @@ void cp_mem_desc(task_struct_t * from, task_struct_t * to) {
 // pte which contains the page that contains
 // virtual_addr is marked as read only
 void set_pte_as_read(uint64_t virtual_addr) {
-	if (is_linear_addr_mapped(virtual_addr)){
+	if (is_linear_addr_mapped(virtual_addr)) {
 		uint64_t * pte = virtual_addr_pte(virtual_addr);
 		*pte = set_bit(*pte, 1, 0); // bit 1 as 0
-		invalidate_addresses_with_page((uint64_t *)virtual_addr);
+		invalidate_addresses_with_page((uint64_t *) virtual_addr);
 	}
 }
 
@@ -184,24 +184,24 @@ typedef struct phys_virt_mapping {
 //	}
 //}
 
-uint64_t* next_entity_virtual_base(uint64_t* entity_entry, void * pv_map) {
-	uint64_t next_entity_base_phys = (uint64_t) next_entity_base(entity_entry);
-//	uint64_t vaddr = NULL;
-//	int is_found = phys_to_virt(next_entity_base_phys, (pv_map_t) pv_map,
-//			&vaddr);
-//	if (is_found) {
-//		return (uint64_t*) *vaddr;
-//	} else {
-//		// map the phys addr to a virtual one and cache it in pv_map
-//		uint64_t res_addr = (uint64_t) get_virtual_location_cr3(0);
-//		insert_into_map(pv_map, next_entity_base_phys, res_addr);
-//		return res_addr;
-//	}
+uint64_t* phys_to_virt_map(uint64_t* physaddr, void * pv_map) {
+	//	uint64_t vaddr = NULL;
+	//	int is_found = phys_to_virt(next_entity_base_phys, (pv_map_t) pv_map,
+	//			&vaddr);
+	//	if (is_found) {
+	//		return (uint64_t*) *vaddr;
+	//	} else {
+	//		// map the phys addr to a virtual one and cache it in pv_map
+	//		uint64_t res_addr = (uint64_t) get_virtual_location_cr3(0);
+	//		insert_into_map(pv_map, next_entity_base_phys, res_addr);
+	//		return res_addr;
+	//	}
 	uint64_t res_addr = (uint64_t) get_virtual_location(0);
-	setup_page_tables_after_cr3_update(res_addr, next_entity_base_phys, 1, 1,
+	setup_page_tables_after_cr3_update(res_addr, (uint64_t)physaddr, 1, 1,
 			0);
 	// remember to give back this virtual address
-	return (uint64_t *)res_addr;
+	return (uint64_t *) res_addr;
+
 }
 
 // page tables that are involved in resolving page_base are
@@ -228,7 +228,7 @@ void cp_ptables_for(uint64_t page_base, pv_map_t* pv_map_node,
 	// since page tables need to be accesible for the kernel setting
 	// present, write, supervisor
 	setup_page_table_from_outside(page_base, page_phys_addr, 1, 1, 0,
-			chld_pml4_base_dbl_ptr, next_entity_virtual_base, pv_map_node);
+			chld_pml4_base_dbl_ptr, phys_to_virt_map, pv_map_node);
 	// since it is COW, page is read only
 	set_pte_as_read(page_base);
 }
