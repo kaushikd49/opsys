@@ -550,14 +550,14 @@ void *get_virtual_location_cr3(int order) {
 	current_virtual_cr3 += (0x1000) * (1 << order); //shifting by those many pages.
 	return return_loc;
 }
-uint64_t * get_physical_pml4_base_for_process() {
+
+uint64_t* get_pml4_base_addrs_for_process(uint64_t* process_pml_base_virtual) {
 	// copy the kernel's pml4 base frame into
 	// a new frame and return the physical address
 	// so that the task_struct can store the same
-
-	uint64_t *process_pml_base_physical = get_free_frame(0);
-	uint64_t *virtual_addr = (uint64_t *) get_virtual_location_cr3(0);
-//	printf("va : %p\n", virtual_addr);
+	uint64_t* process_pml_base_physical = get_free_frame(0);
+	uint64_t* virtual_addr = (uint64_t*) get_virtual_location_cr3(0);
+	//	printf("va : %p\n", virtual_addr);
 	// we are copying the kernel's address space to the process'
 	// so use setup_kernel_page_tables so that the permissions are
 	// set appropriately and not setup_processl_page_tables.
@@ -568,12 +568,23 @@ uint64_t * get_physical_pml4_base_for_process() {
 	uint64_t *ptr = (uint64_t *) KERNEL_PML4_BASE_VIRTUAL;
 	// kernel addresses only lie in pml 511, so just copy that pml4e
 	*(virtual_addr + 511) = *(ptr + 511);
-
 	// self referencing of the page table
-	uint64_t * temp = virtual_addr + 510;
+	uint64_t* temp = virtual_addr + 510;
 	*temp = get_pml4_entry((uint64_t) process_pml_base_physical, 1, 1, 0);
 
+	*process_pml_base_virtual = (uint64_t)virtual_addr;
 	return process_pml_base_physical;
+}
+
+
+uint64_t * get_physical_pml4_base_for_process() {
+	uint64_t process_pml_base_virtual = 0;
+	uint64_t* process_pml_base_physical = get_pml4_base_addrs_for_process(&process_pml_base_virtual);
+	return process_pml_base_physical;
+}
+
+void get_both_pml4_base_addrs_for_process(uint64_t* vaddr, uint64_t* phys_addr) {
+	*phys_addr = (uint64_t)get_pml4_base_addrs_for_process(vaddr);
 }
 
 int is_linear_addr_mapped(uint64_t linear_addr) {
