@@ -6,9 +6,7 @@
 extern task_struct_t *currenttask;
 
 void cp_prev_next(task_struct_t* from, task_struct_t* to) {
-	// TODO : below
-	//	*next;
-	//	*prev;
+	add_process_runq(to);
 }
 
 void cp_executable(task_struct_t * from, task_struct_t * to) {
@@ -258,12 +256,12 @@ void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to) {
 	to->pid = pid;
 	to->ppid = from->pid;
 	to->state = from->state;
-	cp_prev_next(from, to);
 	cp_executable(from, to);
 	cp_pstate(from, to);
 	cp_mem_desc(from, to);
 	mark_pages_read(from);
 	cp_page_tables(from, to);
+	cp_prev_next(from, to);
 }
 
 void copy_process(uint64_t pid) {
