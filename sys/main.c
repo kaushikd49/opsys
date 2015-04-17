@@ -364,7 +364,7 @@ void enable_syscall(){
 void test_free_pages(){
 	void *virtual_addr = kmalloc(64);
 	uint64_t * target_pte = virtual_addr_pte((uint64_t)virtual_addr);
-	uint64_t page_phys_addr  = (uint64_t)next_entity_base(target_pte,NULL);
+	uint64_t page_phys_addr  = (uint64_t)next_entity_base(target_pte);
 	printf("%p", page_phys_addr);
 	int count = get_ref_count(page_phys_addr);
 	printf("free: %d  ", count);
@@ -380,7 +380,7 @@ void test_free_pages(){
 				virtual_addr = kmalloc(64);
 					target_pte = virtual_addr_pte((uint64_t)virtual_addr);
 					page_phys_addr = 0;
-					page_phys_addr  = (uint64_t)next_entity_base(target_pte, NULL);
+					page_phys_addr  = (uint64_t)next_entity_base(target_pte);
 					printf("%p", page_phys_addr);
 }
 

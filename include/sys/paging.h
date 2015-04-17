@@ -22,7 +22,7 @@ void setup_page_table_from_outside(uint64_t linear_addr, uint64_t physical_addr,
 		int p, int rw, int us, uint64_t** pml_base_dbl_ptr,
 		uint64_t* (*next_entity_base_func)(uint64_t*, void *), void * pv_map);
 
-uint64_t* next_entity_base(uint64_t* entity_entry, void * pv_map);
+uint64_t* next_entity_base(uint64_t* entity_entry);
 
 void get_both_pml4_base_addrs_for_process(uint64_t* vaddr, uint64_t* phys_addr);
 

@@ -185,8 +185,7 @@ typedef struct phys_virt_mapping {
 //}
 
 uint64_t* next_entity_virtual_base(uint64_t* entity_entry, void * pv_map) {
-	uint64_t next_entity_base_phys = (uint64_t) next_entity_base(entity_entry,
-	NULL);
+	uint64_t next_entity_base_phys = (uint64_t) next_entity_base(entity_entry);
 //	uint64_t vaddr = NULL;
 //	int is_found = phys_to_virt(next_entity_base_phys, (pv_map_t) pv_map,
 //			&vaddr);
@@ -216,7 +215,7 @@ void cp_ptables_for(uint64_t page_base, pv_map_t* pv_map_node,
 	}
 	// store this pte val for the addr page_base in the child page table too
 	uint64_t * target_pte = virtual_addr_pte(page_base);
-	uint64_t page_phys_addr = (uint64_t) next_entity_base(target_pte, NULL);
+	uint64_t page_phys_addr = (uint64_t) next_entity_base(target_pte);
 
 	// next_entity_virtual_base is a function similar to
 	// next_entity_base in paging.c, except this one returns
