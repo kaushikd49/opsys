@@ -1,5 +1,6 @@
 #include<sys/system_calls.h>
 #include<sys/sbunix.h>
+#include<sys/system_calls.h>
 int write_system_call(int fd, const void *buff, size_t count){
 	if(fd != 1){//EACCES error
 		return -13;

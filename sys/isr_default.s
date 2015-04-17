@@ -1148,7 +1148,6 @@ isr_syscall:
 	pushq %r13 #48
 	pushq %r14 #40
 	pushq %r15 #32
-	movq %rax, %r15 #backing up rax
 	movq $0, %rax
 	movq %ds, %rax
 	pushq %rax #24
@@ -1161,26 +1160,16 @@ isr_syscall:
 	movq $0, %rax
 	movq %gs, %rax
 	pushq %rax  ##pushed all registers here
-	movq %rsp, %rdi #passing the top of stack to temp_preempt_kernel
-	#inb $0x60, %al
-	#movq $0xb8000, %rbx
-	#movb %al, (%rbx)
-	movq %r15, %rax
-	movq $60, %rbx
-	cmp %rax, %rbx
-	jne q2 #not a exit syscall
-	call temp_preempt_exit
+    movq $60, %rbx
+    movq 144(%rsp), %rax
+	cmp %rbx, %rax
+	jne q2
+	call handle_exit
 	movq %rax, %rsp
-	jmp q4 #ender- this tag should alwats point to last label
- q2:movq $1, %rbx
- 	cmp %rax, %rbx
- 	jne q4 #not a write syscall
- 	movq 112(%rsp), %rdi #make sure to take the function parameters from stack except rsp but rsp wont be eeded anywhere
- 	movq 104(%rsp), %rsi
- 	movq 120(%rsp), %rdx
- 	call write_system_call
- 	jmp q4 #ender- this tag should alwats point to last label
- q4:popq %rax #add more syscalls here
+	jmp q3
+ q2:call handle_syscall
+ q3:movq %rax, %rbx
+ 	popq %rax #add more syscalls here
 	movq %rax, %gs
 	popq %rax
 	movq %rax, %fs
@@ -1201,8 +1190,10 @@ isr_syscall:
 	popq %rdi
 	popq %rdx
 	popq %rcx
-	popq %rbx
-	popq %rax
+	popq %rax#actually rbx
+	xchgq %rbx, %rax
+	add $8, %rsp
+	#popq %rax
 	movb $0x20, %al
 	outb %al, $0x20
 	sti
