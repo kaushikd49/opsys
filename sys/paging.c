@@ -456,11 +456,11 @@ void map_page_tables_adress(uint64_t **pml_base_dbl_ptr, int p, int rw, int us) 
 	printf("*pml_base_ptr is %p\n", *pml_base_ptr);
 }
 
-void map_other_addresses(uint64_t **pml_base_dbl_ptr, int p, int rw, int us) {
+void map_other_addresses(uint64_t **pml_base_dbl_ptr, int p, int rw, int us, int len_freelist) {
 	//mapping the free list
 	uint64_t virtual_free_list = VIRTUAL_PHYSFREE_OFFSET + (uint64_t) free_list;
 	uint64_t free_list_temp = (uint64_t) free_list;
-	for (int i = 0; i < 3; i++) {	//free pages is 3 pages long
+	for (int i = 0; i < len_freelist; i++) {	//free pages is 3 pages long
 		setup_page_tables(pml_base_dbl_ptr, virtual_free_list, free_list_temp,
 				p, rw, us);
 		virtual_free_list += 4096;
@@ -480,10 +480,11 @@ void map_tarfs_addresses(uint64_t **pml_base_dbl_ptr, int p, int rw, int us) {
 	}
 }
 void map_linear_addresses(uint64_t **pml_base_dbl_ptr, void* physbase,
-		void* physfree, int p, int rw, int us) {
+		void* physfree, int p, int rw, int us, int len_freelist) {
 	map_kernel_address(pml_base_dbl_ptr, physbase, physfree, p, rw, us);
+
 	map_video_address(pml_base_dbl_ptr, p, rw, us);
-	map_other_addresses(pml_base_dbl_ptr, p, rw, us);//this function maps other random addresses we might randomly map after physfree. Example: freelist
+	map_other_addresses(pml_base_dbl_ptr, p, rw, us, len_freelist);//this function maps other random addresses we might randomly map after physfree. Example: freelist
 	map_page_tables_adress(pml_base_dbl_ptr, p, rw, us);
 //	map_tarfs_addresses(pml_base_dbl_ptr, p, rw, us);
 }
@@ -540,8 +541,8 @@ void manage_memory_test_suite() {
 }
 
 // Kernel paging
-void do_paging(void* physbase, void* physfree, int p, int rw, int us) {
-	map_linear_addresses(&kernel_pml_base_ptr, physbase, physfree, p, rw, us);
+void do_paging(void* physbase, void* physfree, int p, int rw, int us, int len_freelist) {
+	map_linear_addresses(&kernel_pml_base_ptr, physbase, physfree, p, rw, us, len_freelist);
 	update_cr3(kernel_pml_base_ptr);
 }
 uint64_t current_virtual_cr3 = 0xffffffffa0000000;
@@ -630,8 +631,8 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 		mark_frame_used((uint64_t) free_list_location + i * (0x1000));
 	}
 	mark_frame_used(0xb8000);
-	blank_space_baby(free_list);
-	do_paging(physbase, physfree, 1, 1, 0);
+//	blank_space_baby(free_list);
+	do_paging(physbase, physfree, 1, 1, 0,number_pages_free_list);
 
 //	uint64_t *temp = get_physical_pml4_base_for_process();
 //	update_cr3(temp);

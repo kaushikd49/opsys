@@ -10,6 +10,8 @@
 #include <sys/kmalloc.h>
 #include <sys/process.h>
 #include <sys/system_calls.h>
+#include <sys/freelist.h>
+#include<sys/pagingglobals.h>
 static uint64_t current_syscall =0;
 static uint64_t rsp_user_syscall;
 static uint64_t rip_syscall;
@@ -18,10 +20,11 @@ uint64_t * get_free_frame();
 #define INITIAL_STACK_SIZE 4096
 extern void _jump_usermode();
 extern char video_buffer[4096];
-struct smap_t {
-	uint64_t base, length;
-	uint32_t type;
-}__attribute__((packed)) *smap;
+//struct smap_t {
+//	uint64_t base, length;
+//	uint32_t type;
+//}__attribute__((packed)) *smap;
+struct smap_t *smap;
 char stack[INITIAL_STACK_SIZE];
 uint32_t* loader_stack;
 extern char kernmem, physbase;
@@ -328,7 +331,7 @@ void test_syscall_rip(){
 						 :);
 	__asm__ __volatile__("movq $72, %rsp\n\t"
 						 "sti\n\t"
-						 "sysret");
+						 "sysretq");
 }
 
 
@@ -358,7 +361,28 @@ void enable_syscall(){
             read_msr(0xC0000082, &lo, &hi);
 //                        printf("MSR: %x %x\n",hi, lo);
 }
-
+void test_free_pages(){
+	void *virtual_addr = kmalloc(64);
+	uint64_t * target_pte = virtual_addr_pte((uint64_t)virtual_addr);
+	uint64_t page_phys_addr  = (uint64_t)next_entity_base(target_pte,NULL);
+	printf("%p", page_phys_addr);
+	int count = get_ref_count(page_phys_addr);
+	printf("free: %d  ", count);
+	increase_ref_count(page_phys_addr);
+	count = get_ref_count(page_phys_addr);
+		printf("free: %d  ", count);
+		decrease_ref_count(page_phys_addr);
+		count = get_ref_count(page_phys_addr);
+		printf("free: %d  ", count);
+		decrease_ref_count(page_phys_addr);
+				count = get_ref_count(page_phys_addr);
+				printf("free: %d  ", count);
+				virtual_addr = kmalloc(64);
+					target_pte = virtual_addr_pte((uint64_t)virtual_addr);
+					page_phys_addr = 0;
+					page_phys_addr  = (uint64_t)next_entity_base(target_pte, NULL);
+					printf("%p", page_phys_addr);
+}
 
 void start(uint32_t* modulep, void* physbase, void* physfree) {
 	while (modulep[0] != 0x9001) {
@@ -390,7 +414,7 @@ void start(uint32_t* modulep, void* physbase, void* physfree) {
 
 
 init_caches();
-enable_syscall();
+//enable_syscall();
 //	traverse_linked_list();
 init_init_IDT();
 config_PIC();
@@ -398,6 +422,7 @@ add_custom_interrupt();
 init_keyboard_map();
 keyboard_init();
 __asm__ __volatile("cli");
+test_free_pages();
 char *buff = "this is a write \nsystem call";
 int ret = write_system_call(1, buff, 1000);
 
