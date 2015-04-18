@@ -476,6 +476,12 @@ trap_thirteen:
 	popq %rcx
 	popq %rbx
 	popq %rax
+
+	// Pop the stack top to clear the errorcode
+	xchg (%rsp), %rax
+	popq %rax
+
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
 	sti
