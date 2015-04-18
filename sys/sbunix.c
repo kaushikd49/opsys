@@ -133,6 +133,7 @@ void write_buffer_view_into_vid_mem() {
 	int linesPrintable = (VIDEO_ROWS) / 2;
 	int linesToDiscard = lines - linesPrintable;
 
+
 	if (linesToDiscard > 0) {
 		// enough stuff inside buffer to cover video memory
 //		from = vid_buffer_view_ptr - (160 * linesToDiscard);
@@ -141,7 +142,8 @@ void write_buffer_view_into_vid_mem() {
 		from = video_buffer;
 	}
 	char *vid_ptr = (char *) BASE_CURSOR_POS;
-	for (char*p = from; p <= to; p++, vid_ptr++) {
+
+	for (char*p = from; p <= to && vid_ptr < (char *) (BASE_CURSOR_POS + 80*49); p++, vid_ptr++) {
 		*vid_ptr = *p;
 	}
 }
