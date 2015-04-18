@@ -188,14 +188,19 @@ void create_all_paging_entities(const struct paging_entities* pe,
 		uint64_t physical_addr, uint64_t* pml_base_ptr, int p, int rw, int us,
 		uint64_t* (*addr_map_func)(uint64_t*, void *), void * pv_map) {
 	// No entities are present for this linear address
-	uint64_t* pdir_ptr = addr_map_func(get_free_frame(), pv_map);
-	uint64_t* pdir = addr_map_func(get_free_frame(), pv_map);
-	uint64_t* ptable = addr_map_func(get_free_frame(), pv_map);
+	uint64_t* pdir_ptr = get_free_frame();
+	uint64_t* pdir = get_free_frame();
+	uint64_t* ptable = get_free_frame();
+
+	uint64_t* mapped_pdir_ptr = addr_map_func(pdir_ptr, pv_map);
+	uint64_t* mapped_pdir = addr_map_func(pdir, pv_map);
+	uint64_t* mapped_ptable = addr_map_func(ptable, pv_map);
+
 	pml_base_ptr[pe->pml_index] = get_pml4_entry((uint64_t) pdir_ptr, p, rw,
 			us);
-	pdir_ptr[pe->pdir_ptr_index] = get_pdpt_entry((uint64_t) pdir, p, rw, us);
-	pdir[pe->dir_index] = get_pd_entry((uint64_t) ptable, p, rw, us);
-	ptable[pe->table_index] = get_ptable_entry(physical_addr, p, rw, us);
+	mapped_pdir_ptr[pe->pdir_ptr_index] = get_pdpt_entry((uint64_t) pdir, p, rw, us);
+	mapped_pdir[pe->dir_index] = get_pd_entry((uint64_t) ptable, p, rw, us);
+	mapped_ptable[pe->table_index] = get_ptable_entry(physical_addr, p, rw, us);
 }
 
 void create_all_but_pml(const struct paging_entities* pe,
@@ -204,13 +209,16 @@ void create_all_but_pml(const struct paging_entities* pe,
 	// only pml is present for this linear address
 
 	uint64_t* pdir_ptr_base = (uint64_t*) (*deepest_entity_base);
-	uint64_t* pdir = addr_map_func(get_free_frame(), pv_map);
-	uint64_t* ptable = addr_map_func(get_free_frame(), pv_map);
+	uint64_t* pdir = get_free_frame();
+	uint64_t* ptable = get_free_frame();
+
+	uint64_t* mapped_pdir = addr_map_func(pdir, pv_map);
+	uint64_t* mapped_ptable = addr_map_func(ptable, pv_map);
 
 	pdir_ptr_base[pe->pdir_ptr_index] = get_pdpt_entry((uint64_t) pdir, p, rw,
 			us);
-	pdir[pe->dir_index] = get_pd_entry((uint64_t) ptable, p, rw, us);
-	ptable[pe->table_index] = get_ptable_entry(physical_addr, p, rw, us);
+	mapped_pdir[pe->dir_index] = get_pd_entry((uint64_t) ptable, p, rw, us);
+	mapped_ptable[pe->table_index] = get_ptable_entry(physical_addr, p, rw, us);
 }
 
 void create_pdir_and_ptable(const struct paging_entities* pe,
@@ -218,10 +226,12 @@ void create_pdir_and_ptable(const struct paging_entities* pe,
 		int us, uint64_t* (*addr_map_func)(uint64_t*, void *), void * pv_map) {
 	// pml and pdir_ptr are present for this linear address
 	uint64_t* pdir_base = (uint64_t*) (*deepest_entity_base);
-	uint64_t* ptable = addr_map_func(get_free_frame(), pv_map);
+	uint64_t* ptable = get_free_frame();
+
+	uint64_t* mapped_ptable = addr_map_func(ptable, pv_map);
 
 	pdir_base[pe->dir_index] = get_pd_entry((uint64_t) ptable, p, rw, us);
-	ptable[pe->table_index] = get_ptable_entry(physical_addr, p, rw, us);
+	mapped_ptable[pe->table_index] = get_ptable_entry(physical_addr, p, rw, us);
 }
 
 void create_ptable(const struct paging_entities* pe, uint64_t physical_addr,
