@@ -92,7 +92,7 @@ void do_demand_paging(uint64_t virtual_addr) {
 				}
 
 				// load elf for this range of linear addr
-				if (temp_vma->type >= 0 && temp_vma->type <= 3) {
+				if ((temp_vma->type >= 0 && temp_vma->type < 3) ||(temp_vma->type >= 6 && temp_vma->type <= 8)) {
 					// text or rodata or data
 					cp_from_elf(page_virtual_addr, temp_vma, mem_ptr);
 				} else if (temp_vma->type == 3) {
