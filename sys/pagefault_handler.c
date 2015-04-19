@@ -118,7 +118,7 @@ void do_handle_pagefault(uint64_t error_code) {
 			page_alloc(addr);
 		}
 	} else {
-		printf(" must be illegal access %p p:rw:us %d:%d:%d\n", addr, present, rw, us);
+		printf(" must be illegal access pid %d %p p:rw:us %d:%d:%d\n", currenttask->pid, addr, present, rw, us);
 		seg_fault(addr);
 	}
 

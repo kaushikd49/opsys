@@ -204,8 +204,8 @@ int arr[100];
 int b =10;
 
 int main(int argc, char* argv[], char* envp[]) {
-//	int pid = fork();
-	printf("Hello World!---%d\n", 0);
+//	fork();
+	printf("Hello World!---%d\n");
 //	while(1);
 	return 0;
 }

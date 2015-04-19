@@ -138,14 +138,20 @@ void set_pte_as_read(uint64_t virtual_addr) {
 	}
 }
 
+int is_stack_vma(vma_t* vma) {
+	return vma->type == 4;
+}
+
 // mark pages of parent process as read only
+// DO NOT DO THIS FOR STACK
 void mark_pages_read(task_struct_t * from) {
 	mem_desc_t *fmem_map = from->mem_map;
 	vma_t *vma = fmem_map->vma_list;
 	while (vma != NULL) {
 		for (uint64_t addr = vma->vma_start; addr < vma->vma_end; addr +=
 				4096) {
-			set_pte_as_read(addr);
+			if (!is_stack_vma(vma)) // don't mess up with stack
+				set_pte_as_read(addr);
 		}
 		vma = vma->vma_next;
 	}
@@ -197,8 +203,7 @@ uint64_t* phys_to_virt_map(uint64_t* physaddr, void * pv_map) {
 	//		return res_addr;
 	//	}
 	uint64_t res_addr = (uint64_t) get_virtual_location(0);
-	setup_page_tables_after_cr3_update(res_addr, (uint64_t)physaddr, 1, 1,
-			0);
+	setup_page_tables_after_cr3_update(res_addr, (uint64_t) physaddr, 1, 1, 0);
 	// remember to give back this virtual address
 	return (uint64_t *) res_addr;
 
@@ -220,19 +225,23 @@ void cp_ptables_for(uint64_t page_base, pv_map_t* pv_map_node,
 	// next_entity_virtual_base is a function similar to
 	// next_entity_base in paging.c, except this one returns
 	// a virtual address of the next entity base, as once cr3
-	// is updated, we need virtual addr to acces any location
+	// is updated, we need virtual addr to access any location
 	// remaining functionality is identical to that of setting
 	// page table before cr3 update - climb down others' page tables
 	// and update page table entries.
 
-	// since page tables need to be accesible for the kernel setting
+	// since page tables need to be accessible for the kernel setting
 	// present, write, supervisor
-	setup_page_table_from_outside(page_base, page_phys_addr, 1, 1, 0,
+	// ---- TODO - change to apt permission below ----
+	setup_page_table_from_outside(page_base, page_phys_addr, 1, 1, 1,
 			chld_pml4_base_dbl_ptr, phys_to_virt_map, pv_map_node);
 	// since it is COW, page is read only
-	set_pte_as_read(page_base);
+
+	// ---- TODO - make the page READ ----
+//	set_pte_as_read(page_base);
 }
 
+// except stack page tables
 void cp_page_tables(task_struct_t * from, task_struct_t * to) {
 	mem_desc_t *fmem_map = from->mem_map;
 	vma_t* vma = fmem_map->vma_list;
@@ -245,11 +254,16 @@ void cp_page_tables(task_struct_t * from, task_struct_t * to) {
 	uint64_t * child_pml_virtual_ptr = (uint64_t *) child_pml_virtual;
 	pv_map_t *pv_map_node = NULL; // useless for now
 	while (vma != NULL) {
-		for (uint64_t addr = vma->vma_start; addr < vma->vma_end; addr +=
-				4096) {
-			uint64_t page_base = addr & (~0xfff);
-			cp_ptables_for(page_base, pv_map_node, &child_pml_virtual_ptr);
+		if (!is_stack_vma(vma)) {
+			for (uint64_t addr = vma->vma_start; addr < vma->vma_end; addr +=
+					4096) {
+				uint64_t page_base = addr & (~0xfff);
+				printf("vma_begin %p, vma_end %p, copying %p ", vma->vma_start,
+						vma->vma_end, page_base);
+				cp_ptables_for(page_base, pv_map_node, &child_pml_virtual_ptr);
+			}
 		}
+		vma = vma->vma_next;
 	}
 }
 
@@ -271,6 +285,7 @@ void copy_process(uint64_t pid) {
 
 int do_fork() {
 	uint64_t pid = get_next_pid();
+	printf("forked is %d ", pid);
 	copy_process(pid);
 	return (int) pid;
 }

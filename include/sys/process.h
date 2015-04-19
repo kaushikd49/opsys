@@ -112,4 +112,5 @@ void temp_init_kernel_state(task_struct_t *task, task_struct_t *parent_task, voi
 void temp_init_kernel_stack(uint64_t rsp, task_struct_t *task);
 uint64_t get_next_pid();
 void add_kernel_stack(task_struct_t* task);
+uint64_t create_stack_vma(task_struct_t* currenttask);
 #endif

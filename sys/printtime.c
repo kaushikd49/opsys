@@ -36,7 +36,10 @@ uint64_t temp_print_time(uint64_t stack_top) {
 //		ms_boot++;
 	uint64_t returnval;
 	if (ms_boot < 18) {
-			returnval = temp_preempt(stack_top);
+			{
+				returnval = temp_preempt(stack_top);
+//				printf("preempt over-- ");
+			}
 
 		return returnval;
 	} else {

@@ -251,6 +251,14 @@ void load_from_elf(task_struct_t *task, elf_sec_info_t* text_info,
 	}
 }
 
+uint64_t create_stack_vma(task_struct_t* currenttask) {
+	uint64_t stack_page = 0x7000000;
+	add_vma(stack_page, stack_page + 4096, 4, currenttask->mem_map); // stack vma mapping
+	//todo: test stack demand paging by using apt user program
+	currenttask->state.rsp = (uint64_t) stack_page + 0x500; //todo:change size to 1000
+	return stack_page;
+}
+
 //when processes are ready, I would like to make this a procedure where given the mem_desc I can load the executable into the memstruct
 void load_executable(task_struct_t *currenttask) {
 	char *str = currenttask->executable;
@@ -293,13 +301,10 @@ void load_executable(task_struct_t *currenttask) {
 //	kfree(bss_info);
 
 	currenttask->state.rip = (uint64_t) (temp->e_entry);
-	uint64_t stack_page = 0x7000000;
-	add_vma(stack_page, stack_page + 4096, 4, currenttask->mem_map); // stack vma mapping
-	//todo: test stack demand paging by using apt user program
 
+	uint64_t stack_page = create_stack_vma(currenttask);
 	void *free_frame = (void *) get_free_frames(0);
 	setup_process_page_tables((uint64_t) stack_page, (uint64_t) free_frame);
-	currenttask->state.rsp = (uint64_t) stack_page + 0x500;//todo:change size to 1000
 	//add code to initialize stack
 	//heap
 }
@@ -429,11 +434,11 @@ void kernel_process_init() {
 
 	temp_create_kernel_process(test_main,1);
 	temp_create_user_process("bin/hello", 1);
-	temp_create_user_process("bin/hello2", 1);
-
-	temp_create_user_process("bin/hello", 1);
-	temp_create_kernel_process(test_main,1);
-	temp_create_user_process("bin/hello2", 1);
+//	temp_create_user_process("bin/hello2", 1);
+//
+//	temp_create_user_process("bin/hello", 1);
+//	temp_create_kernel_process(test_main,1);
+//	temp_create_user_process("bin/hello2", 1);
 	__asm__ __volatile("sti");
 	printf("here");
 	while(1){
@@ -555,6 +560,7 @@ uint64_t temp_preempt(uint64_t stack_top){
 //						:"%rsp");
 //	printf("%p", tss.rsp0);
 	update_cr3((uint64_t *)(currenttask->state.cr3));
+	printf("pid is %d ",currenttask->pid);
 	return (currenttask->state.kernel_rsp);
 
 	//	printf("%p ", tss.rsp0);
