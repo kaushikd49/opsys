@@ -147,6 +147,7 @@ elf_sec_info_t *find_ehframe_elf(Elf64_Ehdr *current) {
 		ehframe_info->sh_size = ehframe_header->sh_size;
 		return ehframe_info;
 	}
+	return NULL;
 }
 elf_sec_info_t *find_got_elf(Elf64_Ehdr *current) {
 	Elf64_Shdr *got_header = match_section_elf(current, ".got");
@@ -157,6 +158,7 @@ elf_sec_info_t *find_got_elf(Elf64_Ehdr *current) {
 		got_info->sh_size = got_header->sh_size;
 		return got_info;
 	}
+	return NULL;
 }
 elf_sec_info_t *find_gotplt_elf(Elf64_Ehdr *current) {
 	Elf64_Shdr *gotplt_header = match_section_elf(current, ".got.plt");
@@ -167,6 +169,7 @@ elf_sec_info_t *find_gotplt_elf(Elf64_Ehdr *current) {
 		gotplt_info->sh_size = gotplt_header->sh_size;
 		return gotplt_info;
 	}
+	return NULL;
 }
 //===================================================================
 void copy_from_elf(char* current, char* limit, char* elf_current) {
@@ -230,7 +233,7 @@ void add_vma(uint64_t vma_start, uint64_t vma_end, int type,
 
 void load_from_elf(task_struct_t *task, elf_sec_info_t* text_info,
 		Elf64_Ehdr* temp, elf_sec_info_t* rodata_info,
-		elf_sec_info_t* data_info, elf_sec_info_t* bss_info, elf_sec_info_t *ehframe_info,elf_sec_info_t *got_info,elf_sec_info_t *gotplt_inf) {
+		elf_sec_info_t* data_info, elf_sec_info_t* bss_info, elf_sec_info_t *ehframe_info,elf_sec_info_t *got_info,elf_sec_info_t *gotplt_info) {
 	uint64_t section_offset;
 
 	mem_desc_t * mem_desc_ptr = kmalloc(sizeof(struct mem_desc));
@@ -276,10 +279,11 @@ void load_from_elf(task_struct_t *task, elf_sec_info_t* text_info,
 		uint64_t vma_start = (uint64_t) bss_info->sh_addr;
 		uint64_t vma_end = vma_start + (uint64_t) data_info->sh_size;
 		add_vma(vma_start, vma_end, 3, mem_desc_ptr);
-		uint64_t heap_start = ((((uint64_t) )
-				& (~(PAGE_SIZE - 1))) + (PAGE_SIZE));
-		mem_desc_ptr->brk = heap_start;
-		add_vma(heap_start,heap_start, 5, mem_desc_ptr);
+
+	uint64_t heap_start = ((((uint64_t) vma_end)
+							& (~(PAGE_SIZE - 1))) + (PAGE_SIZE));
+	mem_desc_ptr->brk = heap_start;
+	add_vma(heap_start,heap_start, 5, mem_desc_ptr);
 		//		printf("bss:  %x  %x  %x\n",bss_info->sh_addr, section_offset, bss_info->sh_size );
 		//		elf_zerod_copy((char*) (bss_info->sh_addr), data_info->sh_size);
 	}

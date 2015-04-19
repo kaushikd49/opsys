@@ -5,9 +5,6 @@ display/x $rdx
 display/x $rdi
 display/x $rsi
 display/x $rbp
-break manage_memory 
-break isr_timer
-break isr_keyboard
 target remote localhost:9998 
 
 

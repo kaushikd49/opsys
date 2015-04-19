@@ -5,4 +5,5 @@
 #include <sys/defs.h>
 
 int write_system_call(int fd, const void *buff, size_t count);
+uint64_t brk_system_call(uint64_t value);
 #endif

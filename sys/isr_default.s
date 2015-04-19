@@ -63,9 +63,10 @@ isr_default:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -93,9 +94,10 @@ trap_default:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 trap_one:
@@ -122,9 +124,10 @@ trap_one:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 trap_two:
@@ -151,9 +154,10 @@ trap_two:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 trap_three:
@@ -180,9 +184,10 @@ trap_three:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 trap_four:
@@ -209,9 +214,10 @@ trap_four:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 trap_five:
@@ -238,9 +244,10 @@ trap_five:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -268,9 +275,10 @@ trap_six:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -298,9 +306,10 @@ trap_seven:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -329,9 +338,10 @@ trap_eight:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 trap_nine:
@@ -358,9 +368,10 @@ trap_nine:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 trap_ten:
@@ -387,9 +398,10 @@ trap_ten:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 trap_eleven:
@@ -416,9 +428,10 @@ trap_eleven:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 trap_twelve:
@@ -445,9 +458,10 @@ trap_twelve:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -475,9 +489,9 @@ trap_thirteen:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -512,10 +526,11 @@ trap_fourteen:
 	// errorcodes before call to handler, else
 	// GeneralProtectionFault happens
 	xchg (%rsp), %rax
-	popq %rax
+
 
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -543,9 +558,10 @@ trap_fifteen:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -573,9 +589,10 @@ trap_sixteen:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -603,9 +620,10 @@ trap_seventeen:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 trap_eighteen:
@@ -632,9 +650,10 @@ trap_eighteen:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 trap_nineteen:
@@ -661,9 +680,10 @@ trap_nineteen:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -691,9 +711,10 @@ trap_twenty:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 trap_twentyone:
@@ -720,9 +741,10 @@ trap_twentyone:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -750,9 +772,10 @@ trap_twentytwo:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -780,9 +803,10 @@ trap_twentythree:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -810,9 +834,10 @@ trap_twentyfour:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -840,9 +865,10 @@ trap_twentyfive:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -870,9 +896,10 @@ trap_twentysix:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -900,9 +927,10 @@ trap_twentyseven:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -930,9 +958,10 @@ trap_twentyeight:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -960,9 +989,10 @@ trap_twentynine:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -990,9 +1020,10 @@ trap_thirty:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -1020,9 +1051,10 @@ trap_thirtyone:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
+	popq %rax
 	sti
 	iretq
 
@@ -1086,9 +1118,10 @@ isr_timer:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb %al, $0x20
+	popq %rax
 	sti
 	iretq
 
@@ -1122,9 +1155,10 @@ isr_keyboard:
 	popq %rdx
 	popq %rcx
 	popq %rbx
-	popq %rax
+
 	movb $0x20, %al
 	outb %al, $0x20
+	popq %rax
 	sti
 	iretq
 
@@ -1193,9 +1227,11 @@ isr_syscall:
 	popq %rax#actually rbx
 	xchgq %rbx, %rax
 	add $8, %rsp
+	pushq %rax
 	#popq %rax
 	movb $0x20, %al
 	outb %al, $0x20
+	popq %rax
 	sti
 	iretq
 #init steps mentioned in http://wiki.osdev.org/%228042%22_PS/2_Controller#Translation
