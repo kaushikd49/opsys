@@ -215,9 +215,14 @@ int main(int argc, char* argv[], char* envp[]) {
 	printf("write:::%s", buff);
 	read(fd, buff, 7);
 	printf("write2:::%s", buff);
-//	int *a = (int *)malloc(5*sizeof(int));
-//	a[0] = 2;
-//	printf("answer: %d", a[0]);
+	int *a = (int *)malloc(5*sizeof(int));
+	a[0] = 2;
+	a[1] = 4;
+	a[2] = 5;
+		a[3] = 6;
+		a[4] = 7;
+	for(int i = 0; i < 5; i++)
+		printf("%d  ",a[i]);
 //	while(1);
 	return 0;
 }

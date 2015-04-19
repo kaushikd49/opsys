@@ -275,9 +275,9 @@ void load_from_elf(task_struct_t *task, elf_sec_info_t* text_info,
 		//				data_info->sh_size);
 	}
 	if (bss_info != NULL) {
-		section_offset = (uint64_t) temp + (uint64_t) data_info->sh_offset;
+		section_offset = (uint64_t) temp + (uint64_t) bss_info->sh_offset;
 		uint64_t vma_start = (uint64_t) bss_info->sh_addr;
-		uint64_t vma_end = vma_start + (uint64_t) data_info->sh_size;
+		uint64_t vma_end = vma_start + (uint64_t) bss_info->sh_size;
 		add_vma(vma_start, vma_end, 3, mem_desc_ptr);
 
 	uint64_t heap_start = ((((uint64_t) vma_end)
@@ -512,15 +512,15 @@ void kernel_process_init() {
 	stack_ring_three(currenttask);
 	tss.rsp0 = (uint64_t) (currenttask->state.kernel_rsp);
 
-	temp_create_kernel_process(test_main,1);
+//	temp_create_kernel_process(test_main,1);
 	temp_create_user_process("bin/hello", 1);
-	temp_create_user_process("bin/hello2", 1);
+//	temp_create_user_process("bin/hello2", 1);
 //
 //	temp_create_user_process("bin/hello", 1);
-	temp_create_kernel_process(test_main,1);
-	temp_create_kernel_process(test_main,1);
-	temp_create_kernel_process(test_main,1);
-	temp_create_user_process("bin/hello", 1);
+//	temp_create_kernel_process(test_main,1);
+//	temp_create_kernel_process(test_main,1);
+//	temp_create_kernel_process(test_main,1);
+//	temp_create_user_process("bin/hello", 1);
 	__asm__ __volatile("sti");
 	printf("here");
 	while(1){
