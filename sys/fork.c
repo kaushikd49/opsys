@@ -34,7 +34,7 @@ void cp_stack2(task_struct_t * from, task_struct_t * to, uint64_t * stack_virt,
 }
 
 void cp_stack(task_struct_t * from, task_struct_t * to, uint64_t * stack_virt,
-		uint64_t * stack_phys) {
+		uint64_t * stack_phys, uint64_t stack_top) {
 	uint64_t phys = (uint64_t) get_free_frames(0);
 	uint64_t virtual_addr = *stack_virt;
 
@@ -57,7 +57,7 @@ void cp_stack(task_struct_t * from, task_struct_t * to, uint64_t * stack_virt,
 //		frmpg_ptr++;
 //	}
 	regs_syscall_t *virtual = (regs_syscall_t *) virtual_addr;
-	regs_syscall_t *from_virtual = (regs_syscall_t *) from->state.kernel_rsp;
+	regs_syscall_t *from_virtual = (regs_syscall_t *)(stack_top);
 	virtual->gs = from_virtual->gs;
 	virtual->fs = from_virtual->fs;
 	virtual->es = from_virtual->es;
@@ -325,7 +325,7 @@ void cp_page_tables(task_struct_t * from, task_struct_t * to,
 
 }
 
-void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to) {
+void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to, uint64_t stack_top) {
 	to->pid = pid;
 	to->ppid = from->pid;
 	cp_executable(from, to);
@@ -336,7 +336,8 @@ void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to) {
 
 	uint64_t kernel_stack_virt = 0;
 	uint64_t kernel_stack_phys = 0;
-	cp_stack(from, to, &kernel_stack_virt, &kernel_stack_phys);
+	from->state.kernel_rsp = stack_top;
+	cp_stack(from, to, &kernel_stack_virt, &kernel_stack_phys, stack_top);
 	to->state.kernel_rsp = kernel_stack_virt;
 
 	uint64_t stack_virt = 0;
@@ -348,15 +349,15 @@ void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to) {
 			to->state.rsp, stack_phys);
 }
 
-void copy_process(uint64_t pid) {
+void copy_process(uint64_t pid, uint64_t stack_top) {
 	task_struct_t *task = kmalloc(sizeof(task_struct_t));
-	copy_tsk(pid, currenttask, task);
+	copy_tsk(pid, currenttask, task, stack_top);
 }
 
-int do_fork() {
+int do_fork(uint64_t stack_top) {
 	uint64_t pid = get_next_pid();
 	printf("forked is %d ", pid);
-	copy_process(pid);
+	copy_process(pid, stack_top);
 	return (int) pid;
 }
 

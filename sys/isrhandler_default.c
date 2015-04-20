@@ -35,7 +35,8 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 		return write_system_call((int) regs.rdi, (const void *) regs.rsi,
 				(size_t) regs.rdx);
 	} else if (regs.rax == 57) {
-		return fork_sys_call();
+		uint64_t stack_top = (uint64_t) (&(regs.gs));
+		return fork_sys_call(stack_top);
 	} else if(regs.rax == SYS_write){
 		return write_system_call((int)regs.rdi, (const void *)regs.rsi, (size_t)regs.rdx);
 	}
