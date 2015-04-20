@@ -205,39 +205,39 @@ int arr[100];
 int b =10;
 
 int main(int argc, char* argv[], char* envp[]) {
-//	fork();
+	fork();
 	printf("Hello World!\n");
-	int fd = open("test/test.txt", 0);
-	char buff[10];
-	for(int64_t i = 0; i<10; i++){
-		buff[i] = 0;
-	}
-	read(fd, buff, 5);
-	printf("write:::%s", buff);
-	read(fd, buff, 7);
-	printf("write2:::%s", buff);
-	int *a = (int *)malloc(5*sizeof(int));
-	a[0] = 2;
-	a[1] = 4;
-	a[2] = 5;
-		a[3] = 6;
-		a[4] = 7;
-	for(int i = 0; i < 5; i++)
-		printf("%d  ",a[i]);
-
-	void *dir = opendir("bin/");
-	struct dirent *temp =NULL;
-	do{
-	temp = readdir(dir);
-	if(temp!=NULL)
-		printf("temp:%s\n", temp->d_name);
-	}while(temp!=NULL);
-//	temp = readdir(dir);
-//	if(temp !=NULL)
-//		printf("temp:%s", temp->d_name);
-//	else{
-//		printf("\n this is nill");
+//	int fd = open("test/test.txt", 0);
+//	char buff[10];
+//	for(int64_t i = 0; i<10; i++){
+//		buff[i] = 0;
 //	}
-	//	while(1);
+//	read(fd, buff, 5);
+//	printf("write:::%s", buff);
+//	read(fd, buff, 7);
+//	printf("write2:::%s", buff);
+//	int *a = (int *)malloc(5*sizeof(int));
+//	a[0] = 2;
+//	a[1] = 4;
+//	a[2] = 5;
+//		a[3] = 6;
+//		a[4] = 7;
+//	for(int i = 0; i < 5; i++)
+//		printf("%d  ",a[i]);
+//
+//	void *dir = opendir("bin/");
+//	struct dirent *temp =NULL;
+//	do{
+//	temp = readdir(dir);
+//	if(temp!=NULL)
+//		printf("temp:%s\n", temp->d_name);
+//	}while(temp!=NULL);
+////	temp = readdir(dir);
+////	if(temp !=NULL)
+////		printf("temp:%s", temp->d_name);
+////	else{
+////		printf("\n this is nill");
+////	}
+//	//	while(1);
 	return 0;
 }

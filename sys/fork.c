@@ -4,7 +4,7 @@
 #include <sys/process.h>
 #include <sys/scheduling.h>
 #include <sys/freelist.h>
-
+#include <sys/isr_stuff.h>
 extern task_struct_t *currenttask;
 
 void cp_prev_next(task_struct_t* from, task_struct_t* to) {
@@ -21,6 +21,18 @@ void cp_executable(task_struct_t * from, task_struct_t * to) {
 	}
 }
 
+void cp_stack2(task_struct_t * from, task_struct_t * to, uint64_t * stack_virt,
+		uint64_t * stack_phys) {
+	uint64_t phys = (uint64_t) get_free_frames(0);
+	uint64_t virtual_addr = *stack_virt;
+
+	virtual_addr = (uint64_t) get_virtual_location(0);
+
+	setup_kernel_page_tables(virtual_addr, phys);
+	*stack_phys = phys;
+	*stack_virt = virtual_addr;
+}
+
 void cp_stack(task_struct_t * from, task_struct_t * to, uint64_t * stack_virt,
 		uint64_t * stack_phys) {
 	uint64_t phys = (uint64_t) get_free_frames(0);
@@ -35,15 +47,42 @@ void cp_stack(task_struct_t * from, task_struct_t * to, uint64_t * stack_virt,
 	// boundary of stack (as stack grows downwards).
 	// todo: We are ASSUMING kernel stack does not grow >= a page
 
-	uint64_t offset = from->state.kernel_rsp & 0xfff; // last 3 nibbles
-	char * frmpg_ptr = (char *) from->state.kernel_rsp;
-	char * topg_ptr = ((char *) virtual_addr) + offset;
-	while ((((uint64_t) topg_ptr) & 0xfff) != 0) {
-		*topg_ptr = *frmpg_ptr;
-		topg_ptr++;
-		frmpg_ptr++;
-	}
-
+//	uint64_t offset = from->state.kernel_rsp & 0xfff; // last 3 nibbles
+//	char * frmpg_ptr = (char *) from->state.kernel_rsp;
+//	char * topg_ptr = ((char *) virtual_addr) + offset;
+//	int num_bytes = sizeof(regs_syscall_t);
+//	for (int i = 0; i < num_bytes; i++) {
+//		*topg_ptr = *frmpg_ptr;
+//		topg_ptr++;
+//		frmpg_ptr++;
+//	}
+	regs_syscall_t *virtual = (regs_syscall_t *) virtual_addr;
+	regs_syscall_t *from_virtual = (regs_syscall_t *) from->state.kernel_rsp;
+	virtual->gs = from_virtual->gs;
+	virtual->fs = from_virtual->fs;
+	virtual->es = from_virtual->es;
+	virtual->ds = from_virtual->ds;
+	virtual->r15 = from_virtual->r15;
+	virtual->r14 = from_virtual->r14;
+	virtual->r13 = from_virtual->r13;
+	virtual->r12 = from_virtual->r12;
+	virtual->r11 = from_virtual->r11;
+	virtual->r10 = from_virtual->r10;
+	virtual->r9 = from_virtual->r9;
+	virtual->r8 = from_virtual->r8;
+	virtual->rbp = from_virtual->rbp;
+	virtual->rsi = from_virtual->rsi;
+	virtual->rdi = from_virtual->rdi;
+	virtual->rdx = from_virtual->rdx;
+	virtual->rcx = from_virtual->rcx;
+	virtual->rbx = from_virtual->rbx;
+	virtual->rax = from_virtual->rax;
+	virtual->rip = from_virtual->rip;
+	virtual->cs = from_virtual->cs;
+	virtual->flag = from_virtual->flag;
+	virtual->rsp = from_virtual->rsp;
+	virtual->ss = from_virtual->ss;
+	to->state.kernel_rsp = (uint64_t) virtual;
 	*stack_phys = phys;
 	*stack_virt = virtual_addr;
 }
@@ -54,7 +93,6 @@ void cp_pstate(task_struct_t * from, task_struct_t * to) {
 	to->state.rsp = fstate.rsp;
 	to->state.rip = fstate.rip;
 	//general registers
-
 
 	//not copying cr3
 
@@ -303,11 +341,11 @@ void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to) {
 
 	uint64_t stack_virt = 0;
 	uint64_t stack_phys = 0;
-	cp_stack(from, to, &stack_virt, &stack_phys);
+	cp_stack2(from, to, &stack_virt, &stack_phys);
 	to->state.rsp = from->state.rsp;
 
-	cp_page_tables(from, to, to->state.kernel_rsp, kernel_stack_phys, to->state.rsp,
-			stack_phys);
+	cp_page_tables(from, to, to->state.kernel_rsp, kernel_stack_phys,
+			to->state.rsp, stack_phys);
 }
 
 void copy_process(uint64_t pid) {
