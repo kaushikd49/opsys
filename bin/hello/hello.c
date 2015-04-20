@@ -223,6 +223,20 @@ int main(int argc, char* argv[], char* envp[]) {
 		a[4] = 7;
 	for(int i = 0; i < 5; i++)
 		printf("%d  ",a[i]);
-//	while(1);
+
+	void *dir = opendir("bin/");
+	struct dirent *temp =NULL;
+	do{
+	temp = readdir(dir);
+	if(temp!=NULL)
+		printf("temp:%s\n", temp->d_name);
+	}while(temp!=NULL);
+//	temp = readdir(dir);
+//	if(temp !=NULL)
+//		printf("temp:%s", temp->d_name);
+//	else{
+//		printf("\n this is nill");
+//	}
+	//	while(1);
 	return 0;
 }

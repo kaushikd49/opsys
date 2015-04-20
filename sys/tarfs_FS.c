@@ -5,23 +5,7 @@
 #include<sys/tarfs.h>
 #include<sys/tarfs_FS.h>
 #include<sys/process.h>
-#define MAX_FILES_SYSTEM 50
-#define NAME_MAX 255
-#define MAX_DIR 200
-typedef struct{
-	int fd;
-	struct posix_header_ustar *posix_header;
-	char *current_pointer;
-	uint64_t flags;
-	uint64_t size;
-	int used;
-}file_desc_t;
-struct dirent {
-	long d_ino;
-	uint64_t d_off;
-	unsigned short d_reclen;
-	char d_name[NAME_MAX + 1];
-};
+
 file_desc_t *fd_list = NULL;
 uint64_t *find_file_tarfs(char *file_name){
 	struct posix_header_ustar *current =
@@ -128,9 +112,10 @@ void find_and_populate_dirent_array(struct dirent *dirent_array, uint64_t size, 
 					dirent_array[dirent_offset].d_ino = 99;
 					strcpy(dirent_array[dirent_offset].d_name, current->name);
 					dirent_array[dirent_offset].d_off = 99;
-					if(dirent_offset > 0)
-						dirent_array[dirent_offset-1].d_reclen = sizeof(struct dirent);
-					dirent_array[dirent_offset].d_reclen = 0;
+//					if(dirent_offset > 0)
+						dirent_array[dirent_offset].d_reclen = sizeof(struct dirent);
+//					dirent_array[dirent_offset].d_reclen = 0;
+					dirent_offset++;
 				}
 			}
 	//			if(i %5 == 0)
@@ -143,7 +128,10 @@ void find_and_populate_dirent_array(struct dirent *dirent_array, uint64_t size, 
 			//		printf("header : %x", header_next);
 			current = (struct posix_header_ustar *) (header_next);
 			i++;
+
 		}
+		dirent_array[dirent_offset].d_reclen = 0;
+	printf("dirent:%d", dirent_offset);
 }
 void dents_tarfs(int fd, struct dirent *dirent_array, uint64_t size){
 	if((fd_list[fd].flags & O_DIRECTORY) == 0){
