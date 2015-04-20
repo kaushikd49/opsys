@@ -7,6 +7,8 @@
 #include <sys/pagefault_handler.h>
 #include <sys/process.h>
 #include<sys/system_calls.h>
+#include<sys/syscall.h>
+#include<sys/tarfs_FS.h>
 typedef struct {
 	uint64_t r11;
 	uint64_t r10;
@@ -48,12 +50,24 @@ uint64_t handle_exit(regs_syscall_t regs) {
 	uint64_t stack_top = (uint64_t) (&(regs.gs));
 	return temp_preempt_exit(stack_top);
 }
+
 uint64_t handle_syscall(regs_syscall_t regs) {
 	if (regs.rax == 1) {
 		return write_system_call((int) regs.rdi, (const void *) regs.rsi,
 				(size_t) regs.rdx);
 	} else if (regs.rax == 57) {
 		return fork_sys_call();
+	} else if(regs.rax == SYS_write){
+		return write_system_call((int)regs.rdi, (const void *)regs.rsi, (size_t)regs.rdx);
+	}
+	else if(regs.rax == SYS_open){
+		return open_tarfs((char *)regs.rdi, (int)regs.rsi);
+	}
+	else if(regs.rax == SYS_read){
+		return read_tarfs((int)regs.rdi, (void *)(regs.rsi), (size_t)regs.rdx);
+	}
+	else if(regs.rax == SYS_brk){
+		return brk_system_call((uint64_t)regs.rdi);
 	}
 	return 0;
 }

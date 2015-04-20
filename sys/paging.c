@@ -485,7 +485,7 @@ void map_page_tables_adress(uint64_t **pml_base_dbl_ptr, int p, int rw, int us) 
 	uint64_t *pml_base_ptr = *pml_base_dbl_ptr;
 	uint64_t * temp = pml_base_ptr + 510;
 	*temp = get_pml4_entry((uint64_t) pml_base_ptr, p, rw, us);
-	printf("*pml_base_ptr is %p\n", *pml_base_ptr);
+//	printf("*pml_base_ptr is %p\n", *pml_base_ptr);
 }
 
 void map_other_addresses(uint64_t **pml_base_dbl_ptr, int p, int rw, int us,

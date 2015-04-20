@@ -30,14 +30,19 @@ void get_elf_ptr(char** elf_dptr, mem_desc_t* mem_ptr, int type) {
 		*elf_dptr = mem_ptr->rodata_elf_addr;
 	else if (type == 2)
 		*elf_dptr = mem_ptr->data_elf_addr;
+	else if (type == 6)
+//		ehframe_elf_addr;
+//			char *got_elf_addr;
+//			char *gotplt_elf_addr;
+		*elf_dptr = mem_ptr->ehframe_elf_addr;
+	else if (type == 7)
+		*elf_dptr = mem_ptr->got_elf_addr;
+	else if(type == 8)
+		*elf_dptr = mem_ptr->gotplt_elf_addr;
 }
 
 uint64_t virtual_page_base(uint64_t virtual_addr) {
 	return virtual_addr & (~0xfff);
-}
-
-void seg_fault(uint64_t addr) {
-	printf("DO PAGE FAULT\n");
 }
 
 void copy_byte_from_apt_elf(char *vaddr, vma_t* temp_vma, mem_desc_t * mem_ptr) {
@@ -45,6 +50,10 @@ void copy_byte_from_apt_elf(char *vaddr, vma_t* temp_vma, mem_desc_t * mem_ptr) 
 	get_elf_ptr(&elf_sec_ptr, mem_ptr, temp_vma->type);
 	char * elf_ptr = elf_sec_ptr + (vaddr - (char *) temp_vma->vma_start);
 	*vaddr = *elf_ptr;
+}
+
+void seg_fault(uint64_t addr) {
+	printf("DO PAGE FAULT\n");
 }
 
 int is_addr_valid(uint64_t virtual_addr, mem_desc_t* mem_ptr) {
@@ -78,13 +87,15 @@ void do_demand_paging(uint64_t virtual_addr) {
 			for (vma_t *temp_vma = mem_ptr->vma_list; temp_vma != NULL;
 					temp_vma = temp_vma->vma_next) {
 				if (temp >= temp_vma->vma_start && temp < temp_vma->vma_end) {
-					if (temp_vma->type >= 0 && temp_vma->type < 3) {
+					if ((temp_vma->type >= 0 && temp_vma->type < 3)||(temp_vma->type >= 6 && temp_vma->type < 8)) {
 						// text or rodata or data
 						copy_byte_from_apt_elf((char *) temp, temp_vma,
 								mem_ptr);
 					} else if (temp_vma->type == 3) {
 						// bss section
 						*((char *) temp) = 0;
+					} else if (temp_vma->type == 5) {
+						*((char *)temp) = 0;
 					}
 				}
 			}
@@ -122,5 +133,4 @@ void do_handle_pagefault(uint64_t error_code) {
 				currenttask->pid, addr, present, rw, us);
 		seg_fault(addr);
 	}
-
 }

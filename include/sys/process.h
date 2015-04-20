@@ -16,7 +16,9 @@ typedef struct mem_desc {
 	char *text_elf_addr;
 	char *rodata_elf_addr;
 	char *data_elf_addr;
-
+	char *ehframe_elf_addr;
+	char *got_elf_addr;
+	char *gotplt_elf_addr;
 	uint64_t start_code;
 	uint64_t end_code;
 	uint64_t start_data;
@@ -40,7 +42,7 @@ typedef struct vma {
 	uint64_t vma_start;
 	uint64_t vma_end; //no overlap in the areas.
 	int vm_perm; //0: read, 1: write
-	int type; // 0: text,1: rodata, 2: data, 3: bss, 4: stack
+	int type; // 0: text,1: rodata, 2: data, 3: bss, 4: stack, 5:anon
 	struct vma *vma_next;
 
 } vma_t;
@@ -111,6 +113,7 @@ void temp_create_kernel_process(void (*main)(), uint64_t ppid);
 void temp_init_kernel_state(task_struct_t *task, task_struct_t *parent_task, void (*main)());
 void temp_init_kernel_stack(uint64_t rsp, task_struct_t *task);
 uint64_t get_next_pid();
-void add_kernel_stack(task_struct_t* task);
-uint64_t create_stack_vma(task_struct_t* currenttask);
+uint64_t convert_ocatalstr_todecimal(char octal[10]);
+int strcmp(char *string1, char *string2);
+char *strcpy(char *dst, char *src);
 #endif

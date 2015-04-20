@@ -12,6 +12,7 @@
 #include <sys/system_calls.h>
 #include <sys/freelist.h>
 #include<sys/pagingglobals.h>
+#include<sys/tarfs_FS.h>
 static uint64_t current_syscall =0;
 static uint64_t rsp_user_syscall;
 static uint64_t rip_syscall;
@@ -422,12 +423,17 @@ add_custom_interrupt();
 init_keyboard_map();
 keyboard_init();
 __asm__ __volatile("cli");
-test_free_pages();
-//find_file_tarfs();
-char *buff = "this is a write \nsystem call";
-int ret = write_system_call(1, buff, 1000);
-
-printf("%d\n", ret);
+//test_free_pages();
+init_tarfs();
+//find_file_tarfs("bin/hello");
+//int fd = open_tarfs("test/test.txt", O_RDONLY);
+//printf("\nfd:%d ", fd);
+//char *buffer = kmalloc(100);//change this to malloc when we implement brk
+//read_tarfs(fd, buffer, 100);
+//printf("fff%s", buffer);
+//char *buff = "this is a write \nsystem call";
+//int ret = write_system_call(1, buff, 1000);
+//printf("%d\n", ret);
 //	process_stuff(); // <<<<<<------------- here it faults, but not before init_caches()
 //	stack_ring_three();
 //	switch_user_mode();

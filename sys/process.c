@@ -3,15 +3,15 @@
 #include <sys/pagingglobals.h>
 #include <sys/freelist.h>
 #include <sys/paging.h>
-#include<sys/kmalloc.h>
-#include<sys/tarfs.h>
-#include<sys/process.h>
+#include <sys/kmalloc.h>
+#include <sys/tarfs.h>
+#include <sys/process.h>
 #include <sys/gdt.h>
 #include <sys/tarfs.h>
 #define VM_READ 1<<0
 #define VM_WRITE 1<<1
 #define VM_EXEX 1<<2
-
+uint64_t limit =1<<20;
 //static task_struct_t *currenttask; //todo: initialize
 static task_struct_t *lasttask;
 static task_struct_t taskone;
@@ -137,7 +137,41 @@ elf_sec_info_t *find_bss_elf(Elf64_Ehdr *current) {
 	}
 	return NULL;
 }
-
+//================================================================
+elf_sec_info_t *find_ehframe_elf(Elf64_Ehdr *current) {
+	Elf64_Shdr *ehframe_header = match_section_elf(current, ".eh_frame");
+	if (ehframe_header != NULL) {
+		elf_sec_info_t *ehframe_info = kmalloc(sizeof(elf_sec_info_t));
+		ehframe_info->sh_addr = ehframe_header->sh_addr;
+		ehframe_info->sh_offset = ehframe_header->sh_offset;
+		ehframe_info->sh_size = ehframe_header->sh_size;
+		return ehframe_info;
+	}
+	return NULL;
+}
+elf_sec_info_t *find_got_elf(Elf64_Ehdr *current) {
+	Elf64_Shdr *got_header = match_section_elf(current, ".got");
+	if (got_header != NULL) {
+		elf_sec_info_t *got_info = kmalloc(sizeof(elf_sec_info_t));
+		got_info->sh_addr = got_header->sh_addr;
+		got_info->sh_offset = got_header->sh_offset;
+		got_info->sh_size = got_header->sh_size;
+		return got_info;
+	}
+	return NULL;
+}
+elf_sec_info_t *find_gotplt_elf(Elf64_Ehdr *current) {
+	Elf64_Shdr *gotplt_header = match_section_elf(current, ".got.plt");
+	if (gotplt_header != NULL) {
+		elf_sec_info_t *gotplt_info = kmalloc(sizeof(elf_sec_info_t));
+		gotplt_info->sh_addr = gotplt_header->sh_addr;
+		gotplt_info->sh_offset = gotplt_header->sh_offset;
+		gotplt_info->sh_size = gotplt_header->sh_size;
+		return gotplt_info;
+	}
+	return NULL;
+}
+//===================================================================
 void copy_from_elf(char* current, char* limit, char* elf_current) {
 	while (current < limit) {
 		if (!(is_linear_addr_mapped((uint64_t) current))) {
@@ -199,7 +233,7 @@ void add_vma(uint64_t vma_start, uint64_t vma_end, int type,
 
 void load_from_elf(task_struct_t *task, elf_sec_info_t* text_info,
 		Elf64_Ehdr* temp, elf_sec_info_t* rodata_info,
-		elf_sec_info_t* data_info, elf_sec_info_t* bss_info) {
+		elf_sec_info_t* data_info, elf_sec_info_t* bss_info, elf_sec_info_t *ehframe_info,elf_sec_info_t *got_info,elf_sec_info_t *gotplt_info) {
 	uint64_t section_offset;
 
 	mem_desc_t * mem_desc_ptr = kmalloc(sizeof(struct mem_desc));
@@ -237,18 +271,58 @@ void load_from_elf(task_struct_t *task, elf_sec_info_t* text_info,
 		add_vma(vma_start, vma_end, 2, mem_desc_ptr);
 
 		//		printf("data:  %x  %x  %x\n",data_info->sh_addr, section_offset, data_info->sh_size );
-//		elf_mem_copy((char*) (data_info->sh_addr), (char*) section_offset,
-//				data_info->sh_size);
+		//		elf_mem_copy((char*) (data_info->sh_addr), (char*) section_offset,
+		//				data_info->sh_size);
 	}
 	if (bss_info != NULL) {
-		section_offset = (uint64_t) temp + (uint64_t) data_info->sh_offset;
+		section_offset = (uint64_t) temp + (uint64_t) bss_info->sh_offset;
 		uint64_t vma_start = (uint64_t) bss_info->sh_addr;
-		uint64_t vma_end = vma_start + (uint64_t) data_info->sh_size;
+		uint64_t vma_end = vma_start + (uint64_t) bss_info->sh_size;
 		add_vma(vma_start, vma_end, 3, mem_desc_ptr);
 
+	uint64_t heap_start = ((((uint64_t) vma_end)
+							& (~(PAGE_SIZE - 1))) + (PAGE_SIZE));
+	mem_desc_ptr->brk = heap_start;
+	add_vma(heap_start,heap_start, 5, mem_desc_ptr);
 		//		printf("bss:  %x  %x  %x\n",bss_info->sh_addr, section_offset, bss_info->sh_size );
-//		elf_zerod_copy((char*) (bss_info->sh_addr), data_info->sh_size);
+		//		elf_zerod_copy((char*) (bss_info->sh_addr), data_info->sh_size);
 	}
+	//================================================================
+	if (ehframe_info != NULL) {
+		section_offset = (uint64_t) temp + (uint64_t) ehframe_info->sh_offset;
+		mem_desc_ptr->ehframe_elf_addr = (char*) section_offset;
+		uint64_t vma_start = (uint64_t) ehframe_info->sh_addr;
+		uint64_t vma_end = vma_start + (uint64_t) ehframe_info->sh_size;
+		add_vma(vma_start, vma_end, 6, mem_desc_ptr);
+
+		//		printf("data:  %x  %x  %x\n",ehframe_info->sh_addr, section_offset, ehframe_info->sh_size );
+		//		elf_mem_copy((char*) (ehframe_info->sh_addr), (char*) section_offset,
+		//				ehframe_info->sh_size);
+	}
+	if (got_info != NULL) {
+		section_offset = (uint64_t) temp + (uint64_t) got_info->sh_offset;
+		mem_desc_ptr->got_elf_addr = (char*) section_offset;
+		uint64_t vma_start = (uint64_t) got_info->sh_addr;
+		uint64_t vma_end = vma_start + (uint64_t) got_info->sh_size;
+		add_vma(vma_start, vma_end, 7, mem_desc_ptr);
+
+		//		printf("data:  %x  %x  %x\n",got_info->sh_addr, section_offset, got_info->sh_size );
+		//		elf_mem_copy((char*) (got_info->sh_addr), (char*) section_offset,
+		//				got_info->sh_size);
+	}
+	if (gotplt_info != NULL) {
+		section_offset = (uint64_t) temp + (uint64_t) gotplt_info->sh_offset;
+		mem_desc_ptr->gotplt_elf_addr = (char*) section_offset;
+		uint64_t vma_start = (uint64_t) gotplt_info->sh_addr;
+		uint64_t vma_end = vma_start + (uint64_t) gotplt_info->sh_size;
+		add_vma(vma_start, vma_end, 8, mem_desc_ptr);
+
+		//		printf("data:  %x  %x  %x\n",gotplt_info->sh_addr, section_offset, gotplt_info->sh_size );
+		//		elf_mem_copy((char*) (gotplt_info->sh_addr), (char*) section_offset,
+		//				gotplt_info->sh_size);
+	}
+
+	//===================================================================
 }
 
 uint64_t create_stack_vma(task_struct_t* currenttask) {
@@ -269,6 +343,11 @@ void load_executable(task_struct_t *currenttask) {
 	elf_sec_info_t *rodata_info = NULL;
 	elf_sec_info_t *data_info = NULL;
 	elf_sec_info_t *bss_info = NULL;
+	//===================================
+	elf_sec_info_t *ehframe_info = NULL;
+	elf_sec_info_t *got_info = NULL;
+	elf_sec_info_t *gotplt_info = NULL;
+	//====================================
 	Elf64_Ehdr *temp = NULL;
 
 	while ((uint64_t) current < (uint64_t) (&_binary_tarfs_end)) {
@@ -281,6 +360,11 @@ void load_executable(task_struct_t *currenttask) {
 			rodata_info = find_rodata_elf(temp);
 			data_info = find_data_elf(temp);
 			bss_info = find_bss_elf(temp);
+			//================================
+			ehframe_info = find_ehframe_elf(temp);
+			got_info = find_got_elf(temp);
+			gotplt_info = find_gotplt_elf(temp);
+			//================================
 			break;
 		}
 		//	printf("elf header: %x\n",*(current + (uint64_t)sizeof(struct posix_header_ustar)));
@@ -293,7 +377,7 @@ void load_executable(task_struct_t *currenttask) {
 
 	}
 	load_from_elf(currenttask, text_info, temp, rodata_info, data_info,
-			bss_info);
+			bss_info,ehframe_info,got_info,gotplt_info);
 
 //	kfree(text_info);
 //	kfree(rodata_info);
@@ -401,7 +485,8 @@ inline void quit_kernel_thread(){
 void test_main(){
 	uint64_t i = 1;
 	printf("inside kernel thread %d", i);
-	while(i < 1000000000){
+	limit = limit << 2;
+	while(i < limit){
 //		if(i%100000000 == 0){
 //			printf("%d ", i);
 //			i++;
@@ -432,13 +517,15 @@ void kernel_process_init() {
 	stack_ring_three(currenttask);
 	tss.rsp0 = (uint64_t) (currenttask->state.kernel_rsp);
 
-	temp_create_kernel_process(test_main,1);
+//	temp_create_kernel_process(test_main,1);
 	temp_create_user_process("bin/hello", 1);
 //	temp_create_user_process("bin/hello2", 1);
 //
 //	temp_create_user_process("bin/hello", 1);
 //	temp_create_kernel_process(test_main,1);
-//	temp_create_user_process("bin/hello2", 1);
+//	temp_create_kernel_process(test_main,1);
+//	temp_create_kernel_process(test_main,1);
+//	temp_create_user_process("bin/hello", 1);
 	__asm__ __volatile("sti");
 	printf("here");
 	while(1){
@@ -567,7 +654,7 @@ uint64_t temp_preempt(uint64_t stack_top){
 
 }
 void preempt_exit(uint64_t stack_top){
-	printf("\n inside preempt exit");
+	printf("inside preempt exit");
 	task_struct_t *last = currenttask;
 	currenttask = currenttask->next;
 	process_switch_cooperative(&(last->state),&(currenttask->state), stack_top);
@@ -580,7 +667,7 @@ void preempt_exit(uint64_t stack_top){
 //	kfree(last);
 }
 uint64_t temp_preempt_exit(uint64_t stack_top){
-	printf("\n inside preempt exit");
+	printf("inside preempt exit %d", currenttask->pid);
 	task_struct_t *last = currenttask;
 	currenttask = currenttask->next;
 //	process_switch_cooperative(&(last->state),&(currenttask->state), stack_top);
