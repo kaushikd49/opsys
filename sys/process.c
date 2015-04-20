@@ -11,7 +11,7 @@
 #define VM_READ 1<<0
 #define VM_WRITE 1<<1
 #define VM_EXEX 1<<2
-uint64_t limit =1<<20;
+uint64_t limit =1<<30;
 //static task_struct_t *currenttask; //todo: initialize
 static task_struct_t *lasttask;
 static task_struct_t taskone;
@@ -487,10 +487,10 @@ void test_main(){
 	printf("inside kernel thread %d", i);
 	limit = limit << 2;
 	while(i < limit){
-//		if(i%100000000 == 0){
-//			printf("%d ", i);
-//			i++;
-//		}
+		//if(i%100000000 == 0){
+		//	printf("%d ", i);
+		//	i++;
+		//}
 		i++;
 	}
 	quit_kernel_thread();
@@ -517,7 +517,7 @@ void kernel_process_init() {
 	stack_ring_three(currenttask);
 	tss.rsp0 = (uint64_t) (currenttask->state.kernel_rsp);
 
-//	temp_create_kernel_process(test_main,1);
+	temp_create_kernel_process(test_main,1);
 	temp_create_user_process("bin/hello", 1);
 //	temp_create_user_process("bin/hello2", 1);
 //
