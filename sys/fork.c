@@ -3,6 +3,8 @@
 #include <sys/sbunix.h>
 #include <sys/process.h>
 #include <sys/scheduling.h>
+#include <sys/freelist.h>
+
 extern task_struct_t *currenttask;
 
 void cp_prev_next(task_struct_t* from, task_struct_t* to) {
@@ -17,6 +19,33 @@ void cp_executable(task_struct_t * from, task_struct_t * to) {
 		p++;
 		q++;
 	}
+}
+
+void cp_stack(task_struct_t * from, task_struct_t * to, uint64_t * stack_virt,
+		uint64_t * stack_phys) {
+	uint64_t phys = (uint64_t) get_free_frames(0);
+	uint64_t virtual_addr = *stack_virt;
+
+	virtual_addr = (uint64_t) get_virtual_location(0);
+
+	setup_kernel_page_tables(virtual_addr, phys);
+
+	// From whatever offset from's kernel rsp is at, copy stuff
+	// into to's stack too, starting the same offset up-to the top
+	// boundary of stack (as stack grows downwards).
+	// todo: We are ASSUMING kernel stack does not grow >= a page
+
+	uint64_t offset = from->state.kernel_rsp & 0xfff; // last 3 nibbles
+	char * frmpg_ptr = (char *) from->state.kernel_rsp;
+	char * topg_ptr = ((char *) virtual_addr) + offset;
+	while ((((uint64_t) topg_ptr) & 0xfff) != 0) {
+		*topg_ptr = *frmpg_ptr;
+		topg_ptr++;
+		frmpg_ptr++;
+	}
+
+	*stack_phys = phys;
+	*stack_virt = virtual_addr;
 }
 
 void cp_pstate(task_struct_t * from, task_struct_t * to) {
@@ -52,7 +81,7 @@ void cp_pstate(task_struct_t * from, task_struct_t * to) {
 	to->state.fs = fstate.fs;
 	to->state.gs = fstate.gs;
 	to->state.ss = fstate.ss;
-	add_kernel_stack(to);
+
 }
 
 void cp_vma(vma_t* from, vma_t* to, mem_desc_t *mem_map) {
@@ -242,7 +271,9 @@ void cp_ptables_for(uint64_t page_base, pv_map_t* pv_map_node,
 }
 
 // except stack page tables
-void cp_page_tables(task_struct_t * from, task_struct_t * to) {
+void cp_page_tables(task_struct_t * from, task_struct_t * to,
+		uint64_t krnl_stk_virt, uint64_t krnl_stk_phys, uint64_t stk_virt,
+		uint64_t stk_phys) {
 	mem_desc_t *fmem_map = from->mem_map;
 	vma_t* vma = fmem_map->vma_list;
 
@@ -265,6 +296,15 @@ void cp_page_tables(task_struct_t * from, task_struct_t * to) {
 		}
 		vma = vma->vma_next;
 	}
+
+	// map the kernel stack
+	setup_page_table_from_outside(krnl_stk_virt, krnl_stk_phys, 1, 1, 1,
+			&child_pml_virtual_ptr, phys_to_virt_map, pv_map_node);
+
+	// map the process stack
+	setup_page_table_from_outside(stk_virt, stk_phys, 1, 1, 1,
+			&child_pml_virtual_ptr, phys_to_virt_map, pv_map_node);
+
 }
 
 void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to) {
@@ -274,8 +314,20 @@ void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to) {
 	cp_pstate(from, to);
 	cp_mem_desc(from, to);
 	mark_pages_read(from);
-	cp_page_tables(from, to);
 	cp_prev_next(from, to);
+
+	uint64_t kernel_stack_virt = 0;
+	uint64_t kernel_stack_phys = 0;
+	cp_stack(from, to, &kernel_stack_virt, &kernel_stack_phys);
+	to->state.kernel_rsp = kernel_stack_virt;
+
+	uint64_t stack_virt = 0;
+	uint64_t stack_phys = 0;
+	cp_stack(from, to, &stack_virt, &stack_phys);
+	to->state.rsp = from->state.rsp;
+
+	cp_page_tables(from, to, to->state.kernel_rsp, kernel_stack_phys, to->state.rsp,
+			stack_phys);
 }
 
 void copy_process(uint64_t pid) {

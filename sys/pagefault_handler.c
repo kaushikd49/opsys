@@ -36,7 +36,6 @@ uint64_t virtual_page_base(uint64_t virtual_addr) {
 	return virtual_addr & (~0xfff);
 }
 
-
 void seg_fault(uint64_t addr) {
 	printf("DO PAGE FAULT\n");
 }
@@ -108,17 +107,19 @@ void do_handle_pagefault(uint64_t error_code) {
 				printf(" Kernel access by user\n");
 				seg_fault(addr);
 			} else {
-				printf(" Demand paging for process %d for addr %p\n", currenttask->pid, addr);
+				printf(" Demand paging for process %d for addr %p\n",
+						currenttask->pid, addr);
 				do_demand_paging(addr);
 			}
 		} else {
-			printf(" Kernel page fault. Do not reach here unless"
-					" testing.page fault at %p, error_code: %x  \n", addr,
-					error_code);
+			printf(" Pid:%d, kernel page fault. Do not reach here unless"
+					" testing.page fault at %p, error_code: %x  \n",
+					currenttask->pid, addr, error_code);
 			page_alloc(addr);
 		}
 	} else {
-		printf(" must be illegal access pid %d %p p:rw:us %d:%d:%d\n", currenttask->pid, addr, present, rw, us);
+		printf(" must be illegal access pid %d %p p:rw:us %d:%d:%d\n",
+				currenttask->pid, addr, present, rw, us);
 		seg_fault(addr);
 	}
 
