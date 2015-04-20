@@ -69,6 +69,9 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 	else if(regs.rax == SYS_brk){
 		return brk_system_call((uint64_t)regs.rdi);
 	}
+	else if(regs.rax == SYS_getdents){
+		dents_tarfs((int)(regs.rdi)	, (struct dirent *)(regs.rsi), (uint64_t)(regs.rdx));
+	}
 	return 0;
 }
 void isrhandler_default() {
