@@ -44,6 +44,11 @@ typedef struct {
 	uint64_t rcx;
 	uint64_t rbx;
 	uint64_t rax;
+	uint64_t rip;
+	uint64_t cs;
+	uint64_t flag;
+	uint64_t rsp;
+	uint64_t ss;
 
 } regs_syscall_t;
 uint64_t handle_exit(regs_syscall_t regs) {

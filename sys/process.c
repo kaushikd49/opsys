@@ -432,9 +432,7 @@ void map_process_vm(task_struct_t *task) {
  * if user-mode programs try to touch it
  */
 
-void process_init() {
 
-}
 void maintasktwo() {
 	printf("\nthis is main task two ");
 	while(1);
@@ -449,30 +447,7 @@ void stack_ring_three(task_struct_t *task) {
 	);
 
 }
-//this needs to be referenced for sure idea taken from here
-//idea taken from here: http://wiki.osdev.org/Kernel_Multitasking
-void create_process(char *executable, uint64_t ppid) {
-	task_struct_t *task = kmalloc(sizeof(task_struct_t));
-	task_struct_t *temp_start = currenttask->next;
-	task_struct_t *parent_task = NULL;
-	while (temp_start->pid != ppid) {
-		temp_start = temp_start->next;
-	}
-	//assumption here is that the process has a parent, then the parent is found, have to handle zombie process somehow need to know how.
-	parent_task = temp_start;
-	//add the process to the end of list
-	if (parent_task->next == parent_task) {
-		parent_task->next = task;
-		task->next = parent_task;
 
-		lasttask = task;
-	} else {
-		task->next = lasttask->next;
-		lasttask->next = task;
-		lasttask = task;
-	}
-	kernel_create_process(task, parent_task, executable);
-}
 inline void quit_kernel_thread(){
 	int n = 60;
 	int a1 = 0;
@@ -549,78 +524,8 @@ void add_kernel_stack(task_struct_t* task) {
 }
 
 //named kernel_create_process but actually creates user process, we need to change all this to name it properly once we both have a stable merge
-void kernel_create_process(task_struct_t *task, task_struct_t *parent_task, char *executable){
-	//using the user level process struct it is fine for now
-	task->mem_map = NULL;
-	task->pid = get_next_pid();
-	task->ppid = parent_task->pid;	//this need to be more involved.
-	task->state.cs = USER_CODE; // for a user level process these 4 registers will matter but we will worry when we get there
-	task->state.ds = USER_DATA;
-	task->state.es = USER_DATA;
-	task->state.ss = USER_DATA;
-	task->state.gs = USER_DATA;
-	task->state.fs = USER_DATA;
-	task->state.r10 = 0;
-	task->state.r11 = 0;
-	task->state.r12 = 0;
-	task->state.r13 = 0;
-	task->state.r14 = 0;
-	task->state.r15 = 0;
-	task->state.r8 = 0;
-	task->state.r9 = 0;
-	task->state.rax = 0;
-	task->state.rbx = 0;
-	task->state.rcx = 0;
-	task->state.rdx = 0;
-//	task->state.rip = (uint64_t) main;
-	task->state.rbp = 0;
-	task->state.rdi = 0;
-	task->state.rsi = 0;
-	task->state.cr3 = parent_task->state.cr3;
-	task->state.flags |=0x200;
-	task->state.flags = parent_task->state.flags;
-	// need to assign a new stack and since it grows down, we need to change taht to the end of the page too.
-	strcpy((*task).executable,executable);
-	uint64_t *temp = get_physical_pml4_base_for_process();
-	////
-	uint64_t oldcr3 = 0;
-	__asm__ __volatile__("movq %%cr3, %%rax\n\t"
-							 "movq %%rax, %0\n\t"
-						   	 :"=m"(oldcr3)
-							 :
-						     :"%rax");
-	update_cr3((uint64_t *)(temp));
-	__asm__ __volatile__("movq %%cr3, %%rax\n\t"
-						 "movq %%rax, %0\n\t"
-					   	 :"=m"(task->state.cr3)
-						 :
-					     :"%rax");
-	//	currenttask->state.cr3 = (uint64_t)temp;
-	map_process_vm(task);
-	if(task->executable[0] != '\0')
-		load_executable(task);
-	update_cr3((uint64_t *)(oldcr3));
-	add_kernel_stack(task);
-}
 
 
-void preempt(uint64_t stack_top){
-	if(currenttask == &taskone && currenttask->next == currenttask){
-		return;
-	}
-	task_struct_t *last = currenttask;
-	currenttask = currenttask->next;
-	if(currenttask == &taskone){
-		currenttask = currenttask->next;
-	}
-	if(currenttask == last){
-		return;
-	}
-//	printf("h\n");
-	process_switch_cooperative(&(last->state),&(currenttask->state),stack_top);
-	tss.rsp0 = (uint64_t) (currenttask->state.kernel_rsp);
-//	printf("%p ", tss.rsp0);
-}
 
 uint64_t temp_preempt(uint64_t stack_top){
 	if(currenttask == &taskone && currenttask->next == currenttask){
@@ -653,19 +558,7 @@ uint64_t temp_preempt(uint64_t stack_top){
 	//	printf("%p ", tss.rsp0);
 
 }
-void preempt_exit(uint64_t stack_top){
-	printf("inside preempt exit");
-	task_struct_t *last = currenttask;
-	currenttask = currenttask->next;
-	process_switch_cooperative(&(last->state),&(currenttask->state), stack_top);
-	tss.rsp0 = (uint64_t) (currenttask->state.kernel_rsp);
-	task_struct_t *prev = currenttask;
-	while(prev->next !=last){
-		prev= prev->next;
-	}
-	prev->next = last->next;
-//	kfree(last);
-}
+
 uint64_t temp_preempt_exit(uint64_t stack_top){
 	printf("inside preempt exit %d", currenttask->pid);
 	task_struct_t *last = currenttask;
@@ -687,70 +580,6 @@ uint64_t temp_preempt_exit(uint64_t stack_top){
 	return (currenttask->state.kernel_rsp);
 }
 
-void create_kernel_process(void (*main)(),uint64_t ppid){
-	task_struct_t *task = kmalloc(sizeof(task_struct_t));
-		task_struct_t *temp_start = currenttask->next;
-		task_struct_t *parent_task = NULL;
-		while(temp_start->pid != ppid ){
-			temp_start = temp_start->next;
-		}
-		//assumption here is that the process has a parent, then the parent is found, have to handle zombie process somehow need to know how.
-		parent_task = temp_start;
-
-
-
-		//add the process to the end of list
-		if(parent_task->next == parent_task){
-			parent_task->next = task;
-			task->next = parent_task;
-
-			lasttask = task;
-		}
-		else{
-			task->next = lasttask->next;
-			lasttask->next = task;
-			lasttask = task;
-		}
-		kernel_init_process(task, parent_task, main);
-}
-
-void kernel_init_process(task_struct_t *task, task_struct_t *parent, void (*main)()){
-		task->mem_map =NULL;
-		task->pid = get_next_pid();
-		task->ppid = parent->pid;//this need to be more involved.
-		task->state.cs = KERNEL_CODE; // for a user level process these 4 registers will matter but we will worry when we get there
-		task->state.ds = KERNEL_DATA;
-		task->state.es = KERNEL_DATA;
-		task->state.ss = KERNEL_DATA;
-		task->state.gs = KERNEL_DATA;
-		task->state.fs = KERNEL_DATA;
-		task->state.r10 = 0;
-		task->state.r11 = 0;
-		task->state.r12 = 0;
-		task->state.r13 = 0;
-		task->state.r14 = 0;
-		task->state.r15 = 0;
-		task->state.r8 = 0;
-		task->state.r9 = 0;
-		task->state.rax = 0;
-		task->state.rbx = 0;
-		task->state.rcx = 0;
-		task->state.rdx = 0;
-		task->state.rip = (uint64_t) main;
-		task->state.rbp = 0;
-		task->state.rdi = 0;
-		task->state.rsi = 0;
-		task->state.cr3 = parent->state.cr3;
-		task->state.flags |=0x200;
-		task->state.flags = parent->state.flags;
-		// need to assign a new stack and since it grows down, we need to change taht to the end of the page too.
-		//giving the process a new kernel stack
-		uint64_t stack_kernel = (uint64_t) kmalloc(0x1000);
-		task->state.kernel_rsp = (uint64_t) (stack_kernel+0xfff);
-		uint64_t stack_kernel_process = (uint64_t) kmalloc(0x1000);
-		task->state.rsp = (uint64_t)(stack_kernel_process + 0xfff);
-
-}
 
 
 void temp_create_user_process(char *executable, uint64_t ppid){
@@ -782,28 +611,7 @@ void temp_init_user_state(task_struct_t *task, task_struct_t *parent_task, char 
 	task->mem_map = NULL;
 	task->pid = get_next_pid();
 	task->ppid = parent_task->pid;	//this need to be more involved.
-	task->state.cs = USER_CODE; // for a user level process these 4 registers will matter but we will worry when we get there
-	task->state.ds = USER_DATA;
-	task->state.es = USER_DATA;
-	task->state.ss = USER_DATA;
-	task->state.gs = USER_DATA;
-	task->state.fs = USER_DATA;
-	task->state.r10 = 0;
-	task->state.r11 = 0;
-	task->state.r12 = 0;
-	task->state.r13 = 0;
-	task->state.r14 = 0;
-	task->state.r15 = 0;
-	task->state.r8 = 0;
-	task->state.r9 = 0;
-	task->state.rax = 0;
-	task->state.rbx = 0;
-	task->state.rcx = 0;
-	task->state.rdx = 0;
 	//	task->state.rip = (uint64_t) main;
-	task->state.rbp = 0;
-	task->state.rdi = 0;
-	task->state.rsi = 0;
 	task->state.cr3 = parent_task->state.cr3;
 
 	task->state.flags = parent_task->state.flags;
@@ -919,28 +727,7 @@ void temp_init_kernel_state(task_struct_t *task, task_struct_t *parent_task, voi
 	task->mem_map =NULL;
 	task->pid = get_next_pid();
 	task->ppid = parent_task->pid;//this need to be more involved.
-	task->state.cs = KERNEL_CODE; // for a user level process these 4 registers will matter but we will worry when we get there
-	task->state.ds = KERNEL_DATA;
-	task->state.es = KERNEL_DATA;
-	task->state.ss = KERNEL_DATA;
-	task->state.gs = KERNEL_DATA;
-	task->state.fs = KERNEL_DATA;
-	task->state.r10 = 0;
-	task->state.r11 = 0;
-	task->state.r12 = 0;
-	task->state.r13 = 0;
-	task->state.r14 = 0;
-	task->state.r15 = 0;
-	task->state.r8 = 0;
-	task->state.r9 = 0;
-	task->state.rax = 0;
-	task->state.rbx = 0;
-	task->state.rcx = 0;
-	task->state.rdx = 0;
 	task->state.rip = (uint64_t) main;
-	task->state.rbp = 0;
-	task->state.rdi = 0;
-	task->state.rsi = 0;
 	task->state.cr3 = parent_task->state.cr3;
 
 	task->state.flags = parent_task->state.flags;

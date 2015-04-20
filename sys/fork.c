@@ -54,33 +54,13 @@ void cp_pstate(task_struct_t * from, task_struct_t * to) {
 	to->state.rsp = fstate.rsp;
 	to->state.rip = fstate.rip;
 	//general registers
-	to->state.rax = fstate.rax;
-	to->state.rbx = fstate.rbx;
-	to->state.rcx = fstate.rcx;
-	to->state.rdx = fstate.rdx;
-	to->state.rdi = fstate.rdi;
-	to->state.rsi = fstate.rsi;
-	to->state.rbp = fstate.rbp;
-	to->state.r8 = fstate.r8;
-	to->state.r9 = fstate.r9;
-	to->state.r10 = fstate.r10;
-	to->state.r11 = fstate.r11;
-	to->state.r12 = fstate.r12;
-	to->state.r13 = fstate.r13;
-	to->state.r14 = fstate.r14;
-	to->state.r15 = fstate.r15;
+
 
 	//not copying cr3
 
 	//flags
 	to->state.flags = fstate.flags;
 	//segment registers
-	to->state.cs = fstate.cs;
-	to->state.ds = fstate.ds;
-	to->state.es = fstate.es;
-	to->state.fs = fstate.fs;
-	to->state.gs = fstate.gs;
-	to->state.ss = fstate.ss;
 
 }
 
