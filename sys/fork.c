@@ -24,13 +24,24 @@ void cp_executable(task_struct_t * from, task_struct_t * to) {
 void cp_stack2(task_struct_t * from, task_struct_t * to, uint64_t * stack_virt,
 		uint64_t * stack_phys) {
 	uint64_t phys = (uint64_t) get_free_frames(0);
-	uint64_t virtual_addr = *stack_virt;
-
-	virtual_addr = (uint64_t) get_virtual_location(0);
-
+	uint64_t virtual_addr = (uint64_t) get_virtual_location(0);
 	setup_kernel_page_tables(virtual_addr, phys);
+
+	char * stk_strt = (char *) (0x7000000 + 0x500);
+	char * stk_to = (char *) from->state.rsp;
+
+	char * source = stk_to; // stack grows downwards
+	int offset = from->state.rsp & 0xfff; // last 3 nibbles
+	char * target = ((char *) virtual_addr) + offset;
+
+	while(source <= stk_strt){
+		*target = *source;
+		target++;
+		source++;
+	}
+
 	*stack_phys = phys;
-	*stack_virt = virtual_addr;
+	*stack_virt = to->state.rsp;
 }
 
 void cp_stack(task_struct_t * from, task_struct_t * to, uint64_t * stack_virt,
@@ -76,8 +87,9 @@ void cp_stack(task_struct_t * from, task_struct_t * to, uint64_t * stack_virt,
 	virtual->rdx = from_virtual->rdx;
 	virtual->rcx = from_virtual->rcx;
 	virtual->rbx = from_virtual->rbx;
-	virtual->rax = from_virtual->rax;
+	virtual->rax = 0; // ret val from fork
 	virtual->rip = from_virtual->rip;
+	printf("setting child rip to %p ", virtual->rip);
 	virtual->cs = from_virtual->cs;
 	virtual->flag = from_virtual->flag;
 	virtual->rsp = from_virtual->rsp;
@@ -336,7 +348,7 @@ void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to, uint64_t s
 
 	uint64_t kernel_stack_virt = 0;
 	uint64_t kernel_stack_phys = 0;
-	from->state.kernel_rsp = stack_top;
+	//from->state.kernel_rsp = stack_top;
 	cp_stack(from, to, &kernel_stack_virt, &kernel_stack_phys, stack_top);
 	to->state.kernel_rsp = kernel_stack_virt;
 

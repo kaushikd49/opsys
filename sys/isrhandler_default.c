@@ -36,7 +36,10 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 				(size_t) regs.rdx);
 	} else if (regs.rax == 57) {
 		uint64_t stack_top = (uint64_t) (&(regs.gs));
-		return fork_sys_call(stack_top);
+		printf("rip in parent %p ", regs.rip);
+		currenttask->state.rsp = regs.rsp;
+		int abc = fork_sys_call(stack_top);
+		return abc;
 	} else if(regs.rax == SYS_write){
 		return write_system_call((int)regs.rdi, (const void *)regs.rsi, (size_t)regs.rdx);
 	}
