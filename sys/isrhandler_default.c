@@ -29,6 +29,10 @@ uint64_t handle_exit(regs_syscall_t regs) {
 	uint64_t stack_top = (uint64_t) (&(regs.gs));
 	return temp_preempt_exit(stack_top);
 }
+uint64_t handle_read(regs_syscall_t regs){
+	uint64_t stack_top = (uint64_t) (&(regs.gs));
+	return read_tarfs((int)regs.rdi, (void *)(regs.rsi), (size_t)regs.rdx, (uint64_t)(stack_top));
+}
 
 uint64_t handle_syscall(regs_syscall_t regs) {
 	if (regs.rax == 1) {
@@ -42,9 +46,6 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 	}
 	else if(regs.rax == SYS_open){
 		return open_tarfs((char *)regs.rdi, (int)regs.rsi);
-	}
-	else if(regs.rax == SYS_read){
-		return read_tarfs((int)regs.rdi, (void *)(regs.rsi), (size_t)regs.rdx);
 	}
 	else if(regs.rax == SYS_brk){
 		return brk_system_call((uint64_t)regs.rdi);

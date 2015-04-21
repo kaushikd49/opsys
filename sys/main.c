@@ -424,7 +424,7 @@ init_keyboard_map();
 keyboard_init();
 __asm__ __volatile("cli");
 //test_free_pages();
-init_tarfs();
+//init_tarfs();
 //find_file_tarfs("bin/hello");
 //int fd = open_tarfs("test/test.txt", O_RDONLY);
 //printf("\nfd:%d ", fd);

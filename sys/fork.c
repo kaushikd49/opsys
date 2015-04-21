@@ -336,7 +336,7 @@ void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to, uint64_t s
 
 	uint64_t kernel_stack_virt = 0;
 	uint64_t kernel_stack_phys = 0;
-	from->state.kernel_rsp = stack_top;
+//	from->state.kernel_rsp = stack_top;
 	cp_stack(from, to, &kernel_stack_virt, &kernel_stack_phys, stack_top);
 	to->state.kernel_rsp = kernel_stack_virt;
 

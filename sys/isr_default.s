@@ -1203,8 +1203,15 @@ isr_syscall:
     movq $60, %rbx
     movq 144(%rsp), %rax
 	cmp %rbx, %rax
-	jne q2
+	jne q2d
 	call handle_exit
+	movq %rax, %rsp
+	jmp q3
+q2d:movq $0, %rbx
+	movq 144(%rsp), %rax
+	cmp %rbx, %rax
+	jne q2
+	call handle_read
 	movq %rax, %rsp
 	jmp q3
  q2:call handle_syscall

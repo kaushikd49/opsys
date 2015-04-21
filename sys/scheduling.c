@@ -101,14 +101,19 @@ task_struct_t *remove_process_runq(uint64_t pid){
 }
 
 void move_process_waitq_to_runq(uint64_t pid){
+	__asm__ __volatile__("cli");
 	task_struct_t *temp = remove_process_waitq(pid);
+	temp->p_state = STATE_RUNNING;
 	if(temp!=NULL)
 		add_process_runq(temp);
+	__asm__ __volatile__("sti");
 }
 void move_process_runq_to_waitq(uint64_t pid){
+	__asm__ __volatile__("cli");
 	task_struct_t *temp = remove_process_runq(pid);
 	if(temp!=NULL)
 		add_process_waitq(temp);
+	__asm__ __volatile("sti");
 }
 
 
