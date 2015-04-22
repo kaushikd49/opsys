@@ -21,6 +21,7 @@ typedef struct{
 file_desc_t *stdin_fd;
 file_desc_t *stdout_fd;//also for error
 void *input_buffer;
+char *current_stdin_pointer;
 struct dirent {
 	long d_ino;
 	uint64_t d_off;

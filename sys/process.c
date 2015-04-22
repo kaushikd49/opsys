@@ -11,6 +11,7 @@
 #include <sys/tarfs_FS.h>
 #include <sys/kernel_thread.h>
 #include <sys/scheduling.h>
+#include <sys/isr_stuff.h>
 #define VM_READ 1<<0
 #define VM_WRITE 1<<1
 #define VM_EXEX 1<<2
@@ -496,7 +497,7 @@ void init_global_fd() {
 	stdout_fd->busy = 0;
 	stdout_fd->current_process = 0;
 	stdout_fd->ready = 0;
-
+	current_stdin_pointer = stdin_fd->current_pointer;
 }
 
 void kernel_process_init() {
@@ -524,10 +525,13 @@ void kernel_process_init() {
 
 //	temp_create_kernel_process(test_main,1);
 	temp_create_kernel_process(waiting_to_running_q, 1);
-	temp_create_user_process("bin/hello", 1);
+	temp_create_kernel_process(check_user_process_waitpid_daemon, 1);
+	temp_create_user_process("bin/hello2", 1);
+//	temp_create_kernel_process(clear_keyboard_busy, 1);
+	temp_create_user_process("bin/hello", 4);
 //	temp_create_user_process("bin/hello2", 1);
 //
-//	temp_create_user_process("bin/hello", 1);
+	temp_create_user_process("bin/hello", 4);
 //	temp_create_kernel_process(test_main,1);
 //	temp_create_kernel_process(test_main,1);
 //	temp_create_kernel_process(test_main,1);
@@ -622,6 +626,57 @@ uint64_t temp_preempt_wait(int fd, void *buffer, uint64_t size, uint64_t stack_t
 	//	printf("pid is %d ",currenttask->pid);
 		return (currenttask->state.kernel_rsp);
 }
+
+uint64_t temp_preempt_waitpid(int pid, int *status, int options, uint64_t stack_top){
+	if(currenttask == &taskone && currenttask->next == currenttask){
+			return stack_top;
+		}
+		task_struct_t *last = currenttask;
+		currenttask = currenttask->next;
+//		if(currenttask == &taskone){
+//			currenttask = currenttask->next;
+//		}
+//		if(currenttask == last){
+//			return stack_top;
+//		}
+		__asm__ __volatile__("movq %1, %%rax\n\t"
+							 "movq %%rax, %0"
+							 :"=r"(last->state.kernel_rsp)
+							  :"r"(stack_top)
+							  :"memory", "%rax", "%rsp");
+	//	printf("h\n");
+		tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp)+192);
+	//	__asm__ __volatile__("movq %0, %%rsp"
+	//						:
+	//						:"r"(currenttask->state.kernel_rsp)
+	//						:"%rsp");
+	//	printf("%p", tss.rsp0);
+		last->p_state = STATE_WAITING;
+		last->waiting_for = pid;
+		move_process_runq_to_waitq(last->pid);
+		update_cr3((uint64_t *)(currenttask->state.cr3));
+	//	printf("pid is %d ",currenttask->pid);
+		return (currenttask->state.kernel_rsp);
+}
+void check_parent_waiting(task_struct_t *last){
+	int ppid = last->ppid;
+	task_struct_t *temp = waitingtask;
+	if(temp == NULL)
+		return;
+	if(last->is_kernel_process == 1)
+		return;
+	do{
+		if(temp->pid == ppid && (temp->waiting_for ==last->pid || temp->waiting_for == -1)){
+			temp->waiting_for =999;
+			regs_syscall_t *regs = (regs_syscall_t *)temp->state.kernel_rsp;
+			regs->rax = last->pid;
+			temp->p_state = STATE_READY;
+//			move_process_waitq_to_runq(ppid);
+			break;
+		}
+		temp = temp->next;
+	}while(temp!=waitingtask);
+}
 uint64_t temp_preempt_exit(uint64_t stack_top){
 	printf("inside preempt exit %d", currenttask->pid);
 	task_struct_t *last = currenttask;
@@ -634,6 +689,7 @@ uint64_t temp_preempt_exit(uint64_t stack_top){
 	}
 	prev->next = last->next;
 //	kfree(last);
+	check_parent_waiting(last);
 	tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp) + 192);
 //	__asm__ __volatile__("movq %0, %%rsp"
 //							:
@@ -684,6 +740,8 @@ void temp_init_user_state(task_struct_t *task, task_struct_t *parent_task, char 
 	task->mem_map = NULL;
 	task->pid = get_next_pid();
 	task->ppid = parent_task->pid;	//this need to be more involved.
+	task->waiting_for = 999;
+	task->is_kernel_process = 0;
 	//	task->state.rip = (uint64_t) main;
 	task->state.cr3 = parent_task->state.cr3;
 	task->state.flags = parent_task->state.flags;
@@ -802,6 +860,8 @@ void temp_init_kernel_state(task_struct_t *task, task_struct_t *parent_task, voi
 	task->mem_map =NULL;
 	task->pid = get_next_pid();
 	task->ppid = parent_task->pid;//this need to be more involved.
+	task->waiting_for = 999;
+	task->is_kernel_process = 1;
 	task->state.rip = (uint64_t) main;
 	task->state.cr3 = parent_task->state.cr3;
 
@@ -910,7 +970,8 @@ void temp_init_kernel_state_write(task_struct_t *task, task_struct_t *parent_tas
 	task->ppid = parent_task->pid;//this need to be more involved.
 	task->state.rip = (uint64_t) main;
 	task->state.cr3 = parent_task->state.cr3;
-
+	task->waiting_for = 999;
+	task->is_kernel_process = 1;
 	task->state.flags = parent_task->state.flags;
 	task->state.flags |=0x200;
 	// need to assign a new stack and since it grows down, we need to change taht to the end of the page too.

@@ -211,34 +211,40 @@ int main(int argc, char* argv[], char* envp[]) {
 //	char buff[10];
 //	for(int64_t i = 0; i<10; i++){
 //		buff[i] = 0;
-	int fd = open("test/test.txt", 0);
+//	int fd = open("test/test.txt", 0);
 	char buff[10];
 	for(int64_t i = 0; i<10; i++){
 		buff[i] = 0;
 	}
-	read(fd, buff, 5);
-	printf("write:::%s", buff);
-	printf("g\n");
-	read(fd, buff, 7);
-	printf("h\n");
-	printf("write2:::%s", buff);
-	int *a = (int *)malloc(5*sizeof(int));
-	a[0] = 2;
-	a[1] = 4;
-	a[2] = 5;
-		a[3] = 6;
-		a[4] = 7;
-	for(int i = 0; i < 5; i++)
-		printf("%d  ",a[i]);
+//	read(fd, buff, 5);
+//	printf("write:::%s", buff);
+//	printf("g\n");
+//	read(fd, buff, 7);
+//	printf("h\n");
+//	printf("write2:::%s", buff);
+//	int *a = (int *)malloc(5*sizeof(int));
+//	a[0] = 2;
+//	a[1] = 4;
+//	a[2] = 5;
+//		a[3] = 6;
+//		a[4] = 7;
+//	for(int i = 0; i < 5; i++)
+//		printf("%d  ",a[i]);
+//
+//	void *dir = opendir("bin/");
+//	struct dirent *temp =NULL;
+//	do{
+//	temp = readdir(dir);
+//	//printf("\n printing the directory");
+//	if(temp!=NULL)
+//		printf("temp:%s\n", temp->d_name);
+//	}while(temp!=NULL);
+	for(int64_t i = 0; i<10; i++){
+			buff[i] = 0;
+		}
+	read(0, buff, 8);
+	printf("we read:%s\n", buff);
 
-	void *dir = opendir("bin/");
-	struct dirent *temp =NULL;
-	do{
-	temp = readdir(dir);
-	//printf("\n printing the directory");
-	if(temp!=NULL)
-		printf("temp:%s\n", temp->d_name);
-	}while(temp!=NULL);
 //	temp = readdir(dir);
 //	if(temp !=NULL)
 //		printf("temp:%s", temp->d_name);

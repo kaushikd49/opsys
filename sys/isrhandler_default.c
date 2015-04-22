@@ -33,7 +33,10 @@ uint64_t handle_read(regs_syscall_t regs){
 	uint64_t stack_top = (uint64_t) (&(regs.gs));
 	return read_tarfs((int)regs.rdi, (void *)(regs.rsi), (size_t)regs.rdx, (uint64_t)(stack_top));
 }
-
+uint64_t handle_wait(regs_syscall_t regs){
+	uint64_t stack_top = (uint64_t) (&(regs.gs));
+	return wait_pid((int)regs.rdi, (int *)(regs.rsi), (int)(regs.rdx), stack_top);
+}
 uint64_t handle_syscall(regs_syscall_t regs) {
 	if (regs.rax == 1) {
 		return write_system_call((int) regs.rdi, (const void *) regs.rsi,
@@ -54,6 +57,9 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 		dents_tarfs((int)(regs.rdi)	, (struct dirent *)(regs.rsi), (uint64_t)(regs.rdx));
 	}
 	return 0;
+}
+uint64_t handle_fake_preempt(uint64_t stack_top){
+	return temp_preempt(stack_top);
 }
 void isrhandler_default() {
 //	__asm__ __volatile__(

@@ -3,7 +3,7 @@
 #include <sys/sbunix.h>
 #include <sys/gdt.h>
 #include <sys/tarfs.h>
-
+#include <sys/tarfs_FS.h>
 extern char * vid_buffer_view_ptr;
 extern char * vid_buffer_tail_ptr;
 extern char * video_buffer;
@@ -42,7 +42,6 @@ void isrhandler_keyboard() {
 	static int caps = 0;
 	static int arrow_key = 0;
 	char printchar;
-
 	__asm__ __volatile__("inb $0x60, %0\n\t"
 			:"=a"(scancode));
 	if (scancode == KEY_RELEASE) {
@@ -56,10 +55,18 @@ void isrhandler_keyboard() {
 			caps = 0;
 		}
 	} else if (scancode == ENTER) {
+		*current_stdin_pointer = '\n';
+		write_char_to_vid_mem(*current_stdin_pointer, 0);
+		current_stdin_pointer++;
+		*current_stdin_pointer = '\0';
+		current_stdin_pointer = stdin_fd->current_pointer;
+		stdin_fd->ready = 1;
 		clear_and_print_str_at("<ENT>");
 	} else if (scancode == TAB) {
 		clear_and_print_str_at("<TAB>");
 	} else if (scancode == BACKSPACE) {
+		write_char_to_vid_mem(8, 0);
+		current_stdin_pointer--;
 		clear_and_print_str_at("<BACKSPACE>");
 	} else {
 		if (scancode == SHIFT) {
@@ -93,15 +100,24 @@ void isrhandler_keyboard() {
 			// Print characters
 			printchar = keyboard_map[int_scancode][0];
 			printchar = printchar ^ caps;
+			*current_stdin_pointer = printchar;
+			write_char_to_vid_mem(printchar, 0);
+			current_stdin_pointer++;
 			clear_and_print_char_at(printchar);
 		} else if (caps == 0 && keyboard_map[int_scancode][1] == 2) {
 			// Print digits
 			printchar = keyboard_map[int_scancode][0];
 			printchar = printchar ^ caps;
+			*current_stdin_pointer = printchar;
+			write_char_to_vid_mem(printchar, 0);
+			current_stdin_pointer++;
 			clear_and_print_char_at(printchar);
 		} else if (caps != 0 && keyboard_map[int_scancode][1] == 2) {
 			// Print symbols
 			printchar = keyboard_map[int_scancode][2];
+			*current_stdin_pointer = printchar;
+			write_char_to_vid_mem(printchar, 0);
+			current_stdin_pointer++;
 			clear_and_print_char_at(printchar);
 		}
 	}

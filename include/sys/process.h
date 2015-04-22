@@ -80,6 +80,8 @@ typedef struct task_struct {
 	char executable[100];
 	int p_state;
 	file_desc_t *filearray[MAX_NUMBER_FILES];
+	int waiting_for;
+	int is_kernel_process;
 }task_struct_t;
 void load_executable(task_struct_t *	);
 void preempt(uint64_t stack_top);
@@ -109,4 +111,5 @@ uint64_t convert_ocatalstr_todecimal(char octal[10]);
 int strcmp(char *string1, char *string2);
 char *strcpy(char *dst, char *src);
 void quit_kernel_thread();
+uint64_t temp_preempt_waitpid(int pid, int *status, int options, uint64_t stack_top);
 #endif

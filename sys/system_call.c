@@ -7,17 +7,31 @@ int write_system_call(int fd, const void *buff, size_t count){
 	if(fd != 1){//EACCES error
 		return -13;
 	}
-//	if(count>PAGE_SIZE){//cannot write more than a page at a time
-//		return -27;
-//	}
-	char *print_buffer = (char *) buff;
-	int printed = 0;
-	while (printed < count && print_buffer[printed] != '\0') {
-		char character = print_buffer[printed];
-		write_char_to_vid_mem(character, 0);
-		printed++;
+	if(currenttask->filearray[fd] == stdout_fd){
+		char *print_buffer = (char *) buff;
+		int printed = 0;
+		while (printed < count && print_buffer[printed] != '\0') {
+			char character = print_buffer[printed];
+			write_char_to_vid_mem(character, 0);
+			printed++;
+		}
+		return printed;
 	}
-	return printed;
+	else{
+		//still need to test and add error cases
+		//havnt decided how to assign pages to the buffer
+		char *copy_buf = (char *)buff;
+		int printed = 0;
+		while(printed < count && copy_buf[printed] != '\0'){
+			char character  = copy_buf[printed];
+			char *copy_to = (char *)currenttask->filearray[fd]->current_pointer;
+			*copy_to = character;
+			copy_to++;
+			printed++;
+		}
+		return printed++;
+	}
+	return -1;
 }
 
 int fork_sys_call(uint64_t stack_top) {
@@ -57,4 +71,8 @@ uint64_t brk_system_call(uint64_t value){
 
 	}
 	return current_brk;
+}
+
+uint64_t wait_pid(int pid, int *status, int options, uint64_t stack_top){
+	return temp_preempt_waitpid(pid, status, options, stack_top);
 }
