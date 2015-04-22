@@ -202,11 +202,13 @@
 #include <stdio.h>
 #include<stdlib.h>
 int arr[100];
-int b =10;
+int b = 10;
 
 int main(int argc, char* argv[], char* envp[]) {
 //	fork();
 	printf("Hello World!\n");
+//	pid_t val = fork();
+//	printf("Hello World!. Getpid %d Ret val is %d\n", getpid(), val);
 //	int fd = open("test/test.txt", 0);
 //	char buff[10];
 //	for(int64_t i = 0; i<10; i++){
