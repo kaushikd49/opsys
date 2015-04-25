@@ -7,6 +7,7 @@
 cache_t *cache_list = NULL;
 cache_init cache_info = { NULL, NULL };
 uint64_t BASE_MEMORY_MANAGER = 0xffffffffb0000000; //********** fill this up
+uint64_t SELF_REFERENCE = 0xffffff7ff0000000;
 // todo: change this base addr so that kernel addr space is well utilized
 
 void init_caches();
@@ -187,6 +188,6 @@ void kfree(void *addr) {
 }
 
 int is_kernel_addr(uint64_t addr) {
-	return do_pmls_clash(addr, BASE_MEMORY_MANAGER);
+	return do_pmls_clash(addr, BASE_MEMORY_MANAGER) || do_pmls_clash(addr, SELF_REFERENCE);
 }
 

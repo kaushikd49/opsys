@@ -21,8 +21,8 @@ void cp_executable(task_struct_t * from, task_struct_t * to) {
 	}
 }
 
-void cp_process_stack(task_struct_t * from, task_struct_t * to, uint64_t * stack_virt,
-		uint64_t * stack_phys) {
+void cp_process_stack(task_struct_t * from, task_struct_t * to,
+		uint64_t * stack_virt, uint64_t * stack_phys) {
 	uint64_t phys = (uint64_t) get_free_frames(0);
 	uint64_t virtual_addr = (uint64_t) get_virtual_location(0);
 	setup_kernel_page_tables(virtual_addr, phys);
@@ -34,7 +34,7 @@ void cp_process_stack(task_struct_t * from, task_struct_t * to, uint64_t * stack
 	int offset = from->state.rsp & 0xfff; // last 3 nibbles
 	char * target = ((char *) virtual_addr) + offset;
 
-	while(source <= stk_strt){
+	while (source <= stk_strt) {
 		*target = *source;
 		target++;
 		source++;
@@ -44,8 +44,8 @@ void cp_process_stack(task_struct_t * from, task_struct_t * to, uint64_t * stack
 	*stack_virt = to->state.rsp;
 }
 
-void cp_kernel_stack(task_struct_t * from, task_struct_t * to, uint64_t * stack_virt,
-		uint64_t * stack_phys, uint64_t stack_top) {
+void cp_kernel_stack(task_struct_t * from, task_struct_t * to,
+		uint64_t * stack_virt, uint64_t * stack_phys, uint64_t stack_top) {
 	uint64_t phys = (uint64_t) get_free_frames(0);
 	uint64_t virtual_addr = *stack_virt;
 
@@ -54,7 +54,7 @@ void cp_kernel_stack(task_struct_t * from, task_struct_t * to, uint64_t * stack_
 	setup_kernel_page_tables(virtual_addr, phys);
 
 	regs_syscall_t *virtual = (regs_syscall_t *) virtual_addr;
-	regs_syscall_t *from_virtual = (regs_syscall_t *)(stack_top);
+	regs_syscall_t *from_virtual = (regs_syscall_t *) (stack_top);
 	virtual->gs = from_virtual->gs;
 	virtual->fs = from_virtual->fs;
 	virtual->es = from_virtual->es;
@@ -73,7 +73,7 @@ void cp_kernel_stack(task_struct_t * from, task_struct_t * to, uint64_t * stack_
 	virtual->rdx = from_virtual->rdx;
 	virtual->rcx = from_virtual->rcx;
 	virtual->rbx = from_virtual->rbx;
-	virtual->rax = 0; // ret val from fork
+	virtual->rax = 0; // ret val from fork for the child
 	virtual->rip = from_virtual->rip;
 	printf("setting child rip to %p ", virtual->rip);
 	virtual->cs = from_virtual->cs;
@@ -208,6 +208,7 @@ void mark_pages_read(task_struct_t * from) {
 typedef struct phys_virt_mapping {
 	uint64_t physical_addr;
 	uint64_t virtual_addr;
+	int isset;
 	struct phys_virt_mapping * next;
 } pv_map_t;
 
@@ -254,6 +255,31 @@ uint64_t* phys_to_virt_map(uint64_t* physaddr, void * pv_map) {
 
 }
 
+int mapping_not_added(pv_map_t* pv_map_node, uint64_t page_base,
+		uint64_t page_phys_addr) {
+	for (pv_map_t* temp = pv_map_node; temp != NULL; temp = temp->next) {
+		if (temp->virtual_addr == page_base)
+			return 0;
+	}
+	return 1;
+}
+
+void track_mapping(pv_map_t* pv_map_node, uint64_t page_base,
+		uint64_t page_phys_addr) {
+	if (pv_map_node->isset) {
+		pv_map_t * temp = kmalloc(sizeof(pv_map_t));
+		temp->physical_addr = page_phys_addr;
+		temp->virtual_addr = page_base;
+		temp->next = pv_map_node->next;
+		pv_map_node->next = temp;
+	} else {
+		pv_map_node->isset = 1;
+		pv_map_node->physical_addr = page_phys_addr;
+		pv_map_node->virtual_addr = page_base;
+		pv_map_node->next = NULL;
+	}
+}
+
 // page tables that are involved in resolving page_base are
 // created if not already created and entries are duplicated
 void cp_ptables_for(uint64_t page_base, pv_map_t* pv_map_node,
@@ -261,6 +287,7 @@ void cp_ptables_for(uint64_t page_base, pv_map_t* pv_map_node,
 	// parent process has not touched this addr, so why should we bother
 	// creating page table entry for this in the child? Yes, we don't.
 	if (!is_linear_addr_mapped(page_base)) {
+		printf(" not mapped in parent, ignoring copying %p ", page_base);
 		return;
 	}
 	// store this pte val for the addr page_base in the child page table too
@@ -277,13 +304,40 @@ void cp_ptables_for(uint64_t page_base, pv_map_t* pv_map_node,
 
 	// since page tables need to be accessible for the kernel setting
 	// present, write, supervisor
-	// ---- TODO - change to apt permission below ----
-	setup_page_table_from_outside(page_base, page_phys_addr, 1, 1, 1,
-			chld_pml4_base_dbl_ptr, phys_to_virt_map, pv_map_node);
-	// since it is COW, page is read only
+	// ---- TODO - change to read-only apt permission below ----
+	if (mapping_not_added(pv_map_node, page_base, page_phys_addr)) {
 
-	// ---- TODO - make the page READ ----
-//	set_pte_as_read(page_base);
+		setup_page_table_from_outside(page_base, page_phys_addr, 1, 1, 1,
+				chld_pml4_base_dbl_ptr, phys_to_virt_map, pv_map_node);
+		printf(" forkkkref count before for %p is %d ", page_phys_addr,
+				get_ref_count(page_phys_addr));
+		increase_ref_count(page_phys_addr);
+		track_mapping(pv_map_node, page_base, page_phys_addr);
+	}
+}
+
+pv_map_t* init_pv_map() {
+	pv_map_t* pv_map_node = kmalloc(sizeof(pv_map_t));
+	pv_map_node->isset = 0;
+	pv_map_node->next = NULL;
+	return pv_map_node;
+}
+
+void free_pv_map(pv_map_t* pv_map_node) {
+	pv_map_t* p = pv_map_node;
+	pv_map_t* q = NULL;
+
+	while (p != NULL) {
+		if (q != NULL) {
+			kfree(q);
+		}
+		p = p->next;
+		q = p;
+	}
+
+	if (q != NULL) {
+		kfree(q);
+	}
 }
 
 // except stack page tables
@@ -299,20 +353,21 @@ void cp_page_tables(task_struct_t * from, task_struct_t * to,
 	to->state.cr3 = child_pml_phys;
 
 	uint64_t * child_pml_virtual_ptr = (uint64_t *) child_pml_virtual;
-	pv_map_t *pv_map_node = NULL; // useless for now
+
+	pv_map_t* pv_map_node = init_pv_map();
 	while (vma != NULL) {
 		if (!is_stack_vma(vma)) {
 			for (uint64_t addr = vma->vma_start; addr < vma->vma_end; addr +=
 					4096) {
 				uint64_t page_base = addr & (~0xfff);
-//				printf("vma_begin %p, vma_end %p, copying %p ", vma->vma_start,
-//						vma->vma_end, page_base);
+				printf("vma_begin:%p vma_end:%p, type:%d copying %p ",
+						vma->vma_start, vma->vma_end, vma->type, page_base);
 				cp_ptables_for(page_base, pv_map_node, &child_pml_virtual_ptr);
 			}
 		}
 		vma = vma->vma_next;
 	}
-
+	free_pv_map(pv_map_node);
 	// map the kernel stack
 	setup_page_table_from_outside(krnl_stk_virt, krnl_stk_phys, 1, 1, 1,
 			&child_pml_virtual_ptr, phys_to_virt_map, pv_map_node);
@@ -323,7 +378,8 @@ void cp_page_tables(task_struct_t * from, task_struct_t * to,
 
 }
 
-void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to, uint64_t stack_top) {
+void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to,
+		uint64_t stack_top) {
 	to->pid = pid;
 	to->ppid = from->pid;
 	cp_executable(from, to);
@@ -335,7 +391,8 @@ void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to, uint64_t s
 	uint64_t kernel_stack_virt = 0;
 	uint64_t kernel_stack_phys = 0;
 	//from->state.kernel_rsp = stack_top;
-	cp_kernel_stack(from, to, &kernel_stack_virt, &kernel_stack_phys, stack_top);
+	cp_kernel_stack(from, to, &kernel_stack_virt, &kernel_stack_phys,
+			stack_top);
 	to->state.kernel_rsp = kernel_stack_virt;
 
 	uint64_t stack_virt = 0;

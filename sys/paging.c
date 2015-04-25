@@ -703,3 +703,7 @@ int do_pmls_clash(uint64_t addr1, uint64_t addr2) {
 	return pe1.pml_index == pe2.pml_index;
 }
 
+uint64_t phys_addr_of_frame(uint64_t virtual_addr){
+	uint64_t * target_pte = virtual_addr_pte(virtual_addr);
+	return (uint64_t)next_entity_base(target_pte);
+}

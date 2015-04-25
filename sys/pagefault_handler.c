@@ -37,7 +37,7 @@ void get_elf_ptr(char** elf_dptr, mem_desc_t* mem_ptr, int type) {
 		*elf_dptr = mem_ptr->ehframe_elf_addr;
 	else if (type == 7)
 		*elf_dptr = mem_ptr->got_elf_addr;
-	else if(type == 8)
+	else if (type == 8)
 		*elf_dptr = mem_ptr->gotplt_elf_addr;
 }
 
@@ -56,7 +56,7 @@ void seg_fault(uint64_t addr) {
 	printf("DO PAGE FAULT\n");
 }
 
-int is_addr_valid(uint64_t virtual_addr, mem_desc_t* mem_ptr) {
+int is_addr_in_vma(uint64_t virtual_addr, mem_desc_t* mem_ptr) {
 	int flag = 0;
 	for (vma_t* temp_vma = mem_ptr->vma_list; temp_vma != NULL; temp_vma =
 			temp_vma->vma_next) {
@@ -69,11 +69,26 @@ int is_addr_valid(uint64_t virtual_addr, mem_desc_t* mem_ptr) {
 	return flag;
 }
 
+int is_addr_writable_in_vma(uint64_t virtual_addr, mem_desc_t* mem_ptr) {
+	int flag = 0;
+	for (vma_t* temp_vma = mem_ptr->vma_list; temp_vma != NULL; temp_vma =
+			temp_vma->vma_next) {
+		if (virtual_addr >= temp_vma->vma_start
+				&& virtual_addr < temp_vma->vma_end
+//				&& vma->vma_perm == 1
+						) {
+			flag = 1;
+			break;
+		}
+	}
+	return flag;
+}
+
 void do_demand_paging(uint64_t virtual_addr) {
 	mem_desc_t * mem_ptr = currenttask->mem_map;
 	vma_t * temp_vma = mem_ptr->vma_list;
 
-	if (!is_addr_valid(virtual_addr, mem_ptr)) {
+	if (!is_addr_in_vma(virtual_addr, mem_ptr)) {
 		printf("No valid VMAs for this addr %p", virtual_addr);
 		seg_fault(virtual_addr);
 		return;
@@ -87,7 +102,8 @@ void do_demand_paging(uint64_t virtual_addr) {
 			for (vma_t *temp_vma = mem_ptr->vma_list; temp_vma != NULL;
 					temp_vma = temp_vma->vma_next) {
 				if (temp >= temp_vma->vma_start && temp < temp_vma->vma_end) {
-					if ((temp_vma->type >= 0 && temp_vma->type < 3)||(temp_vma->type >= 6 && temp_vma->type < 8)) {
+					if ((temp_vma->type >= 0 && temp_vma->type < 3)
+							|| (temp_vma->type >= 6 && temp_vma->type < 8)) {
 						// text or rodata or data
 						copy_byte_from_apt_elf((char *) temp, temp_vma,
 								mem_ptr);
@@ -95,7 +111,7 @@ void do_demand_paging(uint64_t virtual_addr) {
 						// bss section
 						*((char *) temp) = 0;
 					} else if (temp_vma->type == 5) {
-						*((char *)temp) = 0;
+						*((char *) temp) = 0;
 					}
 				}
 			}
@@ -104,19 +120,45 @@ void do_demand_paging(uint64_t virtual_addr) {
 	}
 }
 
+void bad_kernel_access(uint64_t addr) {
+	//trying to access kernel data
+	printf(" Kernel access by user\n");
+	seg_fault(addr);
+}
+
+int user_access(int us) {
+	return us == 1;
+}
+
+int copy_on_write(uint64_t addr) {
+	mem_desc_t * mem_ptr = currenttask->mem_map;
+	if (!is_addr_writable_in_vma(addr, mem_ptr)) {
+		printf("No valid VMAs for this addr %p", addr);
+		seg_fault(addr);
+		return 0;
+	}
+
+	// addr is a valid addr that has write permission in vma
+	// so lets perform COW
+	uint64_t phys = phys_addr_of_frame(addr);
+	printf("ref count is %d ", get_ref_count(phys));
+//	if (get_ref_count(phys) == 1) {
+//
+//	}
+	return 0;
+}
+
 void do_handle_pagefault(uint64_t error_code) {
 	int present = get_bit(error_code, 0);
 	int rw = get_bit(error_code, 1);
 	int us = get_bit(error_code, 2);
 	uint64_t addr = get_faulted_addr();
-//	printf(" page fault at %p, error_code: %x ", addr, error_code);
+	int kernel_addr = is_kernel_addr(addr);
+	printf(" page fault at %p, error_code: %x ", addr, error_code);
 	if (present == 0) {
-		int kernel_addr = is_kernel_addr(addr);
-		if (us == 1) {
+		if (user_access(us)) {
 			if (kernel_addr) {
-				//trying to access kernel data
-				printf(" Kernel access by user\n");
-				seg_fault(addr);
+				bad_kernel_access(addr);
 			} else {
 				printf(" Demand paging for process %d for addr %p\n",
 						currenttask->pid, addr);
@@ -129,7 +171,17 @@ void do_handle_pagefault(uint64_t error_code) {
 			page_alloc(addr);
 		}
 	} else {
-		printf(" must be illegal access pid %d %p p:rw:us %d:%d:%d\n",
+		if (user_access(us)) {
+			if (kernel_addr) {
+				bad_kernel_access(addr);
+			} else if (copy_on_write(addr)) {
+
+			} else {
+				printf(" Process %d trying to write into protected area %p ",
+						currenttask->pid, addr);
+			}
+		}
+		printf(" must be illegal access, pid:%d at %p p:rw:us %d:%d:%d\n",
 				currenttask->pid, addr, present, rw, us);
 		seg_fault(addr);
 	}

@@ -40,20 +40,23 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 		currenttask->state.rsp = regs.rsp;
 		int abc = fork_sys_call(stack_top);
 		return abc;
-	} else if(regs.rax == SYS_write){
-		return write_system_call((int)regs.rdi, (const void *)regs.rsi, (size_t)regs.rdx);
-	}
-	else if(regs.rax == SYS_open){
-		return open_tarfs((char *)regs.rdi, (int)regs.rsi);
-	}
-	else if(regs.rax == SYS_read){
-		return read_tarfs((int)regs.rdi, (void *)(regs.rsi), (size_t)regs.rdx);
-	}
-	else if(regs.rax == SYS_brk){
-		return brk_system_call((uint64_t)regs.rdi);
-	}
-	else if(regs.rax == SYS_getdents){
-		dents_tarfs((int)(regs.rdi)	, (struct dirent *)(regs.rsi), (uint64_t)(regs.rdx));
+	} else if (regs.rax == SYS_write) {
+		return write_system_call((int) regs.rdi, (const void *) regs.rsi,
+				(size_t) regs.rdx);
+	} else if (regs.rax == SYS_open) {
+		return open_tarfs((char *) regs.rdi, (int) regs.rsi);
+	} else if (regs.rax == SYS_read) {
+		return read_tarfs((int) regs.rdi, (void *) (regs.rsi),
+				(size_t) regs.rdx);
+	} else if (regs.rax == SYS_brk) {
+		return brk_system_call((uint64_t) regs.rdi);
+	} else if (regs.rax == SYS_getdents) {
+		dents_tarfs((int) (regs.rdi), (struct dirent *) (regs.rsi),
+				(uint64_t) (regs.rdx));
+	} else if (regs.rax == SYS_getpid) {
+		return currenttask->pid;
+	} else if (regs.rax == SYS_getppid) {
+		return currenttask->ppid;
 	}
 	return 0;
 }

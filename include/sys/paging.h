@@ -28,4 +28,6 @@ void get_both_pml4_base_addrs_for_process(uint64_t* vaddr, uint64_t* phys_addr);
 
 void setup_page_tables_after_cr3_update(uint64_t linear_addr,
 		uint64_t physical_addr, int p, int rw, int us);
+
+uint64_t phys_addr_of_frame(uint64_t virtual_addr);
 #endif

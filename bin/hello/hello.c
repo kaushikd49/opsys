@@ -204,9 +204,27 @@
 int arr[100];
 int b = 10;
 
+int foo(int a) {
+	return 1;
+}
 int main(int argc, char* argv[], char* envp[]) {
-	pid_t val = fork();
-	printf("Hello World!. Getpid %d Ret val is %d\n", getpid(), val);
+//	int c = 4;
+//	foo(b);
+	fork();
+
+	printf("\nHello! pid:%d parent:%d\n", getpid(), getppid());
+//	b =5;
+//	foo(b);
+	//	if(val == 0){
+//		printf("\nSon, pid:%d fork_ret:%d parent:%d\n", getpid(), val, getppid());
+//	}else if(val>0){
+//		printf("\nDad, pid:%d fork_ret:%d parent:%d\n", getpid(), val, getppid());
+//	}else {
+//		printf("\nprocess:%d fork error, returned %d", getpid(),val);
+//	}
+
+//	b = 2;
+//	b = 1;
 //	int fd = open("test/test.txt", 0);
 //	char buff[10];
 //	for(int64_t i = 0; i<10; i++){
