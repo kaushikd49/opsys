@@ -314,6 +314,7 @@ void cp_ptables_for(uint64_t page_base, pv_map_t* pv_map_node,
 		increase_ref_count(page_phys_addr);
 		track_mapping(pv_map_node, page_base, page_phys_addr);
 	}
+
 }
 
 pv_map_t* init_pv_map() {
@@ -340,6 +341,25 @@ void free_pv_map(pv_map_t* pv_map_node) {
 	}
 }
 
+pv_map_t* cp_for_each_vma(vma_t* vma, uint64_t** child_pml_dbl_ptr_virtual,
+		pv_map_t* pv_map_node) {
+	while (vma != NULL) {
+		if (!is_stack_vma(vma)) {
+			for (uint64_t addr = vma->vma_start; addr < vma->vma_end; addr +=
+					4096) {
+				uint64_t page_base = addr & (~0xfff);
+				printf("vma_begin:%p vma_end:%p, type:%d copying %p ",
+						vma->vma_start, vma->vma_end, vma->type, page_base);
+				cp_ptables_for(page_base, pv_map_node,
+						child_pml_dbl_ptr_virtual);
+			}
+		}
+		vma = vma->vma_next;
+	}
+
+	return pv_map_node;
+}
+
 // except stack page tables
 void cp_page_tables(task_struct_t * from, task_struct_t * to,
 		uint64_t krnl_stk_virt, uint64_t krnl_stk_phys, uint64_t stk_virt,
@@ -353,29 +373,20 @@ void cp_page_tables(task_struct_t * from, task_struct_t * to,
 	to->state.cr3 = child_pml_phys;
 
 	uint64_t * child_pml_virtual_ptr = (uint64_t *) child_pml_virtual;
+	uint64_t** child_pml_dbl_ptr_virtual = &child_pml_virtual_ptr;
 
 	pv_map_t* pv_map_node = init_pv_map();
-	while (vma != NULL) {
-		if (!is_stack_vma(vma)) {
-			for (uint64_t addr = vma->vma_start; addr < vma->vma_end; addr +=
-					4096) {
-				uint64_t page_base = addr & (~0xfff);
-				printf("vma_begin:%p vma_end:%p, type:%d copying %p ",
-						vma->vma_start, vma->vma_end, vma->type, page_base);
-				cp_ptables_for(page_base, pv_map_node, &child_pml_virtual_ptr);
-			}
-		}
-		vma = vma->vma_next;
-	}
-	free_pv_map(pv_map_node);
+	pv_map_node = cp_for_each_vma(vma, child_pml_dbl_ptr_virtual,
+			pv_map_node);
+
 	// map the kernel stack
 	setup_page_table_from_outside(krnl_stk_virt, krnl_stk_phys, 1, 1, 1,
-			&child_pml_virtual_ptr, phys_to_virt_map, pv_map_node);
+			child_pml_dbl_ptr_virtual, phys_to_virt_map, pv_map_node);
 
 	// map the process stack
 	setup_page_table_from_outside(stk_virt, stk_phys, 1, 1, 1,
-			&child_pml_virtual_ptr, phys_to_virt_map, pv_map_node);
-
+			child_pml_dbl_ptr_virtual, phys_to_virt_map, pv_map_node);
+	free_pv_map(pv_map_node);
 }
 
 void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to,
