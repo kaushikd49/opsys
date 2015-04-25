@@ -21,7 +21,7 @@ void cp_executable(task_struct_t * from, task_struct_t * to) {
 	}
 }
 
-void cp_stack2(task_struct_t * from, task_struct_t * to, uint64_t * stack_virt,
+void cp_process_stack(task_struct_t * from, task_struct_t * to, uint64_t * stack_virt,
 		uint64_t * stack_phys) {
 	uint64_t phys = (uint64_t) get_free_frames(0);
 	uint64_t virtual_addr = (uint64_t) get_virtual_location(0);
@@ -44,7 +44,7 @@ void cp_stack2(task_struct_t * from, task_struct_t * to, uint64_t * stack_virt,
 	*stack_virt = to->state.rsp;
 }
 
-void cp_stack(task_struct_t * from, task_struct_t * to, uint64_t * stack_virt,
+void cp_kernel_stack(task_struct_t * from, task_struct_t * to, uint64_t * stack_virt,
 		uint64_t * stack_phys, uint64_t stack_top) {
 	uint64_t phys = (uint64_t) get_free_frames(0);
 	uint64_t virtual_addr = *stack_virt;
@@ -53,20 +53,6 @@ void cp_stack(task_struct_t * from, task_struct_t * to, uint64_t * stack_virt,
 
 	setup_kernel_page_tables(virtual_addr, phys);
 
-	// From whatever offset from's kernel rsp is at, copy stuff
-	// into to's stack too, starting the same offset up-to the top
-	// boundary of stack (as stack grows downwards).
-	// todo: We are ASSUMING kernel stack does not grow >= a page
-
-//	uint64_t offset = from->state.kernel_rsp & 0xfff; // last 3 nibbles
-//	char * frmpg_ptr = (char *) from->state.kernel_rsp;
-//	char * topg_ptr = ((char *) virtual_addr) + offset;
-//	int num_bytes = sizeof(regs_syscall_t);
-//	for (int i = 0; i < num_bytes; i++) {
-//		*topg_ptr = *frmpg_ptr;
-//		topg_ptr++;
-//		frmpg_ptr++;
-//	}
 	regs_syscall_t *virtual = (regs_syscall_t *) virtual_addr;
 	regs_syscall_t *from_virtual = (regs_syscall_t *)(stack_top);
 	virtual->gs = from_virtual->gs;
@@ -319,8 +305,8 @@ void cp_page_tables(task_struct_t * from, task_struct_t * to,
 			for (uint64_t addr = vma->vma_start; addr < vma->vma_end; addr +=
 					4096) {
 				uint64_t page_base = addr & (~0xfff);
-				printf("vma_begin %p, vma_end %p, copying %p ", vma->vma_start,
-						vma->vma_end, page_base);
+//				printf("vma_begin %p, vma_end %p, copying %p ", vma->vma_start,
+//						vma->vma_end, page_base);
 				cp_ptables_for(page_base, pv_map_node, &child_pml_virtual_ptr);
 			}
 		}
@@ -349,12 +335,12 @@ void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to, uint64_t s
 	uint64_t kernel_stack_virt = 0;
 	uint64_t kernel_stack_phys = 0;
 	//from->state.kernel_rsp = stack_top;
-	cp_stack(from, to, &kernel_stack_virt, &kernel_stack_phys, stack_top);
+	cp_kernel_stack(from, to, &kernel_stack_virt, &kernel_stack_phys, stack_top);
 	to->state.kernel_rsp = kernel_stack_virt;
 
 	uint64_t stack_virt = 0;
 	uint64_t stack_phys = 0;
-	cp_stack2(from, to, &stack_virt, &stack_phys);
+	cp_process_stack(from, to, &stack_virt, &stack_phys);
 	to->state.rsp = from->state.rsp;
 
 	cp_page_tables(from, to, to->state.kernel_rsp, kernel_stack_phys,
