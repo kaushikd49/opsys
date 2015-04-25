@@ -309,8 +309,8 @@ void cp_ptables_for(uint64_t page_base, pv_map_t* pv_map_node,
 
 		setup_page_table_from_outside(page_base, page_phys_addr, 1, 1, 1,
 				chld_pml4_base_dbl_ptr, phys_to_virt_map, pv_map_node);
-		printf(" forkkkref count before for %p is %d ", page_phys_addr,
-				get_ref_count(page_phys_addr));
+//		printf(" in forkk count before for %p is %d ", page_phys_addr,
+//				get_ref_count(page_phys_addr));
 		increase_ref_count(page_phys_addr);
 		track_mapping(pv_map_node, page_base, page_phys_addr);
 	}
@@ -348,8 +348,8 @@ pv_map_t* cp_for_each_vma(vma_t* vma, uint64_t** child_pml_dbl_ptr_virtual,
 			for (uint64_t addr = vma->vma_start; addr < vma->vma_end; addr +=
 					4096) {
 				uint64_t page_base = addr & (~0xfff);
-				printf("vma_begin:%p vma_end:%p, type:%d copying %p ",
-						vma->vma_start, vma->vma_end, vma->type, page_base);
+//				printf("vma_begin:%p vma_end:%p, type:%d copying %p ",
+//						vma->vma_start, vma->vma_end, vma->type, page_base);
 				cp_ptables_for(page_base, pv_map_node,
 						child_pml_dbl_ptr_virtual);
 			}

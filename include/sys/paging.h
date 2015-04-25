@@ -30,4 +30,9 @@ void setup_page_tables_after_cr3_update(uint64_t linear_addr,
 		uint64_t physical_addr, int p, int rw, int us);
 
 uint64_t phys_addr_of_frame(uint64_t virtual_addr);
+
+uint64_t * virtual_addr_pml4e(uint64_t linear_addr);
+uint64_t * virtual_addr_pdirptre(uint64_t linear_addr);
+uint64_t * virtual_addr_pdire(uint64_t linear_addr);
+uint64_t * virtual_addr_pte(uint64_t linear_addr);
 #endif

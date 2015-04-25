@@ -130,6 +130,36 @@ int user_access(int us) {
 	return us == 1;
 }
 
+void set_as_write(uint64_t* pte) {
+	*pte = set_bit(*pte, 1, 1); // bit 1 as 1
+}
+
+// will do cr3 refresh here, which is simpler than
+// tlb flush for all possible addrs
+void set_pagetables_as_write(uint64_t virtual_addr) {
+	if (is_linear_addr_mapped(virtual_addr)) {
+		set_as_write(virtual_addr_pml4e(virtual_addr));
+		set_as_write(virtual_addr_pdirptre(virtual_addr));
+		set_as_write(virtual_addr_pdire(virtual_addr));
+		set_as_write(virtual_addr_pte(virtual_addr));
+	}
+	update_cr3((uint64_t *) currenttask->state.cr3);
+}
+
+uint64_t* duplicate_page(uint64_t addr) {
+	// alloc separate page and copy, decr ref count
+	uint64_t* temp_addr = get_virtual_location(0);
+	uint64_t* frame = get_free_frame();
+	setup_process_page_tables((uint64_t) temp_addr, (uint64_t) frame);
+	uint64_t* p = (uint64_t*) (addr & (~0xfff));
+	for (int i = 0; i < 512; i++) {
+		*temp_addr = *p;
+		temp_addr++;
+		p++;
+	}
+	return frame;
+}
+
 int copy_on_write(uint64_t addr) {
 	mem_desc_t * mem_ptr = currenttask->mem_map;
 	if (!is_addr_writable_in_vma(addr, mem_ptr)) {
@@ -138,14 +168,23 @@ int copy_on_write(uint64_t addr) {
 		return 0;
 	}
 
-	// addr is a valid addr that has write permission in vma
-	// so lets perform COW
+	// addr is a valid one that has write
+	// permission in vma, so lets perform COW
 	uint64_t phys = phys_addr_of_frame(addr);
 	printf("ref count is %d ", get_ref_count(phys));
-//	if (get_ref_count(phys) == 1) {
-//
-//	}
-	return 0;
+
+	if (get_ref_count(phys) == 1) {
+		// just mark as writable
+		printf(" just made page writable ");
+		set_pagetables_as_write(addr);
+	} else {
+		// alloc separate page and copy, decr ref count
+		uint64_t* frame = duplicate_page(addr);
+		setup_process_page_tables(addr, (uint64_t) frame);
+		decrease_ref_count(phys);
+		printf(" allocated a new page and copied contents ");
+	}
+	return 1;
 }
 
 void do_handle_pagefault(uint64_t error_code) {
@@ -154,7 +193,8 @@ void do_handle_pagefault(uint64_t error_code) {
 	int us = get_bit(error_code, 2);
 	uint64_t addr = get_faulted_addr();
 	int kernel_addr = is_kernel_addr(addr);
-	printf(" page fault at %p, error_code: %x ", addr, error_code);
+	printf(" pid:%d page fault at %p, error_code: %x ", currenttask->pid, addr,
+			error_code);
 	if (present == 0) {
 		if (user_access(us)) {
 			if (kernel_addr) {
@@ -175,14 +215,16 @@ void do_handle_pagefault(uint64_t error_code) {
 			if (kernel_addr) {
 				bad_kernel_access(addr);
 			} else if (copy_on_write(addr)) {
-
+				printf(" COW completed ");
 			} else {
-				printf(" Process %d trying to write into protected area %p ",
+				printf("\nProcess %d trying to write into protected area %p ",
 						currenttask->pid, addr);
+				seg_fault(addr);
 			}
+		} else {
+			printf(" must be illegal access, pid:%d at %p p:rw:us %d:%d:%d\n",
+					currenttask->pid, addr, present, rw, us);
+			seg_fault(addr);
 		}
-		printf(" must be illegal access, pid:%d at %p p:rw:us %d:%d:%d\n",
-				currenttask->pid, addr, present, rw, us);
-		seg_fault(addr);
 	}
 }

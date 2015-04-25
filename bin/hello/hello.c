@@ -209,8 +209,9 @@ int foo(int a) {
 }
 int main(int argc, char* argv[], char* envp[]) {
 //	int c = 4;
-//	foo(b);
+	foo(b);
 	fork();
+	b = 121;
 
 	printf("\nHello! pid:%d parent:%d\n", getpid(), getppid());
 //	b =5;
