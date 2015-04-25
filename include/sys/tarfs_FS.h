@@ -42,5 +42,7 @@ uint64_t open_tarfs(char *file_name, int flags);
 uint64_t read_tarfs(int fd, void *buffer, uint64_t size, uint64_t stack_top);
 void dents_tarfs(int fd, struct dirent *dirent_array, uint64_t size);
 void init_tarfs();
-
+int dup_tarfs(int fd);
+int close_tarfs(int fd);
+int dup2_tarfs(int fd_old, int fd_new);
 #endif

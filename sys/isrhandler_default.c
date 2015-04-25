@@ -37,6 +37,10 @@ uint64_t handle_wait(regs_syscall_t regs){
 	uint64_t stack_top = (uint64_t) (&(regs.gs));
 	return wait_pid((int)regs.rdi, (int *)(regs.rsi), (int)(regs.rdx), stack_top);
 }
+uint64_t handle_nanosleep(regs_syscall_t regs){
+	uint64_t stack_top = (uint64_t)(&(regs.gs));
+	return nanosleep_sys_call((void *)regs.rdi, (void *)regs.rsi, stack_top);
+}
 uint64_t handle_syscall(regs_syscall_t regs) {
 	if (regs.rax == 1) {
 		return write_system_call((int) regs.rdi, (const void *) regs.rsi,
@@ -58,6 +62,15 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 	}
 	else if(regs.rax == SYS_getdents){
 		dents_tarfs((int)(regs.rdi)	, (struct dirent *)(regs.rsi), (uint64_t)(regs.rdx));
+	}
+	else if(regs.rax == SYS_close){
+		return close_tarfs((int)(regs.rdi));
+	}
+	else if(regs.rax == SYS_dup){
+		return dup_tarfs((int)(regs.rdi));
+	}
+	else if(regs.rax == SYS_dup2){
+		return dup2_tarfs((int)regs.rdi, (int)regs.rsi);
 	}
 	return 0;
 }

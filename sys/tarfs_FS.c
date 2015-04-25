@@ -139,7 +139,32 @@ void dents_tarfs(int fd, struct dirent *dirent_array, uint64_t size){
 	char *dir_name = temp->name;
 	find_and_populate_dirent_array(dirent_array, size, dir_name);
 }
-void close_tarfs(int fd){
-	currenttask->filearray[fd]= NULL;
+int close_tarfs(int fd){
+	if(fd<0 || fd >= 50){
+		return -1;
+	}
+	if(currenttask->filearray[fd] != NULL){
+		currenttask->filearray[fd]= NULL;
+		return 0;
+	}
+	return -1;
 }
 
+int dup_tarfs(int fd){
+	for(uint64_t i = 0;i<MAX_FILES_SYSTEM; i++){
+		if(currenttask->filearray[i] == NULL){
+			currenttask->filearray[i] = currenttask->filearray[fd];
+			return i;
+			break;
+		}
+	}
+	return -1;
+}
+
+int dup2_tarfs(int fd_old, int fd_new){
+	if(currenttask->filearray[fd_old]!=NULL && currenttask->filearray[fd_new]!=NULL){
+		currenttask->filearray[fd_new] = currenttask->filearray[fd_old];
+		return fd_new;
+	}
+	return -1;
+}

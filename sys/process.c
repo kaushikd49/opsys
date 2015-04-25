@@ -12,10 +12,13 @@
 #include <sys/kernel_thread.h>
 #include <sys/scheduling.h>
 #include <sys/isr_stuff.h>
+#include <sys/nanosleep_functions.h>
 #define VM_READ 1<<0
 #define VM_WRITE 1<<1
 #define VM_EXEX 1<<2
 uint64_t limit = 1 << 30;
+extern int seconds_boot;
+extern int ms_boot;
 //static task_struct_t *currenttask; //todo: initialize
 static task_struct_t *lasttask;
 static task_struct_t taskone;
@@ -531,10 +534,10 @@ void kernel_process_init() {
 	temp_create_kernel_process(check_user_process_waitpid_daemon, 1);
 	temp_create_user_process("bin/hello2", 1);
 //	temp_create_kernel_process(clear_keyboard_busy, 1);
-	temp_create_user_process("bin/hello", 4);
+//	temp_create_user_process("bin/hello", 4);
 //	temp_create_user_process("bin/hello2", 1);
 //
-	temp_create_user_process("bin/hello", 4);
+//	temp_create_user_process("bin/hello", 4);
 //	temp_create_kernel_process(test_main,1);
 //	temp_create_kernel_process(test_main,1);
 //	temp_create_kernel_process(test_main,1);
@@ -655,6 +658,39 @@ uint64_t temp_preempt_waitpid(int pid, int *status, int options, uint64_t stack_
 		last->p_state = STATE_WAITING;
 		last->waiting_for = pid;
 		move_process_runq_to_waitq(last->pid);
+		update_cr3((uint64_t *)(currenttask->state.cr3));
+	//	printf("pid is %d ",currenttask->pid);
+		return (currenttask->state.kernel_rsp);
+}
+
+uint64_t temp_preempt_nanosleep(const struct timespec *rqtp, struct timespec *rmtp, uint64_t stack_top){
+	if(currenttask == &taskone && currenttask->next == currenttask){
+			return stack_top;
+		}
+		task_struct_t *last = currenttask;
+		currenttask = currenttask->next;
+//		if(currenttask == &taskone){
+//			currenttask = currenttask->next;
+//		}
+//		if(currenttask == last){
+//			return stack_top;
+//		}
+		__asm__ __volatile__("movq %1, %%rax\n\t"
+							 "movq %%rax, %0"
+							 :"=r"(last->state.kernel_rsp)
+							  :"r"(stack_top)
+							  :"memory", "%rax", "%rsp");
+	//	printf("h\n");
+		tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp)+192);
+	//	__asm__ __volatile__("movq %0, %%rsp"
+	//						:
+	//						:"r"(currenttask->state.kernel_rsp)
+	//						:"%rsp");
+	//	printf("%p", tss.rsp0);
+		last->p_state = STATE_WAITING;
+		move_process_runq_to_waitq(last->pid);
+		nanosleep_node_t *temp = make_nanosleep_node(rqtp, last);
+		add_nanosleep_list(temp);
 		update_cr3((uint64_t *)(currenttask->state.cr3));
 	//	printf("pid is %d ",currenttask->pid);
 		return (currenttask->state.kernel_rsp);

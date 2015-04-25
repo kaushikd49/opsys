@@ -1219,8 +1219,15 @@ q2d:movq $0, %rbx
 q2e:movq $61, %rbx
 	movq 144(%rsp), %rax
 	cmp %rbx, %rax
-	jne q2
+	jne q2f
 	call handle_wait
+	movq %rax, %rsp
+	jmp q3
+q2f:movq $35, %rbx
+	movq 144(%rsp), %rax
+	cmp %rbx, %rax
+	jne q2
+	call handle_nanosleep
 	movq %rax, %rsp
 	jmp q3
  q2:call handle_syscall

@@ -112,4 +112,5 @@ int strcmp(char *string1, char *string2);
 char *strcpy(char *dst, char *src);
 void quit_kernel_thread();
 uint64_t temp_preempt_waitpid(int pid, int *status, int options, uint64_t stack_top);
+
 #endif

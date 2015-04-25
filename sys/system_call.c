@@ -4,9 +4,7 @@
 #include<sys/fork.h>
 #include<sys/process.h>
 int write_system_call(int fd, const void *buff, size_t count){
-	if(fd != 1){//EACCES error
-		return -13;
-	}
+
 	if(currenttask->filearray[fd] == stdout_fd){
 		char *print_buffer = (char *) buff;
 		int printed = 0;
@@ -20,6 +18,7 @@ int write_system_call(int fd, const void *buff, size_t count){
 	else{
 		//still need to test and add error cases
 		//havnt decided how to assign pages to the buffer
+		printf("other half of write");
 		char *copy_buf = (char *)buff;
 		int printed = 0;
 		while(printed < count && copy_buf[printed] != '\0'){
@@ -75,4 +74,8 @@ uint64_t brk_system_call(uint64_t value){
 
 uint64_t wait_pid(int pid, int *status, int options, uint64_t stack_top){
 	return temp_preempt_waitpid(pid, status, options, stack_top);
+}
+
+uint64_t nanosleep_sys_call(const struct timespec *rqtp, struct timespec *rmtp, uint64_t stack_top){
+	return temp_preempt_nanosleep(rqtp, rmtp, stack_top);
 }
