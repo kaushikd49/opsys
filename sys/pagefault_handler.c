@@ -160,14 +160,18 @@ uint64_t* duplicate_page(uint64_t addr) {
 	return frame;
 }
 
-int copy_on_write(uint64_t addr) {
+int is_cow_possible(uint64_t addr) {
 	mem_desc_t * mem_ptr = currenttask->mem_map;
+
 	if (!is_addr_writable_in_vma(addr, mem_ptr)) {
-		printf("No valid VMAs for this addr %p", addr);
+		printf("No write perm in VMAs for this addr %p", addr);
 		seg_fault(addr);
 		return 0;
 	}
+	return 1;
+}
 
+int copy_on_write(uint64_t addr) {
 	// addr is a valid one that has write
 	// permission in vma, so lets perform COW
 	uint64_t phys = phys_addr_of_frame(addr);
@@ -180,7 +184,7 @@ int copy_on_write(uint64_t addr) {
 	} else {
 		// alloc separate page and copy, decr ref count
 		uint64_t* frame = duplicate_page(addr);
-		setup_process_page_tables(addr, (uint64_t) frame);
+		setup_process_page_tables_without_zeroing(addr, (uint64_t) frame);
 		decrease_ref_count(phys);
 		printf(" allocated a new page and copied contents ");
 	}
@@ -214,15 +218,16 @@ void do_handle_pagefault(uint64_t error_code) {
 		if (user_access(us)) {
 			if (kernel_addr) {
 				bad_kernel_access(addr);
-			} else if (copy_on_write(addr)) {
-				printf(" COW completed ");
+			} else if (is_cow_possible(addr)) {
+				printf(" Performing COW ");
+				copy_on_write(addr);
 			} else {
 				printf("\nProcess %d trying to write into protected area %p ",
 						currenttask->pid, addr);
 				seg_fault(addr);
 			}
 		} else {
-			printf(" must be illegal access, pid:%d at %p p:rw:us %d:%d:%d\n",
+			printf(" Something wrong, kernel read fault pid:%d at %p p:rw:us %d:%d:%d\n",
 					currenttask->pid, addr, present, rw, us);
 			seg_fault(addr);
 		}

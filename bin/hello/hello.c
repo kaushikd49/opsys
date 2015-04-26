@@ -211,9 +211,9 @@ int main(int argc, char* argv[], char* envp[]) {
 //	int c = 4;
 	foo(b);
 	fork();
-	b = 121;
+	b = b + 35;
 
-	printf("\nHello! pid:%d parent:%d\n", getpid(), getppid());
+	printf("\nHello! b is %d pid:%d parent:%d\n", b, getpid(), getppid());
 //	b =5;
 //	foo(b);
 	//	if(val == 0){

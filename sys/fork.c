@@ -255,7 +255,7 @@ uint64_t* phys_to_virt_map(uint64_t* physaddr, void * pv_map) {
 
 }
 
-int mapping_not_added(pv_map_t* pv_map_node, uint64_t page_base,
+int is_not_copied(pv_map_t* pv_map_node, uint64_t page_base,
 		uint64_t page_phys_addr) {
 	for (pv_map_t* temp = pv_map_node; temp != NULL; temp = temp->next) {
 		if (temp->virtual_addr == page_base)
@@ -305,9 +305,8 @@ void cp_ptables_for(uint64_t page_base, pv_map_t* pv_map_node,
 	// since page tables need to be accessible for the kernel setting
 	// present, write, supervisor
 	// ---- TODO - change to read-only apt permission below ----
-	if (mapping_not_added(pv_map_node, page_base, page_phys_addr)) {
-
-		setup_page_table_from_outside(page_base, page_phys_addr, 1, 1, 1,
+	if (is_not_copied(pv_map_node, page_base, page_phys_addr)) {
+		setup_process_page_table_from_outside(page_base, page_phys_addr, 1, 0, 1,
 				chld_pml4_base_dbl_ptr, phys_to_virt_map, pv_map_node);
 //		printf(" in forkk count before for %p is %d ", page_phys_addr,
 //				get_ref_count(page_phys_addr));
@@ -380,11 +379,11 @@ void cp_page_tables(task_struct_t * from, task_struct_t * to,
 			pv_map_node);
 
 	// map the kernel stack
-	setup_page_table_from_outside(krnl_stk_virt, krnl_stk_phys, 1, 1, 1,
+	setup_process_page_table_from_outside(krnl_stk_virt, krnl_stk_phys, 1, 1, 1,
 			child_pml_dbl_ptr_virtual, phys_to_virt_map, pv_map_node);
 
 	// map the process stack
-	setup_page_table_from_outside(stk_virt, stk_phys, 1, 1, 1,
+	setup_process_page_table_from_outside(stk_virt, stk_phys, 1, 1, 1,
 			child_pml_dbl_ptr_virtual, phys_to_virt_map, pv_map_node);
 	free_pv_map(pv_map_node);
 }

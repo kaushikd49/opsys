@@ -185,8 +185,9 @@ int page_lookup(uint64_t *pml_base_ptr, uint64_t linear_addr,
 }
 
 void create_all_paging_entities(const struct paging_entities* pe,
-		uint64_t physical_addr, uint64_t* pml_base_ptr, int p, int rw, int us,
-		uint64_t* (*addr_map_func)(uint64_t*, void *), void * pv_map) {
+		uint64_t physical_addr, uint64_t* pml_base_ptr, int ptable_us, int p,
+		int rw, int us, uint64_t* (*addr_map_func)(uint64_t*, void *),
+		void * pv_map) {
 	// No entities are present for this linear address
 	uint64_t* pdir_ptr = get_free_frame();
 	uint64_t* pdir = get_free_frame();
@@ -196,16 +197,19 @@ void create_all_paging_entities(const struct paging_entities* pe,
 	uint64_t* mapped_pdir = addr_map_func(pdir, pv_map);
 	uint64_t* mapped_ptable = addr_map_func(ptable, pv_map);
 
-	pml_base_ptr[pe->pml_index] = get_pml4_entry((uint64_t) pdir_ptr, p, rw,
-			us);
-	mapped_pdir_ptr[pe->pdir_ptr_index] = get_pdpt_entry((uint64_t) pdir, p, rw, us);
-	mapped_pdir[pe->dir_index] = get_pd_entry((uint64_t) ptable, p, rw, us);
+	pml_base_ptr[pe->pml_index] = get_pml4_entry((uint64_t) pdir_ptr, 1, 1,
+			ptable_us);
+	mapped_pdir_ptr[pe->pdir_ptr_index] = get_pdpt_entry((uint64_t) pdir, 1, 1,
+			ptable_us);
+	mapped_pdir[pe->dir_index] = get_pd_entry((uint64_t) ptable, 1, 1,
+			ptable_us);
 	mapped_ptable[pe->table_index] = get_ptable_entry(physical_addr, p, rw, us);
 }
 
 void create_all_but_pml(const struct paging_entities* pe,
-		uint64_t physical_addr, uint64_t* deepest_entity_base, int p, int rw,
-		int us, uint64_t* (*addr_map_func)(uint64_t*, void *), void * pv_map) {
+		uint64_t physical_addr, uint64_t* deepest_entity_base, int ptable_us,
+		int p, int rw, int us, uint64_t* (*addr_map_func)(uint64_t*, void *),
+		void * pv_map) {
 	// only pml is present for this linear address
 
 	uint64_t* pdir_ptr_base = (uint64_t*) (*deepest_entity_base);
@@ -215,14 +219,15 @@ void create_all_but_pml(const struct paging_entities* pe,
 	uint64_t* mapped_pdir = addr_map_func(pdir, pv_map);
 	uint64_t* mapped_ptable = addr_map_func(ptable, pv_map);
 
-	pdir_ptr_base[pe->pdir_ptr_index] = get_pdpt_entry((uint64_t) pdir, p, rw,
-			us);
-	mapped_pdir[pe->dir_index] = get_pd_entry((uint64_t) ptable, p, rw, us);
+	pdir_ptr_base[pe->pdir_ptr_index] = get_pdpt_entry((uint64_t) pdir, 1, 1,
+			ptable_us);
+	mapped_pdir[pe->dir_index] = get_pd_entry((uint64_t) ptable, 1, 1,
+			ptable_us);
 	mapped_ptable[pe->table_index] = get_ptable_entry(physical_addr, p, rw, us);
 }
 
 void create_pdir_and_ptable(const struct paging_entities* pe,
-		uint64_t physical_addr, uint64_t* deepest_entity_base, int p, int rw,
+		uint64_t physical_addr, uint64_t* deepest_entity_base, int ptable_us, int p, int rw,
 		int us, uint64_t* (*addr_map_func)(uint64_t*, void *), void * pv_map) {
 	// pml and pdir_ptr are present for this linear address
 	uint64_t* pdir_base = (uint64_t*) (*deepest_entity_base);
@@ -230,7 +235,7 @@ void create_pdir_and_ptable(const struct paging_entities* pe,
 
 	uint64_t* mapped_ptable = addr_map_func(ptable, pv_map);
 
-	pdir_base[pe->dir_index] = get_pd_entry((uint64_t) ptable, p, rw, us);
+	pdir_base[pe->dir_index] = get_pd_entry((uint64_t) ptable, 1, 1, ptable_us);
 	mapped_ptable[pe->table_index] = get_ptable_entry(physical_addr, p, rw, us);
 }
 
@@ -256,7 +261,7 @@ void create_pte(const struct paging_entities* pe, uint64_t physical_addr,
 }
 
 void setup_page_table_from_outside(uint64_t linear_addr, uint64_t physical_addr,
-		int p, int rw, int us, uint64_t** pml_base_dbl_ptr,
+		int us, int pte_p, int pte_rw, int pte_us, uint64_t** pml_base_dbl_ptr,
 		uint64_t* (*addr_map_func)(uint64_t*, void *), void * pv_map) {
 	struct paging_entities pe;
 	get_paging_entity_indexes(&pe, linear_addr);
@@ -274,33 +279,49 @@ void setup_page_table_from_outside(uint64_t linear_addr, uint64_t physical_addr,
 			deepest_entity_base, addr_map_func, pv_map);
 	if (res == 1) {
 		// No entities are present for this linear address
-		create_all_paging_entities(&pe, physical_addr, *pml_base_dbl_ptr, p, rw,
-				us, addr_map_func, pv_map);
+		create_all_paging_entities(&pe, physical_addr, *pml_base_dbl_ptr, us,
+				pte_p, pte_rw, pte_us, addr_map_func, pv_map);
 	} else if (res == 2) {
 		// only pml is present for this linear address
-		create_all_but_pml(&pe, physical_addr, deepest_entity_base, p, rw, us,
-				addr_map_func, pv_map);
+		create_all_but_pml(&pe, physical_addr, deepest_entity_base, us, pte_p,
+				pte_rw, pte_us, addr_map_func, pv_map);
 	} else if (res == 3) {
 		// pml and pdir_ptr are present for this linear address
-		create_pdir_and_ptable(&pe, physical_addr, deepest_entity_base, p, rw,
-				us, addr_map_func, pv_map);
+		create_pdir_and_ptable(&pe, physical_addr, deepest_entity_base, us,
+				pte_p, pte_rw, pte_us, addr_map_func, pv_map);
 	} else if (res == 4) {
 		// pml, pdir_ptr and pdir are present for this linear address, but not ptable
-		create_ptable(&pe, physical_addr, deepest_entity_base, p, rw, us,
-				addr_map_func, pv_map);
+		create_ptable(&pe, physical_addr, deepest_entity_base, pte_p,
+				pte_rw, pte_us, addr_map_func, pv_map);
 	} else {
 		// all present
-		create_pte(&pe, physical_addr, deepest_entity_base, p, rw, us,
-				addr_map_func, pv_map);
+		create_pte(&pe, physical_addr, deepest_entity_base, pte_p, pte_rw,
+				pte_us, addr_map_func, pv_map);
 	}
+}
+
+void setup_kernel_page_table_from_outside(uint64_t linear_addr,
+		uint64_t physical_addr, int pte_p, int pte_rw, int pte_us,
+		uint64_t** pml_base_dbl_ptr,
+		uint64_t* (*addr_map_func)(uint64_t*, void *), void * pv_map) {
+
+	setup_page_table_from_outside(linear_addr, physical_addr, 0, pte_p, pte_rw,
+			pte_us, pml_base_dbl_ptr, addr_map_func, pv_map);
+}
+
+void setup_process_page_table_from_outside(uint64_t linear_addr,
+		uint64_t physical_addr, int pte_p, int pte_rw, int pte_us,
+		uint64_t** pml_base_dbl_ptr,
+		uint64_t* (*addr_map_func)(uint64_t*, void *), void * pv_map) {
+
+	setup_page_table_from_outside(linear_addr, physical_addr, 1, pte_p, pte_rw,
+			pte_us, pml_base_dbl_ptr, addr_map_func, pv_map);
 }
 
 void setup_page_tables(uint64_t **pml_base_dbl_ptr, uint64_t linear_addr,
 		uint64_t physical_addr, int p, int rw, int us) {
-	setup_page_table_from_outside(linear_addr, physical_addr, p, rw, us,
+	setup_kernel_page_table_from_outside(linear_addr, physical_addr, p, rw, us,
 			pml_base_dbl_ptr, identity_addr_map, NULL);
-
-
 }
 
 void map_kernel_address(uint64_t **pml_base_dbl_ptr, void* physbase,
@@ -347,15 +368,15 @@ uint64_t copy_as_pageoffset(uint64_t linear_addr, int startbit, int endbit,
 }
 
 uint64_t * virtual_addr_pml4e(uint64_t linear_addr) {
-	// copy the pml4 offset from linear addr to PG_TRVRSE_BASIC_VA_ADDR as the page offset.
+// copy the pml4 offset from linear addr to PG_TRVRSE_BASIC_VA_ADDR as the page offset.
 	uint64_t pml4e_virtual_addr = copy_as_pageoffset(linear_addr, 39, 47,
 	PG_TRVRSE_BASIC_VA_ADDR);
 	return (uint64_t *) pml4e_virtual_addr;
 }
 
 uint64_t * virtual_addr_pdirptre(uint64_t linear_addr) {
-	// copy the pml offset and pdirptr offset from linear addr to PG_TRVRSE_BASIC_VA_ADDR
-	//as table and page offsets respectively.
+// copy the pml offset and pdirptr offset from linear addr to PG_TRVRSE_BASIC_VA_ADDR
+//as table and page offsets respectively.
 	uint64_t temp = extract_bits(linear_addr, 39, 47,
 	PG_TRVRSE_BASIC_VA_ADDR, 12, 20);
 	uint64_t pdir_ptre_virtual_addr = copy_as_pageoffset(linear_addr, 30, 38,
@@ -364,8 +385,8 @@ uint64_t * virtual_addr_pdirptre(uint64_t linear_addr) {
 }
 
 uint64_t * virtual_addr_pdire(uint64_t linear_addr) {
-	// copy pml, pdirptr and dir offset from linear addr to PG_TRVRSE_BASIC_VA_ADDR
-	// as dir, table and page offsets respectively
+// copy pml, pdirptr and dir offset from linear addr to PG_TRVRSE_BASIC_VA_ADDR
+// as dir, table and page offsets respectively
 	uint64_t temp = extract_bits(linear_addr, 39, 47, PG_TRVRSE_BASIC_VA_ADDR,
 			21, 29);
 	temp = extract_bits(linear_addr, 30, 38, temp, 12, 20);
@@ -374,8 +395,8 @@ uint64_t * virtual_addr_pdire(uint64_t linear_addr) {
 }
 
 uint64_t * virtual_addr_pte(uint64_t linear_addr) {
-	// copy pml, pdirptr, dir and table offset from linear addr to PG_TRVRSE_BASIC_VA_ADDR
-	// as dirptr, dir, table and page offsets respectively
+// copy pml, pdirptr, dir and table offset from linear addr to PG_TRVRSE_BASIC_VA_ADDR
+// as dirptr, dir, table and page offsets respectively
 	uint64_t temp = extract_bits(linear_addr, 39, 47, PG_TRVRSE_BASIC_VA_ADDR,
 			30, 38);
 	temp = extract_bits(linear_addr, 30, 38, temp, 21, 29);
@@ -405,8 +426,8 @@ static inline void invalidate_tlb(uint64_t* m) {
 void invalidate_addresses_with_page(uint64_t * virtual_addr) {
 	uint64_t temp = extract_bits((uint64_t) virtual_addr, 12, 63, ULONG_ZERO,
 			12, 63);
-	// there are 4096 linear addresses whose page = that of this virtual addr
-	// and all of them need to be flushed
+// there are 4096 linear addresses whose page = that of this virtual addr
+// and all of them need to be flushed
 	for (uint64_t i = 0; i < PAGE_SIZE; i++) {
 		uint64_t addr = extract_bits(i, 0, 11, temp, 0, 11);
 //		printf("clearing %p ", addr);
@@ -423,7 +444,7 @@ void zero_out_using_virtual_addr(uint64_t linear_addr) {
 //**** DO-NOT CALL THIS DIRECTLY. USE OTHER SETUP_PAGE_TABLE.. FUNCS ***
 void setup_page_tables_after_cr3_update(uint64_t linear_addr,
 		uint64_t physical_addr, int p, int rw, int us) {
-	// derive paging entities from linear address and update their target
+// derive paging entities from linear address and update their target
 //	printf("\nlinear_addr is %p, physical:%p\n", linear_addr, physical_addr);
 	uint64_t * pml4e_virtual_addr = virtual_addr_pml4e(linear_addr);
 	if (is_entry_not_created((uint64_t *) pml4e_virtual_addr)) {
@@ -490,7 +511,7 @@ void map_page_tables_adress(uint64_t **pml_base_dbl_ptr, int p, int rw, int us) 
 
 void map_other_addresses(uint64_t **pml_base_dbl_ptr, int p, int rw, int us,
 		int len_freelist) {
-	//mapping the free list
+//mapping the free list
 	uint64_t virtual_free_list = VIRTUAL_PHYSFREE_OFFSET + (uint64_t) free_list;
 	uint64_t free_list_temp = (uint64_t) free_list;
 	for (int i = 0; i < len_freelist; i++) {	//free pages is 3 pages long
@@ -551,7 +572,7 @@ void manage_memory_test_suite() {
 	printf("another mem access after ptable-setup %x\n",
 			*((uint64_t *) 0x1234455355));
 
-	//	struct page_t *test = (struct page_t *)virtual_test_addr;
+//	struct page_t *test = (struct page_t *)virtual_test_addr;
 //	test[0].is_free = 0;
 //	test[0].ref_count = 2;
 //	test[0].virtual_address = NULL;
@@ -588,23 +609,23 @@ void *get_virtual_location_cr3(int order) {
 }
 
 uint64_t* get_pml4_base_addrs_for_process(uint64_t* process_pml_base_virtual) {
-	// copy the kernel's pml4 base frame into
-	// a new frame and return the physical address
-	// so that the task_struct can store the same
+// copy the kernel's pml4 base frame into
+// a new frame and return the physical address
+// so that the task_struct can store the same
 	uint64_t* process_pml_base_physical = get_free_frame(0);
 	uint64_t* virtual_addr = (uint64_t*) get_virtual_location_cr3(0);
-	//	printf("va : %p\n", virtual_addr);
-	// we are copying the kernel's address space to the process'
-	// so use setup_kernel_page_tables so that the permissions are
-	// set appropriately and not setup_processl_page_tables.
-	// When process' page address space needs to be updated
-	// use setup_process_page_tables
+//	printf("va : %p\n", virtual_addr);
+// we are copying the kernel's address space to the process'
+// so use setup_kernel_page_tables so that the permissions are
+// set appropriately and not setup_processl_page_tables.
+// When process' page address space needs to be updated
+// use setup_process_page_tables
 	setup_kernel_page_tables((uint64_t) virtual_addr,
 			(uint64_t) process_pml_base_physical);
 	uint64_t *ptr = (uint64_t *) KERNEL_PML4_BASE_VIRTUAL;
-	// kernel addresses only lie in pml 511, so just copy that pml4e
+// kernel addresses only lie in pml 511, so just copy that pml4e
 	*(virtual_addr + 511) = *(ptr + 511);
-	// self referencing of the page table
+// self referencing of the page table
 	uint64_t* temp = virtual_addr + 510;
 	*temp = get_pml4_entry((uint64_t) process_pml_base_physical, 1, 1, 0);
 
@@ -658,7 +679,7 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 	}
 	create_free_list_test(modulep, free_list, physbase, physfree);
 	printf("PHYSBASE:%p PHYSFREE: %p\n", physbase, physfree);
-	//can write a better check below. Your wish
+//can write a better check below. Your wish
 	uint64_t number_pages_free_list = (MAX_NUMBER_PAGES * sizeof(struct page_t))
 			/ PAGE_SIZE + 1; //potentially wasting a page if it exactly page sizes here but thats fine and rare
 //	printf(" NUMBER OF PAGES TAKEN by FREE_PAGES %d\n", number_pages_free_list);
@@ -703,7 +724,7 @@ int do_pmls_clash(uint64_t addr1, uint64_t addr2) {
 	return pe1.pml_index == pe2.pml_index;
 }
 
-uint64_t phys_addr_of_frame(uint64_t virtual_addr){
+uint64_t phys_addr_of_frame(uint64_t virtual_addr) {
 	uint64_t * target_pte = virtual_addr_pte(virtual_addr);
-	return (uint64_t)next_entity_base(target_pte);
+	return (uint64_t) next_entity_base(target_pte);
 }

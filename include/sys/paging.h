@@ -18,8 +18,9 @@ int get_bit(uint64_t num, int bit_num);
 uint64_t * virtual_addr_pte(uint64_t linear_addr);
 void invalidate_addresses_with_page(uint64_t * virtual_addr);
 
-void setup_page_table_from_outside(uint64_t linear_addr, uint64_t physical_addr,
-		int p, int rw, int us, uint64_t** pml_base_dbl_ptr,
+void setup_process_page_table_from_outside(uint64_t linear_addr,
+		uint64_t physical_addr, int p, int rw, int us,
+		uint64_t** pml_base_dbl_ptr,
 		uint64_t* (*addr_map_func)(uint64_t*, void *), void * pv_map);
 
 uint64_t* next_entity_base(uint64_t* entity_entry);
@@ -35,4 +36,7 @@ uint64_t * virtual_addr_pml4e(uint64_t linear_addr);
 uint64_t * virtual_addr_pdirptre(uint64_t linear_addr);
 uint64_t * virtual_addr_pdire(uint64_t linear_addr);
 uint64_t * virtual_addr_pte(uint64_t linear_addr);
+
+void setup_process_page_tables_without_zeroing(uint64_t linear_addr,
+		uint64_t physical_addr);
 #endif
