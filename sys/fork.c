@@ -159,6 +159,9 @@ void cp_mem_desc(task_struct_t * from, task_struct_t * to) {
 	tmem_map->text_elf_addr = fmem_map->text_elf_addr;
 	tmem_map->rodata_elf_addr = fmem_map->rodata_elf_addr;
 	tmem_map->data_elf_addr = fmem_map->data_elf_addr;
+	tmem_map->ehframe_elf_addr = fmem_map->ehframe_elf_addr;
+	tmem_map->got_elf_addr = fmem_map->got_elf_addr;
+	tmem_map->gotplt_elf_addr = fmem_map->gotplt_elf_addr;
 
 	tmem_map->start_code = fmem_map->start_code;
 	tmem_map->end_code = fmem_map->end_code;
@@ -306,8 +309,8 @@ void cp_ptables_for(uint64_t page_base, pv_map_t* pv_map_node,
 	// present, write, supervisor
 	// ---- TODO - change to read-only apt permission below ----
 	if (is_not_copied(pv_map_node, page_base, page_phys_addr)) {
-		setup_process_page_table_from_outside(page_base, page_phys_addr, 1, 0, 1,
-				chld_pml4_base_dbl_ptr, phys_to_virt_map, pv_map_node);
+		setup_process_page_table_from_outside(page_base, page_phys_addr, 1, 0,
+				1, chld_pml4_base_dbl_ptr, phys_to_virt_map, pv_map_node);
 //		printf(" in forkk count before for %p is %d ", page_phys_addr,
 //				get_ref_count(page_phys_addr));
 		increase_ref_count(page_phys_addr);
@@ -375,8 +378,7 @@ void cp_page_tables(task_struct_t * from, task_struct_t * to,
 	uint64_t** child_pml_dbl_ptr_virtual = &child_pml_virtual_ptr;
 
 	pv_map_t* pv_map_node = init_pv_map();
-	pv_map_node = cp_for_each_vma(vma, child_pml_dbl_ptr_virtual,
-			pv_map_node);
+	pv_map_node = cp_for_each_vma(vma, child_pml_dbl_ptr_virtual, pv_map_node);
 
 	// map the kernel stack
 	setup_process_page_table_from_outside(krnl_stk_virt, krnl_stk_phys, 1, 1, 1,

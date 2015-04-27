@@ -208,12 +208,13 @@ int foo(int a) {
 	return 1;
 }
 int main(int argc, char* argv[], char* envp[]) {
-//	int c = 4;
-	foo(b);
+	int c = 4;
+//	foo(b);
 	fork();
+	c += 21;
 	b = b + 35;
 
-	printf("\nHello! b is %d pid:%d parent:%d\n", b, getpid(), getppid());
+	printf("\nHello! b:c %d:%d, pid:%d parent:%d\n", b,c, getpid(), getppid());
 //	b =5;
 //	foo(b);
 	//	if(val == 0){
