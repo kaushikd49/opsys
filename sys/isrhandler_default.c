@@ -31,6 +31,7 @@ uint64_t handle_exit(regs_syscall_t regs) {
 }
 
 uint64_t handle_syscall(regs_syscall_t regs) {
+	currenttask->state.kernel_rsp = (uint64_t)(&(regs.gs));
 	if (regs.rax == 1) {
 		return write_system_call((int) regs.rdi, (const void *) regs.rsi,
 				(size_t) regs.rdx);

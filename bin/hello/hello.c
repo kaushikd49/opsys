@@ -203,18 +203,28 @@
 #include<stdlib.h>
 int arr[100];
 int b = 10;
-
+extern __thread int errno;
 int foo(int a) {
 	return 1;
 }
 int main(int argc, char* argv[], char* envp[]) {
 	int c = 4;
-//	foo(b);
-	fork();
-	c += 21;
-	b = b + 35;
+	foo(b);
+	getpid();
+	pid_t ret = fork();
+	if (ret == 0) {
+		printf("\nCHILD ret:b:c %d:%d:%d, pid:%d parent:%d\n", ret, b, c,
+				getpid(),getppid());
+	} else if (ret > 0) {
+		printf("\nPARENT ret:b:c %d:%d:%d, pid:%d parent:%d\n", ret, b,
+				c, getpid(),getppid());
+	} else {
+		printf("\nHello! ERROR ret:b:c %d:%d:%d, pid:%d parent:%d\n", ret, b, c,
+				getpid(),getppid());
+	}
+//	c += 21;
+//	b = b + 35;
 
-	printf("\nHello! b:c %d:%d, pid:%d parent:%d\n", b,c, getpid(), getppid());
 //	b =5;
 //	foo(b);
 	//	if(val == 0){
