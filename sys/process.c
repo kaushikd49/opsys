@@ -13,9 +13,19 @@
 #include <sys/scheduling.h>
 #include <sys/isr_stuff.h>
 #include <sys/nanosleep_functions.h>
+#include <errno.h>
+#define THIRTY_TWO_PAGES 0x32000
+#define ENV_START 0x7002000
+#define ENV_END 0x701ffff
+#define ENV_TEMP_START 0x7022000
+#define ENV_TEMP_END 0x703ffff
+#define STACK_TEMP_START 0x7040000
+#define STACK_TEMP_END 0x705ffff
 #define VM_READ 1<<0
 #define VM_WRITE 1<<1
 #define VM_EXEX 1<<2
+uint64_t *ENV_SWAP_START;
+uint64_t *STACK_SWAP_START;
 uint64_t limit = 1 << 30;
 extern int seconds_boot;
 extern int ms_boot;
@@ -28,6 +38,21 @@ typedef struct elf_section_info {
 	Elf64_Off sh_offset;
 	Elf64_Xword sh_size;
 } elf_sec_info_t;
+struct execucatable_t{
+	elf_sec_info_t *text_info;
+	elf_sec_info_t *rodata_info;
+	elf_sec_info_t *data_info;
+	elf_sec_info_t *bss_info;
+	//===================================
+	elf_sec_info_t *ehframe_info;
+	elf_sec_info_t *got_info;
+	elf_sec_info_t *gotplt_info;
+	Elf64_Ehdr *temp;
+	int is_script;
+};
+typedef struct execucatable_t executable_t;
+uint64_t setup_new_process(char *binary, char *argv[], char *envp[],executable_t *executable);
+
 /*
  * elf reference functions
  */
@@ -64,6 +89,18 @@ int strcmp(char *string1, char *string2) {
 	} else {
 		return (int) string1[len];
 	}
+
+}
+
+void copy_string(char *current, char **current_environ){
+
+	while(*current!= '\0'){
+		**current_environ = *current;
+		*current_environ = *current_environ+1;
+		current++;
+	}
+	**current_environ = '\0';
+	*current_environ = *current_environ+1;
 
 }
 //Function idea taken from OSDevWiki http://wiki.osdev.org/ELF_Tutorial
@@ -335,6 +372,100 @@ void load_from_elf(task_struct_t *task, elf_sec_info_t* text_info,
 	//===================================================================
 }
 
+
+void load_from_elf_execve(task_struct_t *task, elf_sec_info_t* text_info,
+		Elf64_Ehdr* temp, elf_sec_info_t* rodata_info,
+		elf_sec_info_t* data_info, elf_sec_info_t* bss_info,
+		elf_sec_info_t *ehframe_info, elf_sec_info_t *got_info,
+		elf_sec_info_t *gotplt_info) {
+	uint64_t section_offset;
+
+	mem_desc_t * mem_desc_ptr = kmalloc(sizeof(struct mem_desc));
+	mem_desc_ptr->num_vma = 0;
+	mem_desc_ptr->vma_list = NULL;
+	task->mem_map = mem_desc_ptr;
+	if (text_info != NULL) {
+		section_offset = (uint64_t) temp + (uint64_t) text_info->sh_offset;
+		mem_desc_ptr->text_elf_addr = (char*) section_offset;
+		uint64_t vma_start = (uint64_t) text_info->sh_addr;
+		uint64_t vma_end = vma_start + (uint64_t) text_info->sh_size;
+		add_vma(vma_start, vma_end, 0, mem_desc_ptr);
+		//		printf("text:  %x  %x  %x\n",text_info->sh_addr, section_offset, text_info->sh_size );
+//		elf_mem_copy((char*) (text_info->sh_addr), (char*) section_offset,
+//				(text_info->sh_size));
+	}
+	if (rodata_info != NULL) {
+		section_offset = (uint64_t) temp + (uint64_t) rodata_info->sh_offset;
+		mem_desc_ptr->rodata_elf_addr = (char*) section_offset;
+		uint64_t vma_start = (uint64_t) rodata_info->sh_addr;
+		uint64_t vma_end = vma_start + (uint64_t) rodata_info->sh_size;
+		add_vma(vma_start, vma_end, 1, mem_desc_ptr);
+
+		//		printf("rodata:  %x  %x  %x\n",rodata_info->sh_addr, section_offset, rodata_info->sh_size );
+//		elf_mem_copy((char*) (rodata_info->sh_addr), (char*) section_offset,
+//				(rodata_info->sh_size));
+	}
+	if (data_info != NULL) {
+		section_offset = (uint64_t) temp + (uint64_t) data_info->sh_offset;
+		mem_desc_ptr->data_elf_addr = (char*) section_offset;
+		uint64_t vma_start = (uint64_t) data_info->sh_addr;
+		uint64_t vma_end = vma_start + (uint64_t) data_info->sh_size;
+		add_vma(vma_start, vma_end, 2, mem_desc_ptr);
+
+		//		printf("data:  %x  %x  %x\n",data_info->sh_addr, section_offset, data_info->sh_size );
+		//		elf_mem_copy((char*) (data_info->sh_addr), (char*) section_offset,
+		//				data_info->sh_size);
+	}
+	if (bss_info != NULL) {
+		section_offset = (uint64_t) temp + (uint64_t) bss_info->sh_offset;
+		uint64_t vma_start = (uint64_t) bss_info->sh_addr;
+		uint64_t vma_end = vma_start + (uint64_t) bss_info->sh_size;
+		add_vma(vma_start, vma_end, 3, mem_desc_ptr);
+
+		uint64_t heap_start = ((((uint64_t) vma_end) & (~(PAGE_SIZE - 1)))
+				+ (PAGE_SIZE));
+		mem_desc_ptr->brk = heap_start;
+		add_vma(heap_start, heap_start, 5, mem_desc_ptr);
+		//		printf("bss:  %x  %x  %x\n",bss_info->sh_addr, section_offset, bss_info->sh_size );
+		//		elf_zerod_copy((char*) (bss_info->sh_addr), data_info->sh_size);
+	}
+	//================================================================
+	if (ehframe_info != NULL) {
+		section_offset = (uint64_t) temp + (uint64_t) ehframe_info->sh_offset;
+		mem_desc_ptr->ehframe_elf_addr = (char*) section_offset;
+		uint64_t vma_start = (uint64_t) ehframe_info->sh_addr;
+		uint64_t vma_end = vma_start + (uint64_t) ehframe_info->sh_size;
+		add_vma(vma_start, vma_end, 6, mem_desc_ptr);
+
+		//		printf("data:  %x  %x  %x\n",ehframe_info->sh_addr, section_offset, ehframe_info->sh_size );
+		//		elf_mem_copy((char*) (ehframe_info->sh_addr), (char*) section_offset,
+		//				ehframe_info->sh_size);
+	}
+	if (got_info != NULL) {
+		section_offset = (uint64_t) temp + (uint64_t) got_info->sh_offset;
+		mem_desc_ptr->got_elf_addr = (char*) section_offset;
+		uint64_t vma_start = (uint64_t) got_info->sh_addr;
+		uint64_t vma_end = vma_start + (uint64_t) got_info->sh_size;
+		add_vma(vma_start, vma_end, 7, mem_desc_ptr);
+
+		//		printf("data:  %x  %x  %x\n",got_info->sh_addr, section_offset, got_info->sh_size );
+		//		elf_mem_copy((char*) (got_info->sh_addr), (char*) section_offset,
+		//				got_info->sh_size);
+	}
+	if (gotplt_info != NULL) {
+		section_offset = (uint64_t) temp + (uint64_t) gotplt_info->sh_offset;
+		mem_desc_ptr->gotplt_elf_addr = (char*) section_offset;
+		uint64_t vma_start = (uint64_t) gotplt_info->sh_addr;
+		uint64_t vma_end = vma_start + (uint64_t) gotplt_info->sh_size;
+		add_vma(vma_start, vma_end, 8, mem_desc_ptr);
+
+		//		printf("data:  %x  %x  %x\n",gotplt_info->sh_addr, section_offset, gotplt_info->sh_size );
+		//		elf_mem_copy((char*) (gotplt_info->sh_addr), (char*) section_offset,
+		//				gotplt_info->sh_size);
+	}
+
+	//===================================================================
+}
 uint64_t create_stack_vma(task_struct_t* currenttask) {
 	uint64_t stack_page = 0x7000000;
 	add_vma(stack_page, stack_page + 4096, 4, currenttask->mem_map); // stack vma mapping
@@ -402,6 +533,74 @@ void load_executable(task_struct_t *currenttask) {
 	setup_process_page_tables((uint64_t) stack_page, (uint64_t) free_frame);
 	//add code to initialize stack
 	//heap
+}
+inline int is_ELF(Elf64_Ehdr *temp){
+	if(temp->e_ident[0] == 0x7F && temp->e_ident[1] == 'E' && temp->e_ident[2] == 'L' && temp->e_ident[3] == 'F')
+		return 1;
+	return 0;
+}
+executable_t *check_binary(char *binary){
+	struct posix_header_ustar *current =
+				(struct posix_header_ustar *) &_binary_tarfs_start;
+		int i = 0;
+
+//		elf_sec_info_t *text_info = NULL;
+//		elf_sec_info_t *rodata_info = NULL;
+//		elf_sec_info_t *data_info = NULL;
+//		elf_sec_info_t *bss_info = NULL;
+		//===================================
+//		elf_sec_info_t *ehframe_info = NULL;
+//		elf_sec_info_t *got_info = NULL;
+//		elf_sec_info_t *gotplt_info = NULL;
+		//====================================
+		Elf64_Ehdr *temp = NULL;
+
+		while ((uint64_t) current < (uint64_t) (&_binary_tarfs_end)) {
+			if (strcmp(current->name, binary) == 0) {
+	//			printf("%s", current->name);
+				uint64_t next = (uint64_t) ((uint64_t) current
+						+ (uint64_t) sizeof(struct posix_header_ustar));
+
+				temp = (Elf64_Ehdr *) (next);
+				executable_t *temp1 = kmalloc(sizeof(executable_t));
+						temp1->bss_info = NULL;
+						temp1->data_info = NULL;
+						temp1->ehframe_info = NULL;
+						temp1->got_info = NULL;
+						temp1->gotplt_info = NULL;
+						temp1->rodata_info = NULL;
+						temp1->text_info = NULL;
+						temp1->is_script = 0;
+						temp1->temp= temp;
+				if(is_ELF(temp) == 1){
+					temp1->text_info = find_text_elf(temp);
+					temp1->rodata_info = find_rodata_elf(temp);
+					temp1->data_info = find_data_elf(temp);
+					temp1->bss_info = find_bss_elf(temp);
+					//================================
+					temp1->ehframe_info = find_ehframe_elf(temp);
+					temp1->got_info = find_got_elf(temp);
+					temp1->gotplt_info = find_gotplt_elf(temp);
+					temp1->temp = temp;
+					//================================
+					temp1->is_script = 0;
+					return temp1;
+				}
+				else{
+					temp1->is_script = 1;
+					return temp1;
+				}
+			}
+			//	printf("elf header: %x\n",*(current + (uint64_t)sizeof(struct posix_header_ustar)));
+			uint64_t header_next = (uint64_t) ((align(
+					convert_ocatalstr_todecimal(current->size), TARFS_ALIGNMENT))
+					+ sizeof(struct posix_header_ustar) + (uint64_t) current);
+	//		printf("header : %x", header_next);
+			current = (struct posix_header_ustar *) (header_next);
+			i++;
+
+		}
+		return NULL;
 }
 /*
  *
@@ -505,7 +704,39 @@ void init_global_fd() {
 	stdout_fd->ready = 0;
 	current_stdin_pointer = stdin_fd->current_pointer;
 }
+void add_default_env(task_struct_t *task){
+	uint64_t oldcr3 = 0;
+		__asm__ __volatile__("movq %%cr3, %%rax\n\t"
+							 "movq %%rax, %0\n\t"
+							 :"=m"(oldcr3)
+							 :
+							 :"%rax");
+	update_cr3((uint64_t *)(task->state.cr3));
 
+	add_vma(ENV_START, ENV_END, 20, task->mem_map);
+	void *free_frame = (void *) get_free_frames(0);
+	setup_process_page_tables((uint64_t) ENV_START, (uint64_t) free_frame);
+	char *current_env = (char *)ENV_START;
+	char *env1 = current_env;
+	copy_string("PATH=bin/", &current_env);
+	char *argv1 = current_env;
+	copy_string(task->executable, &current_env);
+	uint64_t *stack_top = (uint64_t *)(task->state.rsp);
+	*stack_top = 0;
+	stack_top--;
+	*stack_top = (uint64_t)env1;
+	stack_top--;
+	*stack_top=0;
+	stack_top--;
+	*stack_top = (uint64_t)argv1;
+	stack_top--;
+	*stack_top = 1;
+//	stack_top--;
+	regs_syscall_t *regs = (regs_syscall_t *)(task->state.kernel_rsp);
+	uint64_t *user_stack_return = (uint64_t *)(&(regs->rsp));
+	*user_stack_return = (uint64_t)stack_top;
+	update_cr3((uint64_t *)(oldcr3));
+}
 void kernel_process_init() {
 	//this function just stores the current cr3 as the processes page table since we are doing kernel preemption that is fine. For user process this will be a bit involved
 	__asm__ __volatile__("movq %%cr3, %%rax\n\t"
@@ -526,13 +757,24 @@ void kernel_process_init() {
 	currenttask->executable[0] = '\0';
 	currenttask->next = currenttask;
 	currenttask->pid = 1;
+	currenttask->is_kernel_process = 1;
 	stack_ring_three(currenttask);
 	tss.rsp0 = (uint64_t) (currenttask->state.kernel_rsp);
 
 //	temp_create_kernel_process(test_main,1);
 	temp_create_kernel_process(waiting_to_running_q, 1);
 	temp_create_kernel_process(check_user_process_waitpid_daemon, 1);
+	ENV_SWAP_START = kmalloc(0x1000);
+	STACK_SWAP_START = kmalloc(0x1000);
 	temp_create_user_process("bin/hello2", 1);
+	task_struct_t *temp = currenttask;
+	do{
+		if(temp->is_kernel_process == 0){
+			add_default_env(temp);
+		}
+		temp = temp->next;
+	}while(temp!=currenttask);
+
 //	temp_create_kernel_process(clear_keyboard_busy, 1);
 //	temp_create_user_process("bin/hello", 4);
 //	temp_create_user_process("bin/hello2", 1);
@@ -695,6 +937,170 @@ uint64_t temp_preempt_nanosleep(const struct timespec *rqtp, struct timespec *rm
 	//	printf("pid is %d ",currenttask->pid);
 		return (currenttask->state.kernel_rsp);
 }
+
+void make_new_process_state(task_struct_t *task, task_struct_t *parent_task, executable_t *executable ){
+	task->mem_map = NULL;
+	task->ppid = parent_task->pid;
+	task->waiting_for = 999;
+	task->is_kernel_process = 0;
+	task->state.cr3 = parent_task->state.cr3;
+	task->state.flags = parent_task->state.flags;
+	task->state.flags |=0x200;
+	uint64_t *temp1 = get_physical_pml4_base_for_process();
+	uint64_t oldcr3 = 0;
+	__asm__ __volatile__("movq %%cr3, %%rax\n\t"
+						 "movq %%rax, %0\n\t"
+						 :"=m"(oldcr3)
+						 :
+						 :"%rax");
+	update_cr3((uint64_t *)temp1);
+	__asm__ __volatile__("movq %%cr3, %%rax\n\t"
+						 "movq %%rax, %0\n\t"
+			   	   	   	 :"=m"(task->state.cr3)
+						 :
+						 :"%rax");
+	map_process_vm(task);
+	load_from_elf_execve(task, executable->text_info, executable->temp, executable->rodata_info, executable->data_info,
+				executable->bss_info, executable->ehframe_info, executable->got_info, executable->gotplt_info);
+
+	task->state.rip = (uint64_t)(executable->temp->e_entry);
+	uint64_t stack_page = create_stack_vma(currenttask);
+	void *free_frame = (void *)get_free_frames(0);
+	setup_process_page_tables((uint64_t)stack_page, (uint64_t)free_frame);
+
+	uint64_t stack_kernel = (uint64_t)kmalloc(0x1000);
+	task->state.kernel_rsp = (uint64_t)(stack_kernel + 0xfff);
+	temp_init_user_stack(task->state.kernel_rsp, task);
+	task->p_state = STATE_RUNNING;
+	init_file_dp_process(task);
+	currenttask = task;
+//	update_cr3((uint64_t *)(oldcr3));
+}
+void make_new_process(executable_t *executable){
+	task_struct_t *task = kmalloc(sizeof(task_struct_t));
+	int pid = currenttask->pid;
+	task->pid = pid;
+	task_struct_t *temp_start = currenttask->next;
+	task_struct_t *parent_task = NULL;
+	while(temp_start->pid != currenttask->ppid){
+		temp_start = temp_start->next;
+	}
+	parent_task = temp_start;
+	if(parent_task->next ==parent_task){
+		parent_task->next = task;
+		task->next = parent_task;
+		lasttask = task;
+	}else{
+		task->next = lasttask->next;
+		lasttask->next = task;
+		lasttask=currenttask->next;
+		currenttask->pid = -1;
+		currenttask->p_state = STATE_TERMINATED;
+		move_process_runq_to_waitq(-1);
+		currenttask = task;
+		//add code for moving to wait queue.
+	}
+	make_new_process_state(task, parent_task, executable);
+
+}
+void add_env_to_stack(task_struct_t *task){
+	add_vma(ENV_START, ENV_END, 20, task->mem_map);
+	char *current_env = (char *)ENV_START;
+	uint64_t *temp_stack = (uint64_t *)(STACK_SWAP_START);
+	uint64_t *stack_top = (uint64_t *)(task->state.rsp);
+	int num_nulls = 0;
+	while(num_nulls < 2){
+		if(*temp_stack == 0){
+			num_nulls++;
+		}
+		temp_stack++;
+	}
+	temp_stack--;
+	while(temp_stack!=(uint64_t *)STACK_SWAP_START){
+		if(*temp_stack==0){
+			*stack_top = 0;
+		}
+		else{
+			*stack_top = (uint64_t)current_env;
+			copy_string((char *)*temp_stack, &current_env);
+		}
+		temp_stack--;
+		stack_top--;
+	}
+	*stack_top = *temp_stack;
+	regs_syscall_t *regs = (regs_syscall_t *)(task->state.kernel_rsp);
+	uint64_t *user_stack_return = (uint64_t *)(&(regs->rsp));
+	*user_stack_return = (uint64_t)stack_top;
+}
+uint64_t setup_new_process(char *binary, char *argv[], char *envp[],executable_t *executable){
+
+	uint64_t *environ_temp_start = (uint64_t *)(ENV_SWAP_START);
+	uint64_t *temp_stack = (uint64_t *)(STACK_SWAP_START);
+
+	char *current_environ = (char *)(environ_temp_start);
+	uint64_t *current_stack = (uint64_t *)(temp_stack);
+	uint64_t *argv_count = temp_stack;
+	int i = 0;
+	char *current = (char *)argv[i];
+	*argv_count = 0;
+	current_stack++;
+	//copying the arg variables
+	while(current!=NULL){
+		(*argv_count)++;
+		*current_stack = (uint64_t)(current_environ);
+		current_stack++;
+		copy_string((char *)(current), &current_environ);
+		i++;
+		current = argv[i];
+	}
+	*current_stack = 0;
+	current_stack++;
+	i = 0;
+	current = (char *)envp[i];
+	//copying the environment variables.
+	while(current!=NULL){
+		*current_stack = (uint64_t)(current_environ);
+		current_stack++;
+		copy_string((char *)(current), &current_environ);
+		i++;
+		current=envp[i];
+
+	}
+	*current_stack = 0;
+	make_new_process(executable);
+//	load_from_elf_execve(currenttask, executable->text_info, executable->temp, executable->rodata_info, executable->data_info,
+//			executable->bss_info, executable->ehframe_info, executable->got_info, execuatable->gotplt_info);
+
+	//	kfree(text_info);
+	//	kfree(rodata_info);
+	//	kfree(data_info);
+	//	kfree(bss_info);
+
+		currenttask->state.rip = (uint64_t) (executable->temp->e_entry);
+		uint64_t stack_page = create_stack_vma(currenttask);
+
+		void *free_frame = (void *) get_free_frames(0);
+		setup_process_page_tables((uint64_t) stack_page, (uint64_t) free_frame);
+		add_env_to_stack(currenttask);
+		return currenttask->state.kernel_rsp;
+
+}
+uint64_t execve_process(char *binary, char **argv, char **envp, uint64_t stack_top){
+	__asm__ __volatile__("movq %1, %%rax\n\t"
+								 "movq %%rax, %0"
+								 :"=r"(currenttask->state.kernel_rsp)
+								  :"r"(stack_top)
+								  :"memory", "%rax", "%rsp");
+	executable_t *executable = check_binary(binary);
+	regs_syscall_t *regs =(regs_syscall_t *)(currenttask->state.kernel_rsp);
+
+	if(executable == NULL){
+		regs->rax = (uint64_t)-EACCES;
+		return (uint64_t)regs;
+	}
+	return setup_new_process(binary, (char **)argv, (char **)envp, executable);
+
+}
 void check_parent_waiting(task_struct_t *last){
 	int ppid = last->ppid;
 	task_struct_t *temp = waitingtask;
@@ -725,6 +1131,10 @@ uint64_t temp_preempt_exit(uint64_t stack_top){
 		prev = prev->next;
 	}
 	prev->next = last->next;
+	last->pid = -1;
+	last->next = last;
+	last->p_state = STATE_TERMINATED;
+	add_process_waitq(last);
 //	kfree(last);
 	check_parent_waiting(last);
 	tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp) + 192);

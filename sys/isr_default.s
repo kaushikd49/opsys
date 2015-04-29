@@ -1208,6 +1208,7 @@ isr_syscall:
 	jne q2d
 	call handle_exit
 	movq %rax, %rsp
+	movq 144(%rax),%rax
 	jmp q3
 q2d:movq $0, %rbx
 	movq 144(%rsp), %rax
@@ -1215,6 +1216,7 @@ q2d:movq $0, %rbx
 	jne q2e
 	call handle_read
 	movq %rax, %rsp
+	movq 144(%rax),%rax
 	jmp q3
 q2e:movq $61, %rbx
 	movq 144(%rsp), %rax
@@ -1222,13 +1224,23 @@ q2e:movq $61, %rbx
 	jne q2f
 	call handle_wait
 	movq %rax, %rsp
+	movq 144(%rax),%rax
 	jmp q3
 q2f:movq $35, %rbx
 	movq 144(%rsp), %rax
 	cmp %rbx, %rax
-	jne q2
+	jne q2g
 	call handle_nanosleep
 	movq %rax, %rsp
+	movq 144(%rax),%rax
+	jmp q3
+q2g:movq $59, %rbx
+	movq 144(%rsp), %rax
+	cmp %rbx, %rax
+	jne q2
+	call handle_execve
+	movq %rax, %rsp
+	movq 144(%rax),%rax
 	jmp q3
  q2:call handle_syscall
  q3:movq %rax, %rbx

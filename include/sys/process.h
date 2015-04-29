@@ -1,6 +1,7 @@
 #ifndef _PROCESS_H
 #define _PROCESS_H
 #include<sys/tarfs_FS.h>
+#include<sys/defs.h>
 #define USER_CODE (3<<3 | 3)
 #define USER_DATA (4<<3 | 3)
 #define KERNEL_CODE (1<<3|0)
@@ -69,6 +70,7 @@ enum {
 	STATE_RUNNING = 1,
 	STATE_WAITING = 2,
 	STATE_READY = 3,
+	STATE_TERMINATED = 4,
 };
 typedef struct task_struct {
 	uint64_t pid;
@@ -83,6 +85,7 @@ typedef struct task_struct {
 	int waiting_for;
 	int is_kernel_process;
 }task_struct_t;
+
 void load_executable(task_struct_t *	);
 void preempt(uint64_t stack_top);
 uint64_t temp_preempt(uint64_t);
@@ -112,5 +115,7 @@ int strcmp(char *string1, char *string2);
 char *strcpy(char *dst, char *src);
 void quit_kernel_thread();
 uint64_t temp_preempt_waitpid(int pid, int *status, int options, uint64_t stack_top);
+uint64_t execve_process(char *binary, char **argv, char **envp, uint64_t stack_top);
+void init_file_dp_process(task_struct_t* task);
 
 #endif

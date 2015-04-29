@@ -178,3 +178,20 @@ void check_user_process_waitpid_daemon(){
 	fake_preempt();
 	}
 }
+
+//void clean_up_processes(){
+//	if(waitingtask == NULL){
+//		return NULL;
+//	}
+//	task_struct *current = waitingtask;
+//	int count = 0;
+//	do{
+//		count++;
+//		current = current->next;
+//	}while(current!=waitingtask)
+//	task_struct_t *prev = NULL;
+//	task_struct_t *current = waitingtask;
+//	while(current!=NULL &&current){
+//
+//	}
+//}

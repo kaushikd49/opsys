@@ -41,6 +41,11 @@ uint64_t handle_nanosleep(regs_syscall_t regs){
 	uint64_t stack_top = (uint64_t)(&(regs.gs));
 	return nanosleep_sys_call((void *)regs.rdi, (void *)regs.rsi, stack_top);
 }
+
+uint64_t handle_execve(regs_syscall_t regs){
+	uint64_t stack_top = (uint64_t)(&(regs.gs));
+	return execve_sys_call((void *)regs.rdi, (void *)regs.rsi, (void *)regs.rdx, stack_top);
+}
 uint64_t handle_syscall(regs_syscall_t regs) {
 	if (regs.rax == 1) {
 		return write_system_call((int) regs.rdi, (const void *) regs.rsi,

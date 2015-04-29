@@ -206,7 +206,7 @@ int b = 10;
 
 int main(int argc, char* argv[], char* envp[]) {
 //	fork();
-	printf("Hello World!\n");
+	printf("Hello World!%d %s %s \n", argc, argv[0], envp[0]);
 //	pid_t val = fork();
 //	printf("Hello World!. Getpid %d Ret val is %d\n", getpid(), val);
 //	int fd = open("test/test.txt", 0);
