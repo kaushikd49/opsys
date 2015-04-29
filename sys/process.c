@@ -976,19 +976,42 @@ void make_new_process_state(task_struct_t *task, task_struct_t *parent_task, exe
 	currenttask = task;
 //	update_cr3((uint64_t *)(oldcr3));
 }
+
+task_struct_t* get_parent_from_ppid() {
+	task_struct_t* temp_start = currenttask->next;
+	task_struct_t* parent_task = NULL;
+	while (temp_start->pid != currenttask->ppid && temp_start != currenttask) {
+		temp_start = temp_start->next;
+	}
+	if (temp_start->pid == currenttask->ppid)
+		parent_task = temp_start;
+	else {
+		temp_start = waitingtask->next;
+		parent_task = NULL;
+		while (temp_start->pid != currenttask->ppid && temp_start != waitingtask) {
+			temp_start = temp_start->next;
+		}
+		if (temp_start->pid == currenttask->ppid) {
+			parent_task = temp_start;
+		} else {
+			temp_start = currenttask->next;
+			while (temp_start->pid != 1) {
+				temp_start = temp_start->next;
+			}
+			parent_task = temp_start;
+		}
+	}
+	return parent_task;
+}
+
 void make_new_process(executable_t *executable){
 	task_struct_t *task = kmalloc(sizeof(task_struct_t));
 	int pid = currenttask->pid;
 	task->pid = pid;
-	task_struct_t *temp_start = currenttask->next;
-	task_struct_t *parent_task = NULL;
-	while(temp_start->pid != currenttask->ppid){
-		temp_start = temp_start->next;
-	}
-	parent_task = temp_start;
-	if(parent_task->next ==parent_task){
-		parent_task->next = task;
-		task->next = parent_task;
+	task_struct_t* parent_task = get_parent_from_ppid();
+	if(currenttask->next ==currenttask){
+		currenttask->next = task;
+		task->next = currenttask;
 		lasttask = task;
 	}else{
 		task->next = lasttask->next;
