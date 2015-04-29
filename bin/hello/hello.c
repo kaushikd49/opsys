@@ -220,7 +220,7 @@ int main(int argc, char* argv[], char* envp[]) {
 //		char buff[15];
 //		read(0, buff, 15);
 //		printf("%s", buff);
-		execve("bin/hello2",argv, envp);
+		execve("bin/hel",argv, envp);
 		exit(0);
 	} else if (ret > 0) {
 		int status;

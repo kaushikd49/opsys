@@ -766,7 +766,7 @@ void kernel_process_init() {
 	temp_create_kernel_process(check_user_process_waitpid_daemon, 1);
 	ENV_SWAP_START = kmalloc(0x1000);
 	STACK_SWAP_START = kmalloc(0x1000);
-	temp_create_user_process("bin/hello", 1);
+	temp_create_user_process("bin/sbush", 1);
 	task_struct_t *temp = currenttask;
 	do{
 		if(temp->is_kernel_process == 0){

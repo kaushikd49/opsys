@@ -138,7 +138,10 @@ void traphandler_thirteen() {
 }
 void traphandler_fourteen(regs_pushd_t regs) {
 //	printf("trap fourteen");
-	do_handle_pagefault(regs.error_code);
+//	uint64_t stack_top = (uint64_t)(&regs.r11)
+	uint64_t *rsp_loc = (uint64_t *)((uint64_t)&regs.error_code + 32);
+	uint64_t *rsp_val = (uint64_t *)(*rsp_loc);
+	do_handle_pagefault(regs.error_code, rsp_val);
 }
 void traphandler_fifteen() {
 	printf("trap fifteen");
