@@ -37,6 +37,7 @@
 .global trap_thirty
 .global trap_thirtyone
 .global isr_syscall
+.global isr_fake_preempt
 .align 4
 
 isr_default:
@@ -1132,6 +1133,7 @@ isr_timer:
 	iretq
 
 
+
 .text
 
 isr_keyboard:
@@ -1203,9 +1205,42 @@ isr_syscall:
     movq $60, %rbx
     movq 144(%rsp), %rax
 	cmp %rbx, %rax
-	jne q2
+	jne q2d
 	call handle_exit
 	movq %rax, %rsp
+	movq 144(%rax),%rax
+	jmp q3
+q2d:movq $0, %rbx
+	movq 144(%rsp), %rax
+	cmp %rbx, %rax
+	jne q2e
+	call handle_read
+	movq %rax, %rsp
+	movq 144(%rax),%rax
+	jmp q3
+q2e:movq $61, %rbx
+	movq 144(%rsp), %rax
+	cmp %rbx, %rax
+	jne q2f
+	call handle_wait
+	movq %rax, %rsp
+	movq 144(%rax),%rax
+	jmp q3
+q2f:movq $35, %rbx
+	movq 144(%rsp), %rax
+	cmp %rbx, %rax
+	jne q2g
+	call handle_nanosleep
+	movq %rax, %rsp
+	movq 144(%rax),%rax
+	jmp q3
+q2g:movq $59, %rbx
+	movq 144(%rsp), %rax
+	cmp %rbx, %rax
+	jne q2
+	call handle_execve
+	movq %rax, %rsp
+	movq 144(%rax),%rax
 	jmp q3
  q2:call handle_syscall
  q3:movq %rax, %rbx
@@ -1289,3 +1324,65 @@ keyboard_init:
 exit:
 	sti
 	retq
+
+
+isr_fake_preempt:
+	cli
+	pushq %rax
+	pushq %rbx
+	pushq %rcx
+	pushq %rdx
+	pushq %rdi
+	pushq %rsi
+	pushq %rbp
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	pushq %r12
+	pushq %r13
+	pushq %r14
+	pushq %r15
+	movq $0, %rax
+	movq %ds, %rax
+	pushq %rax
+	movq $0, %rax
+	movq %es, %rax
+	pushq %rax
+	movq $0, %rax
+	movq %fs, %rax
+	pushq %rax
+	movq $0, %rax
+	movq %gs, %rax
+	pushq %rax
+	movq %rsp, %rdi
+	call handle_fake_preempt
+	movq %rax, %rsp
+	popq %rax
+	movq %rax, %gs
+	popq %rax
+	movq %rax, %fs
+	popq %rax
+	movq %rax, %es
+	popq %rax
+	movq %rax, %ds
+	popq %r15
+	popq %r14
+	popq %r13
+	popq %r12
+	popq %r11
+	popq %r10
+	popq %r9
+	popq %r8
+	popq %rbp
+	popq %rsi
+	popq %rdi
+	popq %rdx
+	popq %rcx
+	popq %rbx
+
+	movb $0x20, %al
+	outb %al, $0x20
+	popq %rax
+	sti
+	iretq

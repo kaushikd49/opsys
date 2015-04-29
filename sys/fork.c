@@ -98,6 +98,11 @@ void cp_pstate(task_struct_t * from, task_struct_t * to) {
 	to->state.flags = fstate.flags;
 	//segment registers
 
+	to->p_state = from->p_state;
+	to->waiting_for = DEFAULT_WAITING_FOR;
+	to->is_kernel_process = from->is_kernel_process;
+
+	copy_file_dp_process(to, from);
 }
 
 void cp_vma(vma_t* from, vma_t* to, mem_desc_t *mem_map) {
@@ -290,7 +295,7 @@ void cp_ptables_for(uint64_t page_base, pv_map_t* pv_map_node,
 	// parent process has not touched this addr, so why should we bother
 	// creating page table entry for this in the child? Yes, we don't.
 	if (!is_linear_addr_mapped(page_base)) {
-		printf(" not mapped in parent, ignoring copying %p ", page_base);
+//		printf(" not mapped in parent, ignoring copying %p ", page_base);
 		return;
 	}
 	// store this pte val for the addr page_base in the child page table too

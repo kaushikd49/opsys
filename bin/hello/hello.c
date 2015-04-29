@@ -212,18 +212,25 @@ int main(int argc, char* argv[], char* envp[]) {
 	foo(b);
 	getpid();
 	pid_t ret = fork();
+	c += 21;
+	b = b + 35;
 	if (ret == 0) {
 		printf("\nCHILD ret:b:c %d:%d:%d, pid:%d parent:%d\n", ret, b, c,
-				getpid(),getppid());
+				getpid(), getppid());
+//		char buff[15];
+//		read(0, buff, 15);
+//		printf("%s", buff);
+		execve("bin/hello2",argv, envp);
+		exit(0);
 	} else if (ret > 0) {
-		printf("\nPARENT ret:b:c %d:%d:%d, pid:%d parent:%d\n", ret, b,
-				c, getpid(),getppid());
+		int status;
+		waitpid(-1, &status, 0);
+		printf("\nPARENT ret:b:c %d:%d:%d, pid:%d parent:%d\n", ret, b, c,
+				getpid(), getppid());
 	} else {
 		printf("\nHello! ERROR ret:b:c %d:%d:%d, pid:%d parent:%d\n", ret, b, c,
-				getpid(),getppid());
+				getpid(), getppid());
 	}
-//	c += 21;
-//	b = b + 35;
 
 //	b =5;
 //	foo(b);
@@ -237,10 +244,53 @@ int main(int argc, char* argv[], char* envp[]) {
 
 //	b = 2;
 //	b = 1;
+//	fork();
+//	printf("Hello World!%d %s %s \n", argc, argv[0], envp[0]);
+//	pid_t val = fork();
+//	printf("Hello World!. Getpid %d Ret val is %d\n", getpid(), val);
 //	int fd = open("test/test.txt", 0);
 //	char buff[10];
 //	for(int64_t i = 0; i<10; i++){
 //		buff[i] = 0;
+//	int fd = open("test/test.txt", 0);
+//	char buff[10];
+//	for(int64_t i = 0; i<10; i++){
+//		buff[i] = 0;
+//	}
+//	read(fd, buff, 5);
+//	printf("write:::%s", buff);
+//	printf("g\n");
+//	read(fd, buff, 7);
+//	printf("h\n");
+//	printf("write2:::%s", buff);
+//	int *a = (int *)malloc(5*sizeof(int));
+//	a[0] = 2;
+//	a[1] = 4;
+//	a[2] = 5;
+//		a[3] = 6;
+//		a[4] = 7;
+//	for(int i = 0; i < 5; i++)
+//		printf("%d  ",a[i]);
+//
+//	void *dir = opendir("bin/");
+//	struct dirent *temp =NULL;
+//	do{
+//	temp = readdir(dir);
+//	//printf("\n printing the directory");
+//	if(temp!=NULL)
+//		printf("temp:%s\n", temp->d_name);
+//	}while(temp!=NULL);
+//	for(int64_t i = 0; i<10; i++){
+//			buff[i] = 0;
+//		}
+//	read(0, buff, 8);
+//	printf("we read:%s\n", buff);
+
+//	temp = readdir(dir);
+//	if(temp !=NULL)
+//		printf("temp:%s", temp->d_name);
+//	else{
+//		printf("\n this is nill");
 //	}
 //	read(fd, buff, 5);
 //	printf("write:::%s", buff);

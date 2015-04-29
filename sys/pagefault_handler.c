@@ -113,6 +113,9 @@ void do_demand_paging(uint64_t virtual_addr) {
 					} else if (temp_vma->type == 5) {
 						*((char *) temp) = 0;
 					}
+					else if(temp_vma->type == 20){
+						*((char *)temp) = 0;
+					}
 				}
 			}
 			temp++;

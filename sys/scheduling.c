@@ -36,7 +36,7 @@ task_struct_t *remove_process_waitq(uint64_t pid){
 	if(waitingtask == NULL){
 		return NULL;
 	}
-	if(waitingtask->pid == pid){
+	if((uint64_t)waitingtask->pid == pid){
 		task_struct_t *return_taskstruct = waitingtask;
 		if(waitingtask->next == waitingtask){
 			waitingtask = NULL;
@@ -70,7 +70,7 @@ task_struct_t *remove_process_runq(uint64_t pid){
 	if(currenttask == NULL){
 		return NULL;
 	}
-	if(currenttask->pid == pid){
+	if((uint64_t)currenttask->pid == pid){
 		task_struct_t *return_taskstruct = currenttask;
 		if(currenttask->next == currenttask){
 			currenttask = NULL;
@@ -101,7 +101,9 @@ task_struct_t *remove_process_runq(uint64_t pid){
 }
 
 void move_process_waitq_to_runq(uint64_t pid){
+//	printf("%d w to r\n", pid);
 	task_struct_t *temp = remove_process_waitq(pid);
+	temp->p_state = STATE_RUNNING;
 	if(temp!=NULL)
 		add_process_runq(temp);
 }
@@ -110,6 +112,5 @@ void move_process_runq_to_waitq(uint64_t pid){
 	if(temp!=NULL)
 		add_process_waitq(temp);
 }
-
 
 

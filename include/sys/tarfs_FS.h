@@ -1,16 +1,27 @@
 #ifndef __TARFS_FS_H
+
 #define __TARFS_FS_H
+#include<sys/defs.h>
 #define MAX_FILES_SYSTEM 50
 #define NAME_MAX 255
 #define MAX_DIR 200
+
 typedef struct{
-	int fd;
+	//stuff that an elf file needs
 	struct posix_header_ustar *posix_header;
 	char *current_pointer;
 	uint64_t flags;
 	uint64_t size;
 	int used;
+	//syncronization stuff
+	int busy;//if the file is being used.
+	int current_process;//if the file descriptor is shared then only 1 process can use it. busy and current process maintain the syncronization
+	int ready;//variable to tell if buffer is ready
 }file_desc_t;
+file_desc_t *stdin_fd;
+file_desc_t *stdout_fd;//also for error
+void *input_buffer;
+char *current_stdin_pointer;
 struct dirent {
 	long d_ino;
 	uint64_t d_off;
@@ -28,8 +39,10 @@ enum {
 };
 uint64_t *find_file_tarfs(char *);
 uint64_t open_tarfs(char *file_name, int flags);
-uint64_t read_tarfs(int fd, void *buffer, uint64_t size);
+uint64_t read_tarfs(int fd, void *buffer, uint64_t size, uint64_t stack_top);
 void dents_tarfs(int fd, struct dirent *dirent_array, uint64_t size);
 void init_tarfs();
-
+int dup_tarfs(int fd);
+int close_tarfs(int fd);
+int dup2_tarfs(int fd_old, int fd_new);
 #endif
