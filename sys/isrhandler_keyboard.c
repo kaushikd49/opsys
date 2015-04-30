@@ -84,7 +84,8 @@ void isrhandler_keyboard() {
 					vid_buffer_view_ptr -= VID_COLS_WIDTH;
 				}
 			} else if (scancode == DOWN) {
-				if (vid_buffer_view_ptr + VID_COLS_WIDTH <= vid_buffer_tail_ptr) {
+				if (vid_buffer_view_ptr + VID_COLS_WIDTH
+						<= vid_buffer_tail_ptr) {
 					vid_buffer_view_ptr += VID_COLS_WIDTH;
 				}
 			}

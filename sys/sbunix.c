@@ -66,7 +66,7 @@ void shift_buffer_on_overflow(int len) {
 }
 
 void repeat_chars_into_buffer(char c, int num) {
-	if(will_buffer_overflow(num))
+	if (will_buffer_overflow(num))
 		return;
 	shift_buffer_on_overflow(num);
 	char *r = vid_buffer_tail_ptr;
@@ -126,24 +126,37 @@ void write_string_into_buffer(const char* str) {
 	}
 }
 
+int ceil(int dividend, int divisor) {
+	int extra = (dividend % divisor > 1);
+	return dividend / divisor + extra;
+}
+
+void refresh_vid_mem() {
+	for (char *p = (char *) BASE_CURSOR_POS;
+			p < (char *) (BASE_CURSOR_POS + 80 * 49); p += 2) {
+		*p = 0;
+		*(p + 1) = 0x02;
+	}
+}
 void write_buffer_view_into_vid_mem() {
 	// copy a window of size vid_mem from vid_mem_buffer to vid_mem
 	char *from = vid_buffer_view_ptr, *to = vid_buffer_view_ptr;
-	int lines = (vid_buffer_view_ptr - video_buffer) / 160;
-	int linesPrintable = (VIDEO_ROWS) / 2;
+	int lines = ceil(vid_buffer_view_ptr - video_buffer, 160);
+	int linesPrintable = (VIDEO_ROWS) / 2 - 1;
 	int linesToDiscard = lines - linesPrintable;
-
 
 	if (linesToDiscard > 0) {
 		// enough stuff inside buffer to cover video memory
-//		from = vid_buffer_view_ptr - (160 * linesToDiscard);
 		from = video_buffer + (160 * linesToDiscard);
+		refresh_vid_mem();
 	} else {
 		from = video_buffer;
 	}
 	char *vid_ptr = (char *) BASE_CURSOR_POS;
 
-	for (char*p = from; p <= to && vid_ptr < (char *) (BASE_CURSOR_POS + 80*49); p++, vid_ptr++) {
+	for (char*p = from;
+			p <= to && vid_ptr < (char *) (BASE_CURSOR_POS + 80 * 49);
+			p++, vid_ptr++) {
 		*vid_ptr = *p;
 	}
 }
