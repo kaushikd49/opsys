@@ -61,7 +61,6 @@ struct lidtr_t { //initializing ldtr register
 }__attribute__((packed));
 #define align(size, alignment) (size + (alignment - 1)) & ~(alignment - 1)
 #define TARFS_ALIGNMENT 512
-
 typedef int32_t pid_t;
 typedef int64_t ssize_t;
 typedef uint64_t size_t;

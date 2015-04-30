@@ -5,6 +5,7 @@
 #include <sys/scheduling.h>
 #include <sys/freelist.h>
 #include <sys/isr_stuff.h>
+#include <sys/defs.h>
 extern task_struct_t *currenttask;
 
 void cp_prev_next(task_struct_t* from, task_struct_t* to) {
@@ -23,13 +24,23 @@ void cp_executable(task_struct_t * from, task_struct_t * to) {
 
 void cp_process_stack(task_struct_t * from, task_struct_t * to,
 		uint64_t * stack_virt, uint64_t * stack_phys) {
-	uint64_t phys = (uint64_t) get_free_frames(0);
-	uint64_t virtual_addr = (uint64_t) get_virtual_location(0);
-	setup_kernel_page_tables(virtual_addr, phys);
 
-	char * stk_strt = (char *) (0x7000000 + 0x500);
+
+
+	char * stk_strt = (char *) (0x7000000+0x500);
 	char * stk_to = (char *) from->state.rsp;
 
+	uint64_t order = (uint64_t)(align((uint64_t)(stk_strt), PAGE_ALIGN)) - (uint64_t)(align(((uint64_t)(stk_to)-0x1000), PAGE_ALIGN));
+	order = order>>12;
+	order = next_power_two(order);
+	order = find_order(order);
+	uint64_t phys = (uint64_t) get_free_frames(order);
+	uint64_t virtual_addr = (uint64_t) get_virtual_location(order);
+	for(uint64_t i = 0; i <(1<<order); i++){
+		uint64_t virt = (virtual_addr+i*0x1000);
+		uint64_t physi = (phys+i*0x1000);
+		setup_kernel_page_tables(virt,physi);
+	}
 	char * source = stk_to; // stack grows downwards
 	int offset = from->state.rsp & 0xfff; // last 3 nibbles
 	char * target = ((char *) virtual_addr) + offset;
