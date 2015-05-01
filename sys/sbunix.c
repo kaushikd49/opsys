@@ -16,6 +16,7 @@ uint64_t TIMER_LOC = 0xb8f80;
 #define  VID_MEM_WRITABLE (VIDEO_COLS * (VIDEO_ROWS - 1)) // reserving last row for timer
 #define  VID_BUFFER_SIZE (VID_MEM_WRITABLE * NUM_SCREENS)
 #define  MAX_CHARS_IN_VID_BUFFER (VID_BUFFER_SIZE / 2) // 1 byte char and other for color
+
 char video_buffer[VID_BUFFER_SIZE];
 
 //uint64_t cursor_pos = BASE_CURSOR_POS;
@@ -47,27 +48,45 @@ int will_buffer_overflow(int len) {
 	return vid_buffer_tail_ptr + (2 * len) - video_buffer >= VID_BUFFER_SIZE;
 }
 
+void clear_rest_buffer() {
+	char *p = vid_buffer_tail_ptr;
+	while (p <= video_buffer + VID_BUFFER_SIZE) {
+		*p = 0;
+		p++;
+	}
+}
+
+void cp_buffer_page(int num_lines) {
+	// shift num_lines up
+	char *p = video_buffer;
+	char *q = video_buffer + num_lines * 160;
+	while (q <= video_buffer + VID_BUFFER_SIZE) {
+		*p = *q;
+		q++;
+		p++;
+	}
+}
+
 void shift_buffer_on_overflow(int len) {
-	// buffer overflow check
+	// clear least recently used buffer
+	// and shift buffer contents up by
+	// buffer size, clear the last buffer
+	// before writing new data
+
 	if (will_buffer_overflow(len)) {
-		int offset = 2 * len + 1;
-		// shift buffer contents to top
-		char *p = video_buffer + offset;
-		for (; p <= vid_buffer_tail_ptr; p++) {
-			*(p - offset) = *p;
-		}
-		// reset the void created by shift
-		char *q = vid_buffer_tail_ptr;
-		for (int k = 0; k < offset; k++, q--) {
-			*q = '\0';
-		}
-		update_buffer_ptrs(q);
+		int num_lines_to_shift = 24;
+		cp_buffer_page(num_lines_to_shift);
+
+		vid_buffer_tail_ptr -= num_lines_to_shift * 160;
+		vid_buffer_view_ptr -= num_lines_to_shift * 160;
+
+		clear_rest_buffer();
 	}
 }
 
 void repeat_chars_into_buffer(char c, int num) {
-	if (will_buffer_overflow(num))
-		return;
+//	if (will_buffer_overflow(num))
+//		return;
 	shift_buffer_on_overflow(num);
 	char *r = vid_buffer_tail_ptr;
 	if (num > 0) {
@@ -132,7 +151,7 @@ int ceil(int dividend, int divisor) {
 }
 
 void refresh_vid_mem() {
-	for (char *p = (char *) BASE_CURSOR_POS;
+	for (char *p = (char *) BASE_CURSOR_POS + 80 * 48;
 			p < (char *) (BASE_CURSOR_POS + 80 * 49); p += 2) {
 		*p = 0;
 		*(p + 1) = 0x02;
@@ -148,16 +167,25 @@ void write_buffer_view_into_vid_mem() {
 	if (linesToDiscard > 0) {
 		// enough stuff inside buffer to cover video memory
 		from = video_buffer + (160 * linesToDiscard);
-		refresh_vid_mem();
 	} else {
 		from = video_buffer;
 	}
 	char *vid_ptr = (char *) BASE_CURSOR_POS;
 
+	// todo: to+1 below verify
 	for (char*p = from;
-			p <= to && vid_ptr < (char *) (BASE_CURSOR_POS + 80 * 49);
+			p <= to + 1 && vid_ptr < (char *) (BASE_CURSOR_POS + 80 * 49);
 			p++, vid_ptr++) {
 		*vid_ptr = *p;
+	}
+
+	// clear rest of stuff
+	if (linesToDiscard > 0) {
+		for (char * q = vid_ptr; q < (char *) (BASE_CURSOR_POS + 80 * 49);
+				q++) {
+			*q = 0;
+		}
+
 	}
 }
 
