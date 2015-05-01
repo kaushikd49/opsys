@@ -6,6 +6,7 @@
 #include<sys/tarfs_FS.h>
 #include<sys/process.h>
 #include<sys/scheduling.h>
+#include<errno.h>
 uint64_t *find_file_tarfs(char *file_name){
 	struct posix_header_ustar *current =
 			(struct posix_header_ustar *) &_binary_tarfs_start;
@@ -89,6 +90,9 @@ uint64_t read_tarfs(int fd, void *buffer, uint64_t size, uint64_t stack_top){
 	//change the process state to waiting
 	return temp_preempt_wait(fd, buffer, size, stack_top);
 }
+uint64_t write_syscall(int fd, void *buffer, uint64_t size, uint64_t stack_top){
+	return temp_preempt_write(fd, buffer, size, stack_top);
+}
 int str_prefix(char *prefix, char *str){
 	int current = 0;
 	while(prefix[current] !='\0'&& str[current] !='\0' && prefix[current] == str[current]){
@@ -168,3 +172,30 @@ int dup2_tarfs(int fd_old, int fd_new){
 	}
 	return -1;
 }
+
+int pipe_tarfs(int pipe[2]){
+	int pipe_read = get_free_fd();
+	int pipe_write = get_free_fd();
+	if( pipe_read == -1 || pipe_write == -1){
+		return -EMFILE;
+	}
+	pipe[0] = pipe_read;
+	pipe[1] = pipe_write;
+	void *pipe_buffer = (void *)kmalloc(0x1000);
+	currenttask->filearray[pipe_write]->current_pointer = (char *)pipe_buffer;
+	currenttask->filearray[pipe_write]->flags = O_WRONLY;
+	currenttask->filearray[pipe_write]->size = -999;//differentiates pipe from a file buffer
+	currenttask->filearray[pipe_write]->used = 1;
+	currenttask->filearray[pipe_write]->busy = 1;
+	currenttask->filearray[pipe_write]->current_process = currenttask->pid;
+	currenttask->filearray[pipe_write]->ready = 0;
+	currenttask->filearray[pipe_read]->current_pointer = (char *)pipe_buffer;
+	currenttask->filearray[pipe_read]->flags = O_RDONLY;
+	currenttask->filearray[pipe_read]->size = -999;
+	currenttask->filearray[pipe_read]->used = 1;
+	currenttask->filearray[pipe_read]->busy = 1;
+	currenttask->filearray[pipe_read]->current_process = currenttask->pid;
+	currenttask->filearray[pipe_read]->ready = 0;
+	return 0;
+}
+

@@ -3,35 +3,47 @@
 #include<sys/system_calls.h>
 #include<sys/fork.h>
 #include<sys/process.h>
-int write_system_call(int fd, const void *buff, size_t count){
 
-	if(currenttask->filearray[fd] == stdout_fd){
-		char *print_buffer = (char *) buff;
-		int printed = 0;
-		while (printed < count && print_buffer[printed] != '\0') {
-			char character = print_buffer[printed];
-			write_char_to_vid_mem(character, 0);
-			printed++;
-		}
-		return printed;
-	}
-	else{
-		//still need to test and add error cases
-		//havnt decided how to assign pages to the buffer
-		printf("other half of write");
-		char *copy_buf = (char *)buff;
-		int printed = 0;
-		while(printed < count && copy_buf[printed] != '\0'){
-			char character  = copy_buf[printed];
-			char *copy_to = (char *)currenttask->filearray[fd]->current_pointer;
-			*copy_to = character;
-			copy_to++;
-			printed++;
-		}
-		return printed++;
-	}
-	return -1;
-}
+
+
+//int write_system_call(int fd, const void *buff, size_t count){
+//
+//	if(currenttask->filearray[fd] == stdout_fd){
+//		char *print_buffer = (char *) buff;
+//		int printed = 0;
+//		while (printed < count && print_buffer[printed] != '\0') {
+//			char character = print_buffer[printed];
+//			write_char_to_vid_mem(character, 0);
+//			printed++;
+//		}
+//		return printed;
+//	}
+//	else{
+//		//still need to test and add error cases
+//		//havnt decided how to assign pages to the buffer
+//		printf("other half of write");
+//		char *copy_buf = (char *)buff;
+//		int printed = 0;
+//		while(printed < count && copy_buf[printed] != '\0'){
+//			if(need_wait(fd)){
+//				currenttask->filearray[fd]->ready = 0;
+//				currenttask->p_status = TASK_WAITING;
+//				change_read_end_pipe_status(fd, 1);
+//				volatile int check = 0;
+//				while(check == 0){
+//					check = currenttask->filearray[fd]->ready;
+//				}
+//			}
+//			char character  = copy_buf[printed];
+//			char *copy_to = (char *)currenttask->filearray[fd]->current_pointer;
+//			*copy_to = character;
+//			copy_to++;
+//			printed++;
+//		}
+//		return printed++;
+//	}
+//	return -1;
+//}
 
 int fork_sys_call(uint64_t stack_top) {
 	return do_fork(stack_top);
@@ -83,4 +95,8 @@ uint64_t nanosleep_sys_call(const struct timespec *rqtp, struct timespec *rmtp, 
 }
 uint64_t execve_sys_call(char *binary, char **argv, char **envp, uint64_t stack_top){
 	return execve_process(binary, argv, envp,stack_top);
+}
+
+int pipe_system_call(int pipe[2]){
+	return pipe_tarfs(pipe);
 }

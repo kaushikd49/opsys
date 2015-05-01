@@ -12,7 +12,7 @@ typedef struct{
 	char *current_pointer;
 	uint64_t flags;
 	uint64_t size;
-	int used;
+	int used; // not needed
 	//syncronization stuff
 	int busy;//if the file is being used.
 	int current_process;//if the file descriptor is shared then only 1 process can use it. busy and current process maintain the syncronization
@@ -45,4 +45,6 @@ void init_tarfs();
 int dup_tarfs(int fd);
 int close_tarfs(int fd);
 int dup2_tarfs(int fd_old, int fd_new);
+int pipe_tarfs(int pipe[2]);
+uint64_t write_syscall(int fd, void *buffer, uint64_t size, uint64_t stack_top);
 #endif

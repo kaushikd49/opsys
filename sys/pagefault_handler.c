@@ -66,7 +66,7 @@ int is_addr_in_vma(uint64_t virtual_addr, mem_desc_t* mem_ptr, uint64_t *rsp_val
 			break;
 		}
 	}
-	printf("rspval:%x", rsp_val);
+//	printf("rspval:%x", rsp_val);
 	if(virtual_addr >= (uint64_t)rsp_val-8){
 		flag = 1;
 	}
