@@ -22,24 +22,31 @@ void *kmalloc(uint64_t size);
 void kfree(void *addr);
 void init_cache_list(cache_t *cache_list) {
 	cache_list[0].order = 5;
+	cache_list[0].count = 0;
 	//cache_list[0].head = NULL;
 	cache_list[0].free = NULL;
 	cache_list[1].order = 6;
+	cache_list[1].count = 0;
 	//cache_list[1].head = NULL;
 	cache_list[1].free = NULL;
 	cache_list[2].order = 7;
+	cache_list[2].count = 0;
 	//cache_list[2].head = NULL;
 	cache_list[2].free = NULL;
 	cache_list[3].order = 8;
+	cache_list[3].count = 0;
 	//cache_list[3].head = NULL;
 	cache_list[3].free = NULL;
 	cache_list[4].order = 9;
+	cache_list[4].count = 0;
 	//cache_list[4].head = NULL;
 	cache_list[4].free = NULL;
 	cache_list[5].order = 10;
+	cache_list[5].count = 0;
 	//cache_list[5].head = NULL;
 	cache_list[5].free = NULL;
 	cache_list[6].order = 11;
+	cache_list[6].count = 0;
 	//cache_list[6].head = NULL;
 	cache_list[6].free = NULL;
 
@@ -65,7 +72,7 @@ void *get_virtual_location(int order) {
 //this fucntion will add free_t header to the beginning of every
 // memory location in a page that has been allocated
 void prepare_page(int order, void *address) { //order max 11
-//	printf("preparing page..\n");
+	printf("preparing page. %d .\n", order);
 	int i;
 	uint64_t num_memory_slots = PAGE_SIZE / (1 << order);
 	for (i = 0; i < num_memory_slots - 1; i++) {
@@ -80,13 +87,13 @@ void prepare_page(int order, void *address) { //order max 11
 			+ (uint64_t) (i * (1 << order)));
 	free_t *free_location = (free_t *) current_address;
 	free_location->next_free = NULL;
-	cache_t *cache = cache_info.head + sizeof(cache_t) * (order - 5);
+	cache_t *cache = (cache_t *)((uint64_t)cache_info.head + sizeof(cache_t) * (order - 5));
 	cache->free = address;
 }
 // this function gets the actual address of the memory location.
 // It assumes that there are actually free slots in the memory location.
 void *get_mem_alloc(int order) {
-	cache_t *cache = cache_info.head + sizeof(cache_t) * (order - 5);
+	cache_t *cache = (cache_t *)((uint64_t)(cache_info.head) + sizeof(cache_t) * (order - 5));
 	void *return_addr = (void *) (cache->free);
 	free_t *free_address = (free_t *) return_addr;
 	cache->free = free_address->next_free;
@@ -111,7 +118,9 @@ void *get_pages_directly(int order) {
 void *allocate_in_cache(int order) {
 	int cache_location = order - 5;
 	if (cache_location <= 6) { //less than 2048
-		cache_t *cache = cache_info.head + sizeof(cache_t) * cache_location;
+		cache_t *cache = (cache_t *)((uint64_t)(cache_info.head) + sizeof(cache_t) * (order - 5));
+		printf("cnt:%d", cache->count);
+		cache->count++;
 		if (cache->free == NULL) { //we need to add a new page, because either 1) it has never been initialized or that there are no more free pages left
 			void *free_frame = (void *) get_free_frames(0); //allocating 1 free frame since we only get pages one at a time and max size allocated by this method is 2048
 			void *virtual_addr = (void *) get_virtual_location(0);
@@ -133,7 +142,7 @@ void *allocate_in_cache(int order) {
 void dealloc_in_cache(int order, void *ptr) {
 	int cache_location = order - 5;
 	if (cache_location <= 6) {
-		cache_t *cache = cache_info.head + sizeof(cache_t) * cache_location;
+	cache_t *cache = (cache_t *)((uint64_t)(cache_info.head) + sizeof(cache_t) * (order - 5));
 		void *free = cache->free;
 		free_t *new_free_node = (free_t *) ptr;
 		new_free_node->next_free = free;

@@ -413,7 +413,7 @@ void cp_page_tables(task_struct_t * from, task_struct_t * to,
 				child_pml_dbl_ptr_virtual, phys_to_virt_map, pv_map_node);
 	}
 
-	free_pv_map(pv_map_node);
+//	free_pv_map(pv_map_node);
 }
 
 void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to,
@@ -439,7 +439,7 @@ void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to,
 
 	cp_page_tables(from, to, to->state.kernel_rsp, kernel_stack_phys,
 			usr_stk_pv);
-	free_pv_map(usr_stk_pv);
+//	free_pv_map(usr_stk_pv);
 }
 
 void copy_process(uint64_t pid, uint64_t stack_top) {

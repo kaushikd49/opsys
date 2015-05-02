@@ -48,10 +48,12 @@ struct smap_t {
 }__attribute__((packed));
 typedef struct cache_init{
 	struct cache_t *head;
+
 	void *current_virtual;// dont care about reusing virtual space if something gets deallocated then so be it(NOTE: Physical memory is reclaimed).
 }cache_init;
 typedef struct cache_t{
 	int order;
+	int count;
 	void *free;
 
 	//cache_page *head;
