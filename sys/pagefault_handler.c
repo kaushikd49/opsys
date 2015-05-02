@@ -56,7 +56,8 @@ void seg_fault(uint64_t addr) {
 	printf("DO PAGE FAULT\n");
 }
 
-int is_addr_in_vma(uint64_t virtual_addr, mem_desc_t* mem_ptr, uint64_t *rsp_val) {
+int is_addr_in_vma(uint64_t virtual_addr, mem_desc_t* mem_ptr,
+		uint64_t *rsp_val) {
 	int flag = 0;
 	for (vma_t* temp_vma = mem_ptr->vma_list; temp_vma != NULL; temp_vma =
 			temp_vma->vma_next) {
@@ -67,7 +68,7 @@ int is_addr_in_vma(uint64_t virtual_addr, mem_desc_t* mem_ptr, uint64_t *rsp_val
 		}
 	}
 	printf("rspval:%x", rsp_val);
-	if(virtual_addr >= (uint64_t)rsp_val-8){
+	if (virtual_addr >= (uint64_t) rsp_val - 8) {
 		flag = 1;
 	}
 	return flag;
@@ -87,8 +88,8 @@ int is_addr_writable_in_vma(uint64_t virtual_addr, mem_desc_t* mem_ptr) {
 	}
 	return flag;
 }
-inline uint64_t max(uint64_t a, uint64_t b){
-	return a>b?a:b;
+inline uint64_t max(uint64_t a, uint64_t b) {
+	return a > b ? a : b;
 }
 void do_demand_paging(uint64_t virtual_addr, uint64_t *rsp_val) {
 	mem_desc_t * mem_ptr = currenttask->mem_map;
@@ -100,21 +101,21 @@ void do_demand_paging(uint64_t virtual_addr, uint64_t *rsp_val) {
 		return;
 	}
 	uint64_t heap_end = 0;
-	if(virtual_addr >= (uint64_t)rsp_val-8){
-		for (vma_t *temp_vma = mem_ptr->vma_list; temp_vma != NULL;
-				temp_vma = temp_vma->vma_next){
-			if(temp_vma->type == 5){
-				heap_end =temp_vma->vma_end;
+	if (virtual_addr >= (uint64_t) rsp_val - 8) {
+		for (vma_t *temp_vma = mem_ptr->vma_list; temp_vma != NULL; temp_vma =
+				temp_vma->vma_next) {
+			if (temp_vma->type == 5) {
+				heap_end = temp_vma->vma_end;
 			}
 		}
-		for (vma_t *temp_vma = mem_ptr->vma_list; temp_vma != NULL;
-				temp_vma = temp_vma->vma_next){
-			if(temp_vma->type == 4){
-				if(virtual_addr <=heap_end){
+		for (vma_t *temp_vma = mem_ptr->vma_list; temp_vma != NULL; temp_vma =
+				temp_vma->vma_next) {
+			if (temp_vma->type == 4) {
+				if (virtual_addr <= heap_end) {
 					seg_fault(virtual_addr);
-				}
-				else{
-					uint64_t page_virtual_addr = virtual_page_base(virtual_addr);
+				} else {
+					uint64_t page_virtual_addr = virtual_page_base(
+							virtual_addr);
 					temp_vma->vma_start = max(heap_end, page_virtual_addr);
 				}
 			}
@@ -139,12 +140,10 @@ void do_demand_paging(uint64_t virtual_addr, uint64_t *rsp_val) {
 						*((char *) temp) = 0;
 					} else if (temp_vma->type == 5) {
 						*((char *) temp) = 0;
-					}
-					else if(temp_vma->type == 20){
-						*((char *)temp) = 0;
-					}
-					else if(temp_vma->type == 4){
-						*((char *)temp) =0;
+					} else if (temp_vma->type == 20) {
+						*((char *) temp) = 0;
+					} else if (temp_vma->type == 4) {
+						*((char *) temp) = 0;
 					}
 				}
 
@@ -261,7 +260,8 @@ void do_handle_pagefault(uint64_t error_code, uint64_t *rsp_val) {
 				seg_fault(addr);
 			}
 		} else {
-			printf(" Something wrong, kernel read fault pid:%d at %p p:rw:us %d:%d:%d\n",
+			printf(
+					" Something wrong, kernel read fault pid:%d at %p p:rw:us %d:%d:%d\n",
 					currenttask->pid, addr, present, rw, us);
 			seg_fault(addr);
 		}
