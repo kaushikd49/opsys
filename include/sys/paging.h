@@ -39,4 +39,9 @@ uint64_t * virtual_addr_pte(uint64_t linear_addr);
 
 void setup_process_page_tables_without_zeroing(uint64_t linear_addr,
 		uint64_t physical_addr);
+
+void setup_kernel_page_table_from_outside(uint64_t linear_addr,
+		uint64_t physical_addr, int pte_p, int pte_rw, int pte_us,
+		uint64_t** pml_base_dbl_ptr,
+		uint64_t* (*addr_map_func)(uint64_t*, void *), void * pv_map);
 #endif

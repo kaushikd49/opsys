@@ -62,7 +62,7 @@ void cache_phys_virt_mapping(pv_map_t* pv_map_node, uint64_t page_base,
 void cp_process_stack(task_struct_t * from, task_struct_t * to,
 		pv_map_t* usr_stk_pv_map) {
 
-	char * stk_strt = (char *) (0x7000000 + 0x500);
+	char * stk_strt = (char *) (0x7000000 + 0x500); //todo: hard coding
 	char * stk_to = (char *) from->state.rsp;
 
 	uint64_t order = find_stack_page_order(stk_strt, stk_to);
@@ -404,7 +404,7 @@ void cp_page_tables(task_struct_t * from, task_struct_t * to,
 	pv_map_node = cp_for_each_vma(vma, child_pml_dbl_ptr_virtual, pv_map_node);
 
 	// map the kernel stack
-	setup_process_page_table_from_outside(krnl_stk_virt, krnl_stk_phys, 1, 1, 1,
+	setup_kernel_page_table_from_outside(krnl_stk_virt, krnl_stk_phys, 1, 1, 1,
 			child_pml_dbl_ptr_virtual, phys_to_virt_map, pv_map_node);
 
 	for (pv_map_t* p = usr_stk_pv; p != NULL; p = p->next) {
