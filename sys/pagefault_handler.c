@@ -93,7 +93,6 @@ inline uint64_t max(uint64_t a, uint64_t b) {
 }
 void do_demand_paging(uint64_t virtual_addr, uint64_t *rsp_val) {
 	mem_desc_t * mem_ptr = currenttask->mem_map;
-	vma_t * temp_vma = mem_ptr->vma_list;
 
 	if (!is_addr_in_vma(virtual_addr, mem_ptr, rsp_val)) {
 		printf("No valid VMAs for this addr %p", virtual_addr);
@@ -123,6 +122,7 @@ void do_demand_paging(uint64_t virtual_addr, uint64_t *rsp_val) {
 	}
 	page_alloc(virtual_addr);
 
+	vma_t * temp_vma = mem_ptr->vma_list;
 	if (temp_vma != NULL) {
 		uint64_t page_virtual_addr = virtual_page_base(virtual_addr);
 		uint64_t temp = page_virtual_addr;

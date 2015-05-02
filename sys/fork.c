@@ -6,6 +6,7 @@
 #include <sys/freelist.h>
 #include <sys/isr_stuff.h>
 #include <sys/defs.h>
+#include <sys/utils.h>
 extern task_struct_t *currenttask;
 
 
@@ -32,32 +33,7 @@ uint64_t find_stack_page_order(char* stk_strt, char* stk_to) {
 	return order;
 }
 
-// reverse mapping of addrs of page table pages
-// need this since parent process has to create
-// page tables of child without switching cr3
-typedef struct phys_virt_mapping {
-	uint64_t physical_addr;
-	uint64_t virtual_addr;
-	int isset;
-	struct phys_virt_mapping * next;
-} pv_map_t;
 
-
-void cache_phys_virt_mapping(pv_map_t* pv_map_node, uint64_t page_base,
-		uint64_t page_phys_addr) {
-	if (pv_map_node->isset) {
-		pv_map_t * temp = kmalloc(sizeof(pv_map_t));
-		temp->physical_addr = page_phys_addr;
-		temp->virtual_addr = page_base;
-		temp->next = pv_map_node->next;
-		pv_map_node->next = temp;
-	} else {
-		pv_map_node->isset = 1;
-		pv_map_node->physical_addr = page_phys_addr;
-		pv_map_node->virtual_addr = page_base;
-		pv_map_node->next = NULL;
-	}
-}
 
 void cp_process_stack(task_struct_t * from, task_struct_t * to,
 		pv_map_t* usr_stk_pv_map) {
@@ -75,7 +51,7 @@ void cp_process_stack(task_struct_t * from, task_struct_t * to,
 		uint64_t physi = (phys + i * 0x1000);
 		setup_kernel_page_tables(virt, physi);
 		uint64_t usr_stk_virt = (stk_virt_base + i * 0x1000); // target user stack virtual addr
-		cache_phys_virt_mapping(usr_stk_pv_map, usr_stk_virt, physi);
+		cache_pv_mapping(usr_stk_pv_map, usr_stk_virt, physi);
 	}
 	char * source = stk_to; // stack grows downwards
 	int offset = from->state.rsp & 0xfff; // last 3 nibbles
@@ -298,15 +274,6 @@ uint64_t* phys_to_virt_map(uint64_t* physaddr, void * pv_map) {
 
 }
 
-int is_not_copied(pv_map_t* pv_map_node, uint64_t page_base,
-		uint64_t page_phys_addr) {
-	for (pv_map_t* temp = pv_map_node; temp != NULL; temp = temp->next) {
-		if (temp->virtual_addr == page_base)
-			return 0;
-	}
-	return 1;
-}
-
 // page tables that are involved in resolving page_base are
 // created if not already created and entries are duplicated
 void cp_ptables_for(uint64_t page_base, pv_map_t* pv_map_node,
@@ -332,40 +299,17 @@ void cp_ptables_for(uint64_t page_base, pv_map_t* pv_map_node,
 	// since page tables need to be accessible for the kernel setting
 	// present, write, supervisor
 	// ---- TODO - change to read-only apt permission below ----
-	if (is_not_copied(pv_map_node, page_base, page_phys_addr)) {
+	if (if_not_contains_pv_mapping(pv_map_node, page_base, page_phys_addr)) {
 		setup_process_page_table_from_outside(page_base, page_phys_addr, 1, 0,
 				1, chld_pml4_base_dbl_ptr, phys_to_virt_map, pv_map_node);
 //		printf(" in forkk count before for %p is %d ", page_phys_addr,
 //				get_ref_count(page_phys_addr));
 		increase_ref_count(page_phys_addr);
-		cache_phys_virt_mapping(pv_map_node, page_base, page_phys_addr);
+		cache_pv_mapping(pv_map_node, page_base, page_phys_addr);
 	}
 
 }
 
-pv_map_t* init_pv_map() {
-	pv_map_t* pv_map_node = kmalloc(sizeof(pv_map_t));
-	pv_map_node->isset = 0;
-	pv_map_node->next = NULL;
-	return pv_map_node;
-}
-
-void free_pv_map(pv_map_t* pv_map_node) {
-	pv_map_t* p = pv_map_node;
-	pv_map_t* q = NULL;
-
-	while (p != NULL) {
-		if (q != NULL) {
-			kfree(q);
-		}
-		p = p->next;
-		q = p;
-	}
-
-	if (q != NULL) {
-		kfree(q);
-	}
-}
 
 pv_map_t* cp_for_each_vma(vma_t* vma, uint64_t** child_pml_dbl_ptr_virtual,
 		pv_map_t* pv_map_node) {
