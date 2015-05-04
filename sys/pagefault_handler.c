@@ -209,18 +209,18 @@ int copy_on_write(uint64_t addr) {
 	// addr is a valid one that has write
 	// permission in vma, so lets perform COW
 	uint64_t phys = phys_addr_of_frame(addr);
-	printf("ref count is %d ", get_ref_count(phys));
+//	printf("ref count is %d ", get_ref_count(phys));
 
 	if (get_ref_count(phys) == 1) {
 		// just mark as writable
-		printf(" just made page writable ");
+//		printf(" just made page writable ");
 		set_pagetables_as_write(addr);
 	} else {
 		// alloc separate page and copy, decr ref count
 		uint64_t* frame = duplicate_page(addr);
 		setup_process_page_tables_without_zeroing(addr, (uint64_t) frame);
 		decrease_ref_count(phys);
-		printf(" allocated a new page and copied contents ");
+//		printf(" allocated a new page and copied contents ");
 	}
 	return 1;
 }
@@ -253,7 +253,7 @@ void do_handle_pagefault(uint64_t error_code, uint64_t *rsp_val) {
 			if (kernel_addr) {
 				bad_kernel_access(addr);
 			} else if (is_cow_possible(addr)) {
-				printf(" Performing COW ");
+//				printf(" Performing COW ");
 				copy_on_write(addr);
 			} else {
 				printf("\nProcess %d trying to write into protected area %p ",

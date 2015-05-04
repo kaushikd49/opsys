@@ -174,6 +174,8 @@ uint64_t get_free_pages(page_t *free_list,int order){
 			return phys_page;
 		}
 	}
+	printf("danger");
+	while(1);
 	return 0;
 }
 void return_page(uint64_t page, page_t *free_list) {
@@ -201,9 +203,6 @@ void blank_space_baby(page_t *free_list) {
 	for(i = 0; i < MAX_NUMBER_PAGES; i++){
 		if(free_list[i].is_free == 1 && (free_list[i].frame_addr != 0x3f000 && free_list[i].frame_addr != 0x40000 &&free_list[i].frame_addr != 0x41000 )){
 			clear_space(free_list[i].frame_addr);
-		}
-		else if(free_list[i].frame_addr == 0x3f000 || free_list[i].frame_addr == 0x40000 || free_list[i].frame_addr == 0x41000){
-			printf("hello: %d", i);
 		}
 	}
 	//printf("\n this frame: %p  ",free_list[i].frame_addr);
@@ -236,11 +235,17 @@ void return_pages(uint64_t page, page_t *free_list, int order){
 }
 uint64_t * get_free_frame() {
 	uint64_t freePage = get_free_page(free_list);
+
 //	printf("returning freepage:%p ", freePage);
 	return (uint64_t *) freePage;
 }
 uint64_t * get_free_frames(int order){
 	uint64_t freePage = get_free_pages(free_list, order);
+	if(freePage == 0){
+		while(1){
+			printf("ff");
+		}
+	}
 //	printf("returning freepages:%p ", freePage);
 	return (uint64_t *) freePage;
 }

@@ -126,6 +126,10 @@ char *strcpy(char *dst, char *src);
 void quit_kernel_thread();
 uint64_t temp_preempt_waitpid(int pid, int *status, int options, uint64_t stack_top);
 uint64_t execve_process(char *binary, char **argv, char **envp, uint64_t stack_top);
+////////////////////////////////////////
 void init_file_dp_process(task_struct_t* task);
 void copy_file_dp_process(task_struct_t *task, task_struct_t *parent_task);
+int increment_global_count_fd(file_desc_t *fd);
+void decrement_global_count_fd(file_desc_t *fd);
+int add_to_global_fd(file_desc_t *fd);
 #endif

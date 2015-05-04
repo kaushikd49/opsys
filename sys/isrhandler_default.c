@@ -59,7 +59,7 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 //
 	if (regs.rax == 57) {
 		uint64_t stack_top = (uint64_t) (&(regs.gs));
-		printf("rip in parent %p ", regs.rip);
+//		printf("rip in parent %p ", regs.rip);
 		currenttask->state.rsp = regs.rsp;
 		int abc = fork_sys_call(stack_top);
 		return abc;
@@ -91,6 +91,7 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 	return 0;
 }
 uint64_t handle_fake_preempt(uint64_t stack_top, int flag){
+	currenttask->state.kernel_rsp = stack_top;
 	if(flag == 1)
 		return temp_preempt(stack_top);
 	return temp_preempt_read_block(stack_top);

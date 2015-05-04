@@ -1391,6 +1391,7 @@ isr_fake_preempt:
 
 	movb $0x20, %al
 	outb %al, $0x20
+	movq $0x200, %rax
+	orq %rax, 24(%rsp)
 	popq %rax
-	sti
 	iretq

@@ -20,6 +20,13 @@ typedef struct{
 }file_desc_t;
 file_desc_t *stdin_fd;
 file_desc_t *stdout_fd;//also for error
+struct global_fd_node{
+	file_desc_t *fd;
+	int count;
+};
+#define MAX_FILES_OS 200
+typedef struct global_fd_node global_fd_node_t;
+global_fd_node_t global_fd_array[MAX_FILES_OS];
 void *input_buffer;
 char *current_stdin_pointer;
 struct dirent {

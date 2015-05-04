@@ -53,7 +53,7 @@ typedef struct cache_init{
 typedef struct cache_t{
 	int order;
 	void *free;
-
+	int count;
 	//cache_page *head;
 
 }cache_t;

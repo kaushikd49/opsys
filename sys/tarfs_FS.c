@@ -34,6 +34,10 @@ int get_free_fd(){
 	for(uint64_t i = 0;i<MAX_FILES_SYSTEM; i++){
 		if(currenttask->filearray[i] == NULL){
 			currenttask->filearray[i] = (file_desc_t *)kmalloc(sizeof(file_desc_t));
+			int ret = add_to_global_fd(currenttask->filearray[i]);
+			if(ret == 0){
+				return -1;
+			}
 			currenttask->filearray[i]->used = 1;
 			currenttask->filearray[i]->posix_header = NULL;
 			currenttask->filearray[i]->current_pointer = NULL;
@@ -49,7 +53,10 @@ int get_free_fd(){
 }
 
 void return_fd(int fd){
-	currenttask->filearray[fd] = NULL;
+	if(currenttask->filearray[fd] !=NULL){
+		decrement_global_count_fd(currenttask->filearray[fd]);
+		currenttask->filearray[fd] = NULL;
+	}
 }
 
 uint64_t open_tarfs(char *file_name, int flags){
@@ -57,6 +64,9 @@ uint64_t open_tarfs(char *file_name, int flags){
 		return -1;
 	}
 	int fd = get_free_fd();
+	if(fd == -1){
+		return -1;
+	}
 	uint64_t *tarfs_header = find_file_tarfs(file_name);
 	if(tarfs_header == NULL){
 		return -1;
@@ -148,6 +158,7 @@ int close_tarfs(int fd){
 		return -1;
 	}
 	if(currenttask->filearray[fd] != NULL){
+		decrement_global_count_fd(currenttask->filearray[fd]);
 		currenttask->filearray[fd]= NULL;
 		return 0;
 	}
@@ -157,7 +168,9 @@ int close_tarfs(int fd){
 int dup_tarfs(int fd){
 	for(uint64_t i = 0;i<MAX_FILES_SYSTEM; i++){
 		if(currenttask->filearray[i] == NULL){
+
 			currenttask->filearray[i] = currenttask->filearray[fd];
+			increment_global_count_fd(currenttask->filearray[i]);
 			return i;
 			break;
 		}
@@ -167,7 +180,9 @@ int dup_tarfs(int fd){
 
 int dup2_tarfs(int fd_old, int fd_new){
 	if(currenttask->filearray[fd_old]!=NULL && currenttask->filearray[fd_new]!=NULL){
+		decrement_global_count_fd(currenttask->filearray[fd_new]);
 		currenttask->filearray[fd_new] = currenttask->filearray[fd_old];
+		increment_global_count_fd(currenttask->filearray[fd_new]);
 		return fd_new;
 	}
 	return -1;
@@ -186,14 +201,14 @@ int pipe_tarfs(int pipe[2]){
 	currenttask->filearray[pipe_write]->flags = O_WRONLY;
 	currenttask->filearray[pipe_write]->size = -999;//differentiates pipe from a file buffer
 	currenttask->filearray[pipe_write]->used = 1;
-	currenttask->filearray[pipe_write]->busy = 1;
+	currenttask->filearray[pipe_write]->busy = 0;
 	currenttask->filearray[pipe_write]->current_process = currenttask->pid;
-	currenttask->filearray[pipe_write]->ready = 0;
+	currenttask->filearray[pipe_write]->ready = 1;
 	currenttask->filearray[pipe_read]->current_pointer = (char *)pipe_buffer;
 	currenttask->filearray[pipe_read]->flags = O_RDONLY;
 	currenttask->filearray[pipe_read]->size = -999;
 	currenttask->filearray[pipe_read]->used = 1;
-	currenttask->filearray[pipe_read]->busy = 1;
+	currenttask->filearray[pipe_read]->busy = 0;
 	currenttask->filearray[pipe_read]->current_process = currenttask->pid;
 	currenttask->filearray[pipe_read]->ready = 0;
 	return 0;
