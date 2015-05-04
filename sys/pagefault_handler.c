@@ -16,7 +16,7 @@ uint64_t get_faulted_addr() {
 	return virtual_addr;
 }
 
-void page_alloc(uint64_t virtual_addr) {
+void page_alloc(task_struct_t * task, uint64_t virtual_addr) {
 	uint64_t* frame = get_free_frame();
 	//todo :what if kernel page faults??
 	uint64_t base_virtual_addr = virtual_addr & (~0xfff);
@@ -91,8 +91,9 @@ int is_addr_writable_in_vma(uint64_t virtual_addr, mem_desc_t* mem_ptr) {
 inline uint64_t max(uint64_t a, uint64_t b) {
 	return a > b ? a : b;
 }
-void do_demand_paging(uint64_t virtual_addr, uint64_t *rsp_val) {
-	mem_desc_t * mem_ptr = currenttask->mem_map;
+void do_demand_paging(task_struct_t * task, uint64_t virtual_addr,
+		uint64_t *rsp_val) {
+	mem_desc_t * mem_ptr = task->mem_map;
 
 	if (!is_addr_in_vma(virtual_addr, mem_ptr, rsp_val)) {
 		printf("No valid VMAs for this addr %p", virtual_addr);
@@ -120,7 +121,7 @@ void do_demand_paging(uint64_t virtual_addr, uint64_t *rsp_val) {
 			}
 		}
 	}
-	page_alloc(virtual_addr);
+	page_alloc(task, virtual_addr);
 
 	vma_t * temp_vma = mem_ptr->vma_list;
 	if (temp_vma != NULL) {
@@ -240,12 +241,12 @@ void do_handle_pagefault(uint64_t error_code, uint64_t *rsp_val) {
 				printf(" Pid:%d, kernel page fault. Do not reach here unless"
 						" testing.page fault at %p, error_code: %x  \n",
 						currenttask->pid, addr, error_code);
-				page_alloc(addr);
+				page_alloc(currenttask, addr);
 			}
 		} else {
 //			printf(" Demand paging for process %d for addr %p\n",
 //					currenttask->pid, addr);
-			do_demand_paging(addr, rsp_val);
+			do_demand_paging(currenttask, addr, rsp_val);
 		}
 	} else {
 		if (kernel_addr) {

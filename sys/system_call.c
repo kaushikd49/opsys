@@ -22,14 +22,10 @@ void print_state(char state[], task_struct_t *t) {
 			t->is_kernel_process);
 }
 
-int ps_system_call() {
+void print_ps(task_struct_t * task) {
 	int visited = 0;
-	printf("----------PROCESS STATE----------\n");
-	printf("---------------------------------\n");
-	printf("| pid | ppid |  state  | iskrnl |\n");
-	printf("---------------------------------\n");
-	for (task_struct_t *t = currenttask; t != currenttask || visited == 0;
-			t = t->next) {
+	for (task_struct_t* t = task; t != NULL && (t != task || visited == 0); t =
+			t->next) {
 		visited = 1;
 		if (t->p_state == STATE_RUNNING) {
 			print_state("RUNNING", t);
@@ -41,6 +37,16 @@ int ps_system_call() {
 			print_state("TERMINATED", t);
 		}
 	}
+}
+
+int ps_system_call() {
+
+	printf("----------PROCESS STATE----------\n");
+	printf("---------------------------------\n");
+	printf("| pid | ppid |  state  | iskrnl |\n");
+	printf("---------------------------------\n");
+	print_ps(currenttask);
+	print_ps(waitingtask);
 	printf("---------------------------------\n");
 	return 0;
 }
@@ -73,7 +79,6 @@ int write_system_call(int fd, const void *buff, size_t count) {
 	}
 	return -1;
 }
-
 
 //int write_system_call(int fd, const void *buff, size_t count){
 //
@@ -168,6 +173,6 @@ uint64_t execve_sys_call(char *binary, char **argv, char **envp,
 	return execve_process(binary, argv, envp, stack_top);
 }
 
-int pipe_system_call(int pipe[2]){
+int pipe_system_call(int pipe[2]) {
 	return pipe_tarfs(pipe);
 }
