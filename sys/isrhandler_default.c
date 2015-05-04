@@ -80,6 +80,8 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 		return currenttask->pid;
 	} else if (regs.rax == SYS_getppid) {
 		return currenttask->ppid;
+	} else if (regs.rax == SYS_getps) {
+		return ps_system_call();
 	}
 	return 0;
 }

@@ -22,4 +22,5 @@
 #define SYS_dup2       33
 #define SYS_getdents   78
 
+#define SYS_getps   99 // custom one added
 #endif

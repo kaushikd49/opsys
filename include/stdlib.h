@@ -76,4 +76,6 @@ int closedir(void *dir);
 //string functions
 size_t strlen(char *str);
 void errorHandler(int errorCode);
+
+int process_state();
 #endif

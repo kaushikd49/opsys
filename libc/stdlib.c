@@ -46,6 +46,13 @@ size_t write(int fd, const void *buf, size_t count) {
 	}
 	return size;
 }
+
+int process_state() {
+	uint64_t result;
+	result = syscall_0(SYS_getps);
+	return (unsigned int) result;
+}
+
 //no errors for strlen
 size_t strlen(const char *str) {
 	size_t current = 0;
@@ -414,7 +421,7 @@ struct blockHeader *fragmentBlock(struct blockHeader *loc, size_t prevSize) {
 	size_t resetMask = 0xFFFFFFFFFFFFFFFE;
 	struct blockHeader *next = loc->next;
 	if ((prevSize - (loc->size & resetMask))
-			> (size_t)(sizeof(struct blockHeader))) {
+			> (size_t) (sizeof(struct blockHeader))) {
 		struct blockHeader *newNext = (struct blockHeader *) ((uint64_t) loc
 				+ (uint64_t) (loc->size & resetMask));
 		newNext->size = prevSize - (loc->size & resetMask);
@@ -483,10 +490,11 @@ void *memset(void *s, int c, size_t n) {
 	int *current = (int *) s;
 	//int offset = 0;
 	if (n % 4 != 0) {
-		printf("\nmemset dangerous: programmer care required when assigning to this area");
+		printf(
+				"\nmemset dangerous: programmer care required when assigning to this area");
 		return s;
 	}
-	while ((size_t)(current) < (size_t) s + (size_t) n) {
+	while ((size_t) (current) < (size_t) s + (size_t) n) {
 		*(current) = c;
 		current++;
 	}
@@ -559,20 +567,20 @@ enum {
 //
 size_t open(const char *filename, int permission) {
 	unsigned short mode;
-	if((permission & 0x40)!=0)
-		 mode = DEFAULT_MODE; //todo:verify the mode. default rwx
-	uint64_t result =  syscall_3(SYS_open, (uint64_t)filename, (uint64_t)permission,(uint64_t)mode);
-	if((signed long)result == -EACCES){//checked
-		errno =EACCES;//premission denied to access the file checked--
+	if ((permission & 0x40) != 0)
+		mode = DEFAULT_MODE; //todo:verify the mode. default rwx
+	uint64_t result = syscall_3(SYS_open, (uint64_t) filename,
+			(uint64_t) permission, (uint64_t) mode);
+	if ((signed long) result == -EACCES) { //checked
+		errno = EACCES; //premission denied to access the file checked--
 		return -1;
-	}
-	else if((signed long)result == -ENOENT){//checked
-		errno = ENOENT;//file or directory does not exist checked--
+	} else if ((signed long) result == -ENOENT) { //checked
+		errno = ENOENT; //file or directory does not exist checked--
 		return -1;
 	} else if ((signed long) result == -EEXIST) {		//checked
 		errno = EEXIST;		//file already exists returns when using O_CREATE
 		return -1;
-	} else if ((signed long) result == -EDQUOT) {//checked
+	} else if ((signed long) result == -EDQUOT) {		//checked
 		errno = EDQUOT; //quota of open files exceeded by user.
 		return -1;
 	} else if ((signed long) result == -EFAULT) {
@@ -645,8 +653,7 @@ pid_t fork(void) {
 	} else if ((pid_t) result == -ENOMEM) {
 		errno = ENOMEM;
 		return -1;
-	}
-	else if((pid_t)result<0){
+	} else if ((pid_t) result < 0) {
 		errno = FORKERROR;
 		return -1;
 	}
@@ -883,13 +890,13 @@ void *opendir(const char *name) {
 		return returnVal;
 	}
 	struct dirent *direntries = (struct dirent *) malloc(
-			MAX_DIR * sizeof(struct dirent));
-	if(direntries == NULL){
-		returnVal = NULL;//errno set by malloc
+	MAX_DIR * sizeof(struct dirent));
+	if (direntries == NULL) {
+		returnVal = NULL; //errno set by malloc
 		return returnVal;
 	}
 	syscall_3((uint64_t) SYS_getdents, (uint64_t) fd, (uint64_t) direntries,
-			MAX_DIR * sizeof(struct dirent));
+	MAX_DIR * sizeof(struct dirent));
 	returnVal->start = direntries;
 	returnVal->current = direntries;
 	returnVal->fd = fd;
