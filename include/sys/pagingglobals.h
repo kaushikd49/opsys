@@ -55,7 +55,6 @@ typedef struct cache_t{
 	int order;
 	int count;
 	void *free;
-
 	//cache_page *head;
 
 }cache_t;

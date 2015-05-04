@@ -7,6 +7,7 @@
 extern char * vid_buffer_view_ptr;
 extern char * vid_buffer_tail_ptr;
 extern char * video_buffer;
+extern uint64_t *global_keyboard;
 int write_char_to_vid_mem(char c, uint64_t pos);
 void write_to_video_memory(const char* str, uint64_t position);
 void write_buffer_view_into_vid_mem();
@@ -65,9 +66,11 @@ void isrhandler_keyboard() {
 	} else if (scancode == TAB) {
 		clear_and_print_str_at("<TAB>");
 	} else if (scancode == BACKSPACE) {
-		write_char_to_vid_mem(8, 0);
-		current_stdin_pointer--;
-		clear_and_print_str_at("<BACKSPACE>");
+		if(current_stdin_pointer > (char *)global_keyboard){
+			write_char_to_vid_mem(8, 0);
+			current_stdin_pointer--;
+			clear_and_print_str_at("<BACKSPACE>");
+		}
 	} else {
 		if (scancode == SHIFT) {
 			caps = 0x20;

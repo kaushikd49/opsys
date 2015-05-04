@@ -67,42 +67,64 @@ void cp_process_stack(task_struct_t * from, task_struct_t * to,
 void cp_kernel_stack(task_struct_t * from, task_struct_t * to,
 		uint64_t * stack_virt, uint64_t * stack_phys, uint64_t stack_top) {
 	uint64_t phys = (uint64_t) get_free_frames(0);
-	uint64_t virtual_addr = *stack_virt;
+//	uint64_t virtual_addr = *stack_virt;
 
-	virtual_addr = (uint64_t) get_virtual_location(0);
+	uint64_t virtual_addr = (uint64_t) get_virtual_location(0);
 
 	setup_kernel_page_tables(virtual_addr, phys);
-
-	regs_syscall_t *virtual = (regs_syscall_t *) virtual_addr;
+	to->state.kernel_rsp = virtual_addr + 0x999;
+	uint64_t *temp = (uint64_t *)(to->state.kernel_rsp);
 	regs_syscall_t *from_virtual = (regs_syscall_t *) (stack_top);
-	virtual->gs = from_virtual->gs;
-	virtual->fs = from_virtual->fs;
-	virtual->es = from_virtual->es;
-	virtual->ds = from_virtual->ds;
-	virtual->r15 = from_virtual->r15;
-	virtual->r14 = from_virtual->r14;
-	virtual->r13 = from_virtual->r13;
-	virtual->r12 = from_virtual->r12;
-	virtual->r11 = from_virtual->r11;
-	virtual->r10 = from_virtual->r10;
-	virtual->r9 = from_virtual->r9;
-	virtual->r8 = from_virtual->r8;
-	virtual->rbp = from_virtual->rbp;
-	virtual->rsi = from_virtual->rsi;
-	virtual->rdi = from_virtual->rdi;
-	virtual->rdx = from_virtual->rdx;
-	virtual->rcx = from_virtual->rcx;
-	virtual->rbx = from_virtual->rbx;
-	virtual->rax = 0; // ret val from fork for the child
-	virtual->rip = from_virtual->rip;
-	printf("setting child rip to %p ", virtual->rip);
-	virtual->cs = from_virtual->cs;
-	virtual->flag = from_virtual->flag;
-	virtual->rsp = from_virtual->rsp;
-	virtual->ss = from_virtual->ss;
-	to->state.kernel_rsp = (uint64_t) virtual;
+	*temp = from_virtual->ss;
+	temp -=1;
+	*temp = from_virtual->rsp;
+	temp -=1;
+	*temp = from_virtual->flag;
+	temp -=1;
+	*temp = from_virtual->cs;
+	temp -=1;
+	*temp = from_virtual->rip;
+	temp -=1;
+	*temp = 0;
+	temp -=1;
+	*temp = from_virtual->rbx;
+	temp -=1;
+	*temp = from_virtual->rcx;
+	temp -=1;
+	*temp = from_virtual->rdx;
+	temp -=1;
+	*temp = from_virtual->rdi;
+	temp -=1;
+	*temp = from_virtual->rsi;
+	temp -=1;
+	*temp = from_virtual->rbp;
+	temp -=1;
+	*temp = from_virtual->r8;
+	temp -=1;
+	*temp = from_virtual->r9;
+	temp -=1;
+	*temp = from_virtual->r10;
+	temp -=1;
+	*temp = from_virtual->r11;
+	temp -=1;
+	*temp = from_virtual->r12;
+	temp -=1;
+	*temp = from_virtual->r13;
+	temp -=1;
+	*temp = from_virtual->r14;
+	temp -=1;
+	*temp = from_virtual->r15;
+	temp -=1;
+	*temp = from_virtual->ds;
+	temp -=1;
+	*temp = from_virtual->es;
+	temp -=1;
+	*temp = from_virtual->fs;
+	temp -=1;
+	*temp = from_virtual->gs;
+	to->state.kernel_rsp = (uint64_t)temp;
 	*stack_phys = phys;
-	*stack_virt = virtual_addr;
+	*stack_virt = to->state.kernel_rsp;
 }
 
 void cp_pstate(task_struct_t * from, task_struct_t * to) {
@@ -354,10 +376,10 @@ void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to,
 
 	uint64_t kernel_stack_virt = 0;
 	uint64_t kernel_stack_phys = 0;
-	//from->state.kernel_rsp = stack_top;
+	from->state.kernel_rsp = stack_top;
 	cp_kernel_stack(from, to, &kernel_stack_virt, &kernel_stack_phys,
 			stack_top);
-	to->state.kernel_rsp = kernel_stack_virt;
+//	to->state.kernel_rsp = kernel_stack_virt;
 
 	pv_map_t* usr_stk_pv = init_pv_map();
 	cp_process_stack(from, to, usr_stk_pv);
@@ -375,7 +397,7 @@ void copy_process(uint64_t pid, uint64_t stack_top) {
 
 int do_fork(uint64_t stack_top) {
 	uint64_t pid = get_next_pid();
-	printf("forked is %d ", pid);
+//	printf("forked is %d ", pid);
 	copy_process(pid, stack_top);
 	return (int) pid;
 }
