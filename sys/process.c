@@ -1170,7 +1170,7 @@ void mark_as_terminated(task_struct_t* last) {
 }
 
 uint64_t temp_preempt_exit(uint64_t stack_top) {
-	printf("inside preempt exit %d", currenttask->pid);
+	printf("inside preempt exit %d iskernel:%d", currenttask->pid, currenttask->is_kernel_process);
 	task_struct_t *last = currenttask;
 	currenttask = currenttask->next;
 //	process_switch_cooperative(&(last->state),&(currenttask->state), stack_top);

@@ -95,7 +95,7 @@ void do_demand_paging(uint64_t virtual_addr, uint64_t *rsp_val) {
 	mem_desc_t * mem_ptr = currenttask->mem_map;
 
 	if (!is_addr_in_vma(virtual_addr, mem_ptr, rsp_val)) {
-//		printf("No valid VMAs for this addr %p", virtual_addr);
+		printf("No valid VMAs for this addr %p", virtual_addr);
 		seg_fault(virtual_addr);
 		return;
 	}

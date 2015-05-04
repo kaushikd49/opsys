@@ -180,8 +180,9 @@ uint64_t get_free_pages(page_t *free_list, int order) {
 				&& check_array_range(free_list, i, i + limit - 1) == 1) {
 			clear_array_range(free_list, i, i + limit - 1);
 			uint64_t phys_page = free_list[i].frame_addr;
-			if (currenttask != 0)
-				printf(" pid:%d returning frame %p \n", currenttask->pid, phys_page);
+			if (currenttask != 0){
+//				printf(" pid:%d returning frame %p \n", currenttask->pid, phys_page);
+			}
 			return phys_page;
 		}
 	}
