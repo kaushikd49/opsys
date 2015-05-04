@@ -1154,22 +1154,29 @@ void check_parent_waiting(task_struct_t *last) {
 		temp = temp->next;
 	} while (temp != waitingtask);
 }
+
+void mark_as_terminated(task_struct_t* last) {
+	task_struct_t *prev = currenttask;
+	while (prev->next != last) {
+		prev = prev->next;
+	}
+	prev->next = last->next;
+
+	last->next = last;
+	last->p_state = STATE_TERMINATED;
+	last->pid = -1;
+	add_process_waitq(last);
+	check_parent_waiting(last);
+}
+
 uint64_t temp_preempt_exit(uint64_t stack_top) {
 	printf("inside preempt exit %d", currenttask->pid);
 	task_struct_t *last = currenttask;
 	currenttask = currenttask->next;
 //	process_switch_cooperative(&(last->state),&(currenttask->state), stack_top);
 //	tss.rsp0 = (uint64_t) (currenttask->state.kernel_rsp);
-	task_struct_t *prev = currenttask;
-	while (prev->next != last) {
-		prev = prev->next;
-	}
-	prev->next = last->next;
-	last->next = last;
-	last->p_state = STATE_TERMINATED;
-	add_process_waitq(last);
+	mark_as_terminated(last);
 
-	check_parent_waiting(last);
 	tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp) + 192);
 //	__asm__ __volatile__("movq %0, %%rsp"
 //							:
@@ -1177,12 +1184,9 @@ uint64_t temp_preempt_exit(uint64_t stack_top) {
 //							:"%rsp");
 	update_cr3((uint64_t *) (currenttask->state.cr3));
 
-
 //	printf(" num freepages before %d ", num_free_pages());
 //	cleanup_process(last);
 //	printf(" num freepages after %d ", num_free_pages());
-
-	last->pid = -1;
 
 	return (currenttask->state.kernel_rsp);
 }

@@ -23,4 +23,5 @@
 #define SYS_getdents   78
 
 #define SYS_getps   99 // custom one added
+#define SYS_kill   199 // custom one added
 #endif

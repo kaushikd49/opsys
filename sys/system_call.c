@@ -4,6 +4,19 @@
 #include<sys/fork.h>
 #include<sys/process.h>
 
+int kill_system_call(pid_t pid) {
+	int visited = 0;
+	for (task_struct_t *t = currenttask; t != currenttask || visited == 0;
+			t = t->next) {
+		visited = 1;
+		if (t->pid == pid) {
+			mark_as_terminated(t);
+			return 0;
+		}
+		// todo: return value conventions
+	}
+	return -1;
+}
 void print_state(char state[], task_struct_t *t) {
 	printf("|  %d  |  %d   | %s |   %d   |\n", t->pid, t->ppid, state,
 			t->is_kernel_process);

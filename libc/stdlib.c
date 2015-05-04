@@ -47,6 +47,12 @@ size_t write(int fd, const void *buf, size_t count) {
 	return size;
 }
 
+int kill(pid_t pid) {
+	uint64_t result;
+	result = syscall_1(SYS_kill, pid);
+	return (unsigned int) result;
+}
+
 int process_state() {
 	uint64_t result;
 	result = syscall_0(SYS_getps);

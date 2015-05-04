@@ -1,4 +1,3 @@
-
 #ifndef _STDLIB_H
 #define _STDLIB_H
 #include<errno.h>
@@ -16,7 +15,7 @@ int brk(void *end_data_segment);
 
 // processes
 //typedef uint32_t pid_t;
-struct timespec{
+struct timespec {
 	time_t tv_sec;
 	long tv_nsec;
 
@@ -78,4 +77,5 @@ size_t strlen(char *str);
 void errorHandler(int errorCode);
 
 int process_state();
+int kill(pid_t pid);
 #endif

@@ -69,10 +69,7 @@ typedef struct process_state {
 } process_state;
 
 enum {
-	STATE_RUNNING = 1,
-	STATE_WAITING = 2,
-	STATE_READY = 3,
-	STATE_TERMINATED = 4,
+	STATE_RUNNING = 1, STATE_WAITING = 2, STATE_READY = 3, STATE_TERMINATED = 4,
 };
 typedef struct task_struct {
 	uint64_t pid;
@@ -86,38 +83,51 @@ typedef struct task_struct {
 	file_desc_t *filearray[MAX_NUMBER_FILES];
 	int waiting_for;
 	int is_kernel_process;
-}task_struct_t;
+} task_struct_t;
 
-void load_executable(task_struct_t *	);
+void load_executable(task_struct_t *);
 void preempt(uint64_t stack_top);
 uint64_t temp_preempt(uint64_t);
 uint64_t temp_preempt_exit(uint64_t);
-void kernel_create_process(task_struct_t *task, task_struct_t *parent_task, char *executable);
+void kernel_create_process(task_struct_t *task, task_struct_t *parent_task,
+		char *executable);
 
 task_struct_t *currenttask;
-task_struct_t *waitingtask;// this is the head to the elements in the wait queue
+task_struct_t *waitingtask;	// this is the head to the elements in the wait queue
 
 void kernel_process_init();
 
-void kernel_init_process(task_struct_t *task, task_struct_t *parent, void (*main)());
-void create_kernel_process(void (*main)(),uint64_t ppid);
+void kernel_init_process(task_struct_t *task, task_struct_t *parent,
+		void (*main)());
+void create_kernel_process(void (*main)(), uint64_t ppid);
 void temp_create_user_process(char *executable, uint64_t ppid);
-void temp_init_user_state(task_struct_t *task, task_struct_t *parent_task, char *executable);
+void temp_init_user_state(task_struct_t *task, task_struct_t *parent_task,
+		char *executable);
 void temp_init_user_stack(uint64_t rsp, task_struct_t *task);
 void temp_create_kernel_process(void (*main)(), uint64_t ppid);
-void temp_init_kernel_state(task_struct_t *task, task_struct_t *parent_task, void (*main)());
+void temp_init_kernel_state(task_struct_t *task, task_struct_t *parent_task,
+		void (*main)());
 void temp_init_kernel_stack(uint64_t rsp, task_struct_t *task);
-uint64_t temp_preempt_wait(int fd, void *buffer, uint64_t size, uint64_t stack_top);
-void temp_create_kernel_process_write(void (*main)(), uint64_t ppid, int fd, void *buffer, uint64_t size);
-void temp_init_kernel_state_write(task_struct_t *task, task_struct_t *parent_task, void (*main)(), int fd, void *buffer, uint64_t size);
-void temp_init_kernel_stack_write(uint64_t rsp, task_struct_t *task, int fd, void *buffer, uint64_t size);
+uint64_t temp_preempt_wait(int fd, void *buffer, uint64_t size,
+		uint64_t stack_top);
+void temp_create_kernel_process_write(void (*main)(), uint64_t ppid, int fd,
+		void *buffer, uint64_t size);
+void temp_init_kernel_state_write(task_struct_t *task,
+		task_struct_t *parent_task, void (*main)(), int fd, void *buffer,
+		uint64_t size);
+void temp_init_kernel_stack_write(uint64_t rsp, task_struct_t *task, int fd,
+		void *buffer, uint64_t size);
 uint64_t get_next_pid();
 uint64_t convert_ocatalstr_todecimal(char octal[10]);
 int strcmp(char *string1, char *string2);
 char *strcpy(char *dst, char *src);
 void quit_kernel_thread();
-uint64_t temp_preempt_waitpid(int pid, int *status, int options, uint64_t stack_top);
-uint64_t execve_process(char *binary, char **argv, char **envp, uint64_t stack_top);
+uint64_t temp_preempt_waitpid(int pid, int *status, int options,
+		uint64_t stack_top);
+uint64_t execve_process(char *binary, char **argv, char **envp,
+		uint64_t stack_top);
 void init_file_dp_process(task_struct_t* task);
 void copy_file_dp_process(task_struct_t *task, task_struct_t *parent_task);
+
+void mark_as_terminated(task_struct_t* last);
 #endif
