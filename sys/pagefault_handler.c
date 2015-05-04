@@ -18,7 +18,6 @@ uint64_t get_faulted_addr() {
 
 void page_alloc(task_struct_t * task, uint64_t virtual_addr) {
 	uint64_t* frame = get_free_frame();
-	//todo :what if kernel page faults??
 	uint64_t base_virtual_addr = virtual_addr & (~0xfff);
 	setup_process_page_tables(base_virtual_addr, (uint64_t) frame);
 }
