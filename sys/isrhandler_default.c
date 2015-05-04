@@ -34,11 +34,12 @@ uint64_t handle_read(regs_syscall_t regs) {
 	return read_tarfs((int) regs.rdi, (void *) (regs.rsi), (size_t) regs.rdx,
 			(uint64_t) (stack_top));
 }
-uint64_t handle_write(regs_syscall_t regs){
-	uint64_t stack_top = (uint64_t)(&(regs.gs));
-	return write_syscall((int)regs.rdi, (void *)(regs.rsi), (size_t)regs.rdx, (uint64_t)(stack_top));
+uint64_t handle_write(regs_syscall_t regs) {
+	uint64_t stack_top = (uint64_t) (&(regs.gs));
+	return write_syscall((int) regs.rdi, (void *) (regs.rsi), (size_t) regs.rdx,
+			(uint64_t) (stack_top));
 }
-uint64_t handle_wait(regs_syscall_t regs){
+uint64_t handle_wait(regs_syscall_t regs) {
 	uint64_t stack_top = (uint64_t) (&(regs.gs));
 	return wait_pid((int) regs.rdi, (int *) (regs.rsi), (int) (regs.rdx),
 			stack_top);
@@ -54,7 +55,7 @@ uint64_t handle_execve(regs_syscall_t regs) {
 			(void *) regs.rdx, stack_top);
 }
 uint64_t handle_syscall(regs_syscall_t regs) {
-	currenttask->state.kernel_rsp = (uint64_t)(&(regs.gs));
+	currenttask->state.kernel_rsp = (uint64_t) (&(regs.gs));
 //	if (regs.rax == ) {
 //		return write_system_call((int) regs.rdi, (const void *) regs.rsi,
 //				(size_t) regs.rdx);
@@ -70,38 +71,35 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 //	else if(regs.rax == SYS_write){
 //		return write_system_call((int)regs.rdi, (const void *)regs.rsi, (size_t)regs.rdx);
 //	}
-	else if(regs.rax == SYS_open){
-		return open_tarfs((char *)regs.rdi, (int)regs.rsi);
-	}
-	else if(regs.rax == SYS_brk){
-		return brk_system_call((uint64_t)regs.rdi);
-	}
-	else if(regs.rax == SYS_getdents){
-		dents_tarfs((int)(regs.rdi)	, (struct dirent *)(regs.rsi), (uint64_t)(regs.rdx));
-	}
-	else if(regs.rax == SYS_close){
-		return close_tarfs((int)(regs.rdi));
-	}
-	else if(regs.rax == SYS_dup){
-		return dup_tarfs((int)(regs.rdi));
-	}
-	else if(regs.rax == SYS_dup2){
-		return dup2_tarfs((int)regs.rdi, (int)regs.rsi);
-	}
-	else if(regs.rax == SYS_pipe){
-		return pipe_system_call((int *)regs.rdi);
+	else if (regs.rax == SYS_open) {
+		return open_tarfs((char *) regs.rdi, (int) regs.rsi);
+	} else if (regs.rax == SYS_brk) {
+		return brk_system_call((uint64_t) regs.rdi);
+	} else if (regs.rax == SYS_getdents) {
+		dents_tarfs((int) (regs.rdi), (struct dirent *) (regs.rsi),
+				(uint64_t) (regs.rdx));
+	} else if (regs.rax == SYS_close) {
+		return close_tarfs((int) (regs.rdi));
+	} else if (regs.rax == SYS_dup) {
+		return dup_tarfs((int) (regs.rdi));
+	} else if (regs.rax == SYS_dup2) {
+		return dup2_tarfs((int) regs.rdi, (int) regs.rsi);
+	} else if (regs.rax == SYS_pipe) {
+		return pipe_system_call((int *) regs.rdi);
 	} else if (regs.rax == SYS_getpid) {
 		return currenttask->pid;
 	} else if (regs.rax == SYS_getppid) {
 		return currenttask->ppid;
 	} else if (regs.rax == SYS_getps) {
 		return ps_system_call();
+	} else if (regs.rax == SYS_kill) {
+		return kill_system_call((pid_t) regs.rdi);
 	}
 	return 0;
 }
-uint64_t handle_fake_preempt(uint64_t stack_top, int flag){
+uint64_t handle_fake_preempt(uint64_t stack_top, int flag) {
 	currenttask->state.kernel_rsp = stack_top;
-	if(flag == 1)
+	if (flag == 1)
 		return temp_preempt(stack_top);
 	return temp_preempt_read_block(stack_top);
 }
