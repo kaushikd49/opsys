@@ -227,8 +227,9 @@ void create_all_but_pml(const struct paging_entities* pe,
 }
 
 void create_pdir_and_ptable(const struct paging_entities* pe,
-		uint64_t physical_addr, uint64_t* deepest_entity_base, int ptable_us, int p, int rw,
-		int us, uint64_t* (*addr_map_func)(uint64_t*, void *), void * pv_map) {
+		uint64_t physical_addr, uint64_t* deepest_entity_base, int ptable_us,
+		int p, int rw, int us, uint64_t* (*addr_map_func)(uint64_t*, void *),
+		void * pv_map) {
 	// pml and pdir_ptr are present for this linear address
 	uint64_t* pdir_base = (uint64_t*) (*deepest_entity_base);
 	uint64_t* ptable = get_free_frame();
@@ -291,8 +292,8 @@ void setup_page_table_from_outside(uint64_t linear_addr, uint64_t physical_addr,
 				pte_p, pte_rw, pte_us, addr_map_func, pv_map);
 	} else if (res == 4) {
 		// pml, pdir_ptr and pdir are present for this linear address, but not ptable
-		create_ptable(&pe, physical_addr, deepest_entity_base, pte_p,
-				pte_rw, pte_us, addr_map_func, pv_map);
+		create_ptable(&pe, physical_addr, deepest_entity_base, pte_p, pte_rw,
+				pte_us, addr_map_func, pv_map);
 	} else {
 		// all present
 		create_pte(&pe, physical_addr, deepest_entity_base, pte_p, pte_rw,
@@ -728,3 +729,20 @@ uint64_t phys_addr_of_frame(uint64_t virtual_addr) {
 	uint64_t * target_pte = virtual_addr_pte(virtual_addr);
 	return (uint64_t) next_entity_base(target_pte);
 }
+
+uint64_t vaddr_of_ptable(uint64_t virtual_addr) {
+	uint64_t * target_pte = virtual_addr_pte(virtual_addr);
+	return ((uint64_t) target_pte) & (~0xfff);
+}
+
+uint64_t vaddr_of_pdir(uint64_t virtual_addr) {
+	uint64_t * target_pdire = virtual_addr_pdire(virtual_addr);
+	return ((uint64_t) target_pdire) & (~0xfff);
+}
+
+uint64_t vaddr_of_pdir_ptr(uint64_t virtual_addr) {
+	uint64_t * target_pdir_ptre = virtual_addr_pdirptre(virtual_addr);
+	return ((uint64_t) target_pdir_ptre) & (~0xfff);
+}
+
+

@@ -29,25 +29,28 @@ uint64_t handle_exit(regs_syscall_t regs) {
 	uint64_t stack_top = (uint64_t) (&(regs.gs));
 	return temp_preempt_exit(stack_top);
 }
-uint64_t handle_read(regs_syscall_t regs){
+uint64_t handle_read(regs_syscall_t regs) {
 	uint64_t stack_top = (uint64_t) (&(regs.gs));
-	return read_tarfs((int)regs.rdi, (void *)(regs.rsi), (size_t)regs.rdx, (uint64_t)(stack_top));
+	return read_tarfs((int) regs.rdi, (void *) (regs.rsi), (size_t) regs.rdx,
+			(uint64_t) (stack_top));
 }
-uint64_t handle_wait(regs_syscall_t regs){
+uint64_t handle_wait(regs_syscall_t regs) {
 	uint64_t stack_top = (uint64_t) (&(regs.gs));
-	return wait_pid((int)regs.rdi, (int *)(regs.rsi), (int)(regs.rdx), stack_top);
+	return wait_pid((int) regs.rdi, (int *) (regs.rsi), (int) (regs.rdx),
+			stack_top);
 }
-uint64_t handle_nanosleep(regs_syscall_t regs){
-	uint64_t stack_top = (uint64_t)(&(regs.gs));
-	return nanosleep_sys_call((void *)regs.rdi, (void *)regs.rsi, stack_top);
+uint64_t handle_nanosleep(regs_syscall_t regs) {
+	uint64_t stack_top = (uint64_t) (&(regs.gs));
+	return nanosleep_sys_call((void *) regs.rdi, (void *) regs.rsi, stack_top);
 }
 
-uint64_t handle_execve(regs_syscall_t regs){
-	uint64_t stack_top = (uint64_t)(&(regs.gs));
-	return execve_sys_call((void *)regs.rdi, (void *)regs.rsi, (void *)regs.rdx, stack_top);
+uint64_t handle_execve(regs_syscall_t regs) {
+	uint64_t stack_top = (uint64_t) (&(regs.gs));
+	return execve_sys_call((void *) regs.rdi, (void *) regs.rsi,
+			(void *) regs.rdx, stack_top);
 }
 uint64_t handle_syscall(regs_syscall_t regs) {
-	currenttask->state.kernel_rsp = (uint64_t)(&(regs.gs));
+	currenttask->state.kernel_rsp = (uint64_t) (&(regs.gs));
 	if (regs.rax == 1) {
 		return write_system_call((int) regs.rdi, (const void *) regs.rsi,
 				(size_t) regs.rdx);
@@ -57,30 +60,30 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 		currenttask->state.rsp = regs.rsp;
 		int abc = fork_sys_call(stack_top);
 		return abc;
-	} else if(regs.rax == SYS_write){
-		return write_system_call((int)regs.rdi, (const void *)regs.rsi, (size_t)regs.rdx);
-	}
-	else if(regs.rax == SYS_open){
-		return open_tarfs((char *)regs.rdi, (int)regs.rsi);
-	}
-	else if(regs.rax == SYS_brk){
-		return brk_system_call((uint64_t)regs.rdi);
-	}
-	else if(regs.rax == SYS_getdents){
-		dents_tarfs((int)(regs.rdi)	, (struct dirent *)(regs.rsi), (uint64_t)(regs.rdx));
-	}
-	else if(regs.rax == SYS_close){
-		return close_tarfs((int)(regs.rdi));
-	}
-	else if(regs.rax == SYS_dup){
-		return dup_tarfs((int)(regs.rdi));
-	}
-	else if(regs.rax == SYS_dup2){
-		return dup2_tarfs((int)regs.rdi, (int)regs.rsi);
+	} else if (regs.rax == SYS_write) {
+		return write_system_call((int) regs.rdi, (const void *) regs.rsi,
+				(size_t) regs.rdx);
+	} else if (regs.rax == SYS_open) {
+		return open_tarfs((char *) regs.rdi, (int) regs.rsi);
+	} else if (regs.rax == SYS_brk) {
+		return brk_system_call((uint64_t) regs.rdi);
+	} else if (regs.rax == SYS_getdents) {
+		dents_tarfs((int) (regs.rdi), (struct dirent *) (regs.rsi),
+				(uint64_t) (regs.rdx));
+	} else if (regs.rax == SYS_close) {
+		return close_tarfs((int) (regs.rdi));
+	} else if (regs.rax == SYS_dup) {
+		return dup_tarfs((int) (regs.rdi));
+	} else if (regs.rax == SYS_dup2) {
+		return dup2_tarfs((int) regs.rdi, (int) regs.rsi);
+	} else if (regs.rax == SYS_getpid) {
+		return currenttask->pid;
+	} else if (regs.rax == SYS_getppid) {
+		return currenttask->ppid;
 	}
 	return 0;
 }
-uint64_t handle_fake_preempt(uint64_t stack_top){
+uint64_t handle_fake_preempt(uint64_t stack_top) {
 	return temp_preempt(stack_top);
 }
 void isrhandler_default() {
@@ -139,8 +142,8 @@ void traphandler_thirteen() {
 void traphandler_fourteen(regs_pushd_t regs) {
 //	printf("trap fourteen");
 //	uint64_t stack_top = (uint64_t)(&regs.r11)
-	uint64_t *rsp_loc = (uint64_t *)((uint64_t)&regs.error_code + 32);
-	uint64_t *rsp_val = (uint64_t *)(*rsp_loc);
+	uint64_t *rsp_loc = (uint64_t *) ((uint64_t) &regs.error_code + 32);
+	uint64_t *rsp_val = (uint64_t *) (*rsp_loc);
 	do_handle_pagefault(regs.error_code, rsp_val);
 }
 void traphandler_fifteen() {

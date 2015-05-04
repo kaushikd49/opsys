@@ -119,7 +119,7 @@ void *allocate_in_cache(int order) {
 	int cache_location = order - 5;
 	if (cache_location <= 6) { //less than 2048
 		cache_t *cache = (cache_t *)((uint64_t)(cache_info.head) + sizeof(cache_t) * (order - 5));
-		printf("cnt:%d", cache->count);
+//		printf("cnt:%d", cache->count);
 		cache->count++;
 		if (cache->free == NULL) { //we need to add a new page, because either 1) it has never been initialized or that there are no more free pages left
 			void *free_frame = (void *) get_free_frames(0); //allocating 1 free frame since we only get pages one at a time and max size allocated by this method is 2048

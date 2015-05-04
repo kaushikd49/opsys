@@ -31,4 +31,6 @@ int get_ref_count(uint64_t physical_addr_page);
 void decrease_ref_count(uint64_t physical_addr_page);
 
 void increase_ref_count(uint64_t physical_addr_page);
+
+int num_free_pages();
 #endif

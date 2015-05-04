@@ -44,4 +44,15 @@ void setup_kernel_page_table_from_outside(uint64_t linear_addr,
 		uint64_t physical_addr, int pte_p, int pte_rw, int pte_us,
 		uint64_t** pml_base_dbl_ptr,
 		uint64_t* (*addr_map_func)(uint64_t*, void *), void * pv_map);
+
+uint64_t vaddr_of_pdir(uint64_t virtual_addr);
+
+uint64_t vaddr_of_pdir_ptr(uint64_t virtual_addr);
+
+uint64_t vaddr_of_ptable(uint64_t virtual_addr);
+
+int page_lookup(uint64_t *pml_base_ptr, uint64_t linear_addr,
+		uint64_t* deepest_entity, uint64_t* deepest_entity_base,
+		uint64_t* (*addr_map_func)(uint64_t*, void *), void * pv_map);
+
 #endif

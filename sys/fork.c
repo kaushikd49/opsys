@@ -255,24 +255,6 @@ void mark_pages_read(task_struct_t * from) {
 //	}
 //}
 
-uint64_t* phys_to_virt_map(uint64_t* physaddr, void * pv_map) {
-	//	uint64_t vaddr = NULL;
-	//	int is_found = phys_to_virt(next_entity_base_phys, (pv_map_t) pv_map,
-	//			&vaddr);
-	//	if (is_found) {
-	//		return (uint64_t*) *vaddr;
-	//	} else {
-	//		// map the phys addr to a virtual one and cache it in pv_map
-	//		uint64_t res_addr = (uint64_t) get_virtual_location_cr3(0);
-	//		insert_into_map(pv_map, next_entity_base_phys, res_addr);
-	//		return res_addr;
-	//	}
-	uint64_t res_addr = (uint64_t) get_virtual_location(0);
-	setup_page_tables_after_cr3_update(res_addr, (uint64_t) physaddr, 1, 1, 0);
-	// remember to give back this virtual address
-	return (uint64_t *) res_addr;
-
-}
 
 // page tables that are involved in resolving page_base are
 // created if not already created and entries are duplicated
@@ -299,7 +281,7 @@ void cp_ptables_for(uint64_t page_base, pv_map_t* pv_map_node,
 	// since page tables need to be accessible for the kernel setting
 	// present, write, supervisor
 	// ---- TODO - change to read-only apt permission below ----
-	if (if_not_contains_pv_mapping(pv_map_node, page_base, page_phys_addr)) {
+	if (if_not_contains_virt_addr(pv_map_node, page_base, page_phys_addr)) {
 		setup_process_page_table_from_outside(page_base, page_phys_addr, 1, 0,
 				1, chld_pml4_base_dbl_ptr, phys_to_virt_map, pv_map_node);
 //		printf(" in forkk count before for %p is %d ", page_phys_addr,
