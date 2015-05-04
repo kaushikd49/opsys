@@ -812,7 +812,7 @@ void kernel_process_init() {
 	temp_create_kernel_process(waiting_to_running_q, 1);
 	temp_create_kernel_process(check_user_process_waitpid_daemon, 1);
 	temp_create_kernel_process(return_blocking_rw_to_runq, 1);
-	temp_create_kernel_process(clean_up_processes, 1);
+//	temp_create_kernel_process(clean_up_processes, 1);
 	ENV_SWAP_START = kmalloc(0x1000);
 	STACK_SWAP_START = kmalloc(0x1000);
 	temp_create_user_process("bin/sbush", 1);
@@ -1339,6 +1339,7 @@ void temp_init_user_state(task_struct_t *task, task_struct_t *parent_task,
 	task->mem_map = NULL;
 	task->pid = get_next_pid();
 	task->ppid = parent_task->pid;	//this need to be more involved.
+	strcpy(task->pwd, parent_task->pwd);
 	task->waiting_for = DEFAULT_WAITING_FOR;
 	task->is_kernel_process = 0;
 	//	task->state.rip = (uint64_t) main;
@@ -1434,6 +1435,7 @@ void temp_create_kernel_process(void (*main)(), uint64_t ppid) {
 	task_struct_t *task = kmalloc(sizeof(task_struct_t));
 	task_struct_t *temp_start = currenttask->next;
 	task_struct_t *parent_task = NULL;
+
 	while (temp_start->pid != ppid) {
 		temp_start = temp_start->next;
 	}
@@ -1460,6 +1462,7 @@ void temp_init_kernel_state(task_struct_t *task, task_struct_t *parent_task,
 	task->mem_map = NULL;
 	task->pid = get_next_pid();
 	task->ppid = parent_task->pid; //this need to be more involved.
+	strcpy(task->pwd, parent_task->pwd);
 	task->waiting_for = DEFAULT_WAITING_FOR;
 	task->is_kernel_process = 1;
 	task->ppid = parent_task->pid; //this need to be more involved.
@@ -1598,10 +1601,11 @@ void temp_init_kernel_state_read(task_struct_t *task, task_struct_t *parent_task
 	task->pid = get_next_pid();
 	task->ppid = parent_task->pid;//this need to be more involved.
 	task->state.rip = (uint64_t) main;
+	strcpy(task->pwd, parent_task->pwd);
 	task->state.cr3 = parent_task->state.cr3;
 	task->waiting_for = DEFAULT_WAITING_FOR;
 	task->is_kernel_process = 1;
-	strcpy(parent_task->executable, task->executable);
+	strcpy(task->executable, parent_task->executable);
 	task->state.flags = parent_task->state.flags;
 	task->state.flags |=0x200;
 	// need to assign a new stack and since it grows down, we need to change taht to the end of the page too.
@@ -1622,11 +1626,12 @@ void temp_init_kernel_state_write(task_struct_t *task, task_struct_t *parent_tas
 	task->mem_map =parent_task->mem_map;
 	task->pid = get_next_pid();
 	task->ppid = parent_task->pid; //this need to be more involved.
+	strcpy(task->pwd, parent_task->pwd);
 	task->state.rip = (uint64_t) main;
 	task->state.cr3 = parent_task->state.cr3;
 	task->waiting_for = DEFAULT_WAITING_FOR;
 	task->is_kernel_process = 1;
-	strcpy(parent_task->executable, task->executable);
+	strcpy(task->executable, parent_task->executable);
 	task->state.flags = parent_task->state.flags;
 	task->state.flags |= 0x200;
 	// need to assign a new stack and since it grows down, we need to change taht to the end of the page too.
