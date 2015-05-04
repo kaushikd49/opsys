@@ -31,6 +31,14 @@ void cleanup_mem_map(task_struct_t * task) {
 
 void cleanup_fds(task_struct_t * task) {
 	// todo: this. also, need to keep the ptr for beginning of buffer
+
+	for (uint64_t i = 0; i < MAX_NUMBER_FILES; i++) {
+		if (task->filearray[i] != NULL) {
+			decrement_global_count_fd(task->filearray[i]);
+			task->filearray[i] = NULL;
+		}
+	}
+//	kfree(task->filearray);
 }
 
 void free_frame(uint64_t phys_addr) {
@@ -49,7 +57,8 @@ uint64_t get_phys_from_virt_of_other_process(uint64_t *pml4_base_virt,
 	int res = page_lookup(pml4_base_virt, vaddr, deepest_entity,
 			deepest_entity_base, phys_to_virt_map, pv_map_node);
 
-	uint64_t phys_addr = (uint64_t) next_entity_base((uint64_t *)*deepest_entity);
+	uint64_t phys_addr = (uint64_t) next_entity_base(
+			(uint64_t *) *deepest_entity);
 
 	if (res != 0) {
 		return 0;

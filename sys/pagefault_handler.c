@@ -226,32 +226,39 @@ int copy_on_write(uint64_t addr) {
 
 void do_handle_pagefault(uint64_t error_code, uint64_t *rsp_val) {
 	int present = get_bit(error_code, 0);
-	int rw = get_bit(error_code, 1);
+//	int rw = get_bit(error_code, 1);
 	int us = get_bit(error_code, 2);
 	uint64_t addr = get_faulted_addr();
 	int kernel_addr = is_kernel_addr(addr);
-//	printf(" pid:%d page fault at %p, error_code: %x ", currenttask->pid, addr,
-//			error_code);
+	printf(" pid:%d page fault at %p, error_code: %x ", currenttask->pid, addr,
+			error_code);
 	if (present == 0) {
-		if (user_access(us)) {
-			if (kernel_addr) {
+		if (kernel_addr) {
+			if (user_access(us)) {
 				bad_kernel_access(addr);
 			} else {
-//				printf(" Demand paging for process %d for addr %p\n",
-//						currenttask->pid, addr);
-				do_demand_paging(addr, rsp_val);
+				printf(" Pid:%d, kernel page fault. Do not reach here unless"
+						" testing.page fault at %p, error_code: %x  \n",
+						currenttask->pid, addr, error_code);
+				page_alloc(addr);
 			}
 		} else {
-			printf(" Pid:%d, kernel page fault. Do not reach here unless"
-					" testing.page fault at %p, error_code: %x  \n",
-					currenttask->pid, addr, error_code);
-			page_alloc(addr);
+//			printf(" Demand paging for process %d for addr %p\n",
+//					currenttask->pid, addr);
+			do_demand_paging(addr, rsp_val);
 		}
 	} else {
-		if (user_access(us)) {
-			if (kernel_addr) {
+		if (kernel_addr) {
+			if (user_access(us)) {
 				bad_kernel_access(addr);
-			} else if (is_cow_possible(addr)) {
+			} else {
+				printf(
+						" Something wrong, kernel cant read its own mem pid:%d\n",
+						currenttask->pid);
+				seg_fault(addr);
+			}
+		} else {
+			if (is_cow_possible(addr)) {
 //				printf(" Performing COW ");
 				copy_on_write(addr);
 			} else {
@@ -259,11 +266,6 @@ void do_handle_pagefault(uint64_t error_code, uint64_t *rsp_val) {
 						currenttask->pid, addr);
 				seg_fault(addr);
 			}
-		} else {
-			printf(
-					" Something wrong, kernel read fault pid:%d at %p p:rw:us %d:%d:%d\n",
-					currenttask->pid, addr, present, rw, us);
-			seg_fault(addr);
 		}
 	}
 }

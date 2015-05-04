@@ -691,7 +691,7 @@ void init_global_fd() {
 	stdout_fd = (file_desc_t *) kmalloc(sizeof(file_desc_t));
 	input_buffer = (void *) kmalloc(0x1000);
 	stdin_fd->posix_header = NULL;
-	stdin_fd->current_pointer = (char *)input_buffer;
+	stdin_fd->current_pointer = (char *) input_buffer;
 	global_keyboard = input_buffer;
 	stdin_fd->flags = O_RDONLY;
 	stdin_fd->size = 0x1000;
@@ -708,7 +708,7 @@ void init_global_fd() {
 	stdout_fd->current_process = 0;
 	stdout_fd->ready = 0;
 	current_stdin_pointer = stdin_fd->current_pointer;
-	for(uint64_t i = 0; i < MAX_FILES_OS; i++){
+	for (uint64_t i = 0; i < MAX_FILES_OS; i++) {
 		global_fd_array[i].fd = NULL;
 		global_fd_array[i].count = 0;
 	}
@@ -718,31 +718,31 @@ void init_global_fd() {
 	global_fd_array[1].count = 1;
 }
 
-int increment_global_count_fd(file_desc_t *fd){
+int increment_global_count_fd(file_desc_t *fd) {
 	int check = 0;
-	for(uint64_t i = 0; i < MAX_FILES_OS; i++){
-		if(global_fd_array[i].fd != NULL && global_fd_array[i].fd == fd){
+	for (uint64_t i = 0; i < MAX_FILES_OS; i++) {
+		if (global_fd_array[i].fd != NULL && global_fd_array[i].fd == fd) {
 			check = 1;
 			(global_fd_array[i].count)++;
 			break;
 		}
 	}
-	if(check == 0){
+	if (check == 0) {
 		return add_to_global_fd(fd);
 	}
 	return 1;
 }
-void decrement_global_count_fd(file_desc_t *fd){
-	for(uint64_t i = 0; i < MAX_FILES_OS; i++){
-		if(global_fd_array[i].fd != NULL && global_fd_array[i].fd == fd){
+void decrement_global_count_fd(file_desc_t *fd) {
+	for (uint64_t i = 0; i < MAX_FILES_OS; i++) {
+		if (global_fd_array[i].fd != NULL && global_fd_array[i].fd == fd) {
 			(global_fd_array[i].count)--;
 		}
 		//todo: add code to delete an fd if the count drops to 0
 	}
 }
-int add_to_global_fd(file_desc_t *fd){
-	for(uint64_t i = 0; i < MAX_FILES_OS; i++){
-		if(global_fd_array[i].fd == NULL){
+int add_to_global_fd(file_desc_t *fd) {
+	for (uint64_t i = 0; i < MAX_FILES_OS; i++) {
+		if (global_fd_array[i].fd == NULL) {
 			global_fd_array[i].fd = fd;
 			global_fd_array[i].count = 1;
 			return 1;
@@ -834,7 +834,7 @@ void kernel_process_init() {
 //	temp_create_kernel_process(test_main,1);
 //	temp_create_user_process("bin/hello", 1);
 	__asm__ __volatile__("sti");
-	while(1){
+	while (1) {
 		__asm__ __volatile("sti");
 	}
 
@@ -875,8 +875,8 @@ uint64_t temp_preempt(uint64_t stack_top) {
 			:"r"(stack_top)
 			:"memory", "%rax", "%rsp");
 //	printf("h\n");
-	if(currenttask->is_kernel_process!=1)
-	tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp) + 192);
+	if (currenttask->is_kernel_process != 1)
+		tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp) + 192);
 //	if(currenttask->pid == 2){
 //		printf("tss rsp %x", tss.rsp0);
 //	}
@@ -893,43 +893,12 @@ uint64_t temp_preempt(uint64_t stack_top) {
 
 }
 
-uint64_t temp_preempt_read_block(uint64_t stack_top){
-	if(currenttask == &taskone && currenttask->next == currenttask){
-			return stack_top;
-		}
-		task_struct_t *last = currenttask;
-		currenttask = currenttask->next;
-//		if(currenttask == &taskone){
-//			currenttask = currenttask->next;
-//		}
-//		if(currenttask == last){
-//			return stack_top;
-//		}
-		__asm__ __volatile__("movq %1, %%rax\n\t"
-							 "movq %%rax, %0"
-							 :"=r"(last->state.kernel_rsp)
-							  :"r"(stack_top)
-							  :"memory", "%rax", "%rsp");
-	//	printf("h\n");
-		if(currenttask->is_kernel_process!=1)
-			tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp)+192);
-	//	__asm__ __volatile__("movq %0, %%rsp"
-	//						:
-	//						:"r"(currenttask->state.kernel_rsp)
-	//						:"%rsp");
-	//	printf("%p", tss.rsp0);
-		last->p_state = STATE_WAITING;
-		move_process_runq_to_waitq(last->pid);
-		update_cr3((uint64_t *)(currenttask->state.cr3));
-	//	printf("pid is %d ",currenttask->pid);
-		return (currenttask->state.kernel_rsp);
-}
-uint64_t temp_preempt_wait(int fd, void *buffer, uint64_t size, uint64_t stack_top){
-	if(currenttask == &taskone && currenttask->next == currenttask){
-			return stack_top;
-		}
-		task_struct_t *last = currenttask;
-		currenttask = currenttask->next;
+uint64_t temp_preempt_read_block(uint64_t stack_top) {
+	if (currenttask == &taskone && currenttask->next == currenttask) {
+		return stack_top;
+	}
+	task_struct_t *last = currenttask;
+	currenttask = currenttask->next;
 //		if(currenttask == &taskone){
 //			currenttask = currenttask->next;
 //		}
@@ -942,8 +911,40 @@ uint64_t temp_preempt_wait(int fd, void *buffer, uint64_t size, uint64_t stack_t
 			:"r"(stack_top)
 			:"memory", "%rax", "%rsp");
 	//	printf("h\n");
-		if(currenttask->is_kernel_process!=1)
-			tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp)+192);
+	if (currenttask->is_kernel_process != 1)
+		tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp) + 192);
+	//	__asm__ __volatile__("movq %0, %%rsp"
+	//						:
+	//						:"r"(currenttask->state.kernel_rsp)
+	//						:"%rsp");
+	//	printf("%p", tss.rsp0);
+	last->p_state = STATE_WAITING;
+	move_process_runq_to_waitq(last->pid);
+	update_cr3((uint64_t *) (currenttask->state.cr3));
+	//	printf("pid is %d ",currenttask->pid);
+	return (currenttask->state.kernel_rsp);
+}
+uint64_t temp_preempt_wait(int fd, void *buffer, uint64_t size,
+		uint64_t stack_top) {
+	if (currenttask == &taskone && currenttask->next == currenttask) {
+		return stack_top;
+	}
+	task_struct_t *last = currenttask;
+	currenttask = currenttask->next;
+//		if(currenttask == &taskone){
+//			currenttask = currenttask->next;
+//		}
+//		if(currenttask == last){
+//			return stack_top;
+//		}
+	__asm__ __volatile__("movq %1, %%rax\n\t"
+			"movq %%rax, %0"
+			:"=r"(last->state.kernel_rsp)
+			:"r"(stack_top)
+			:"memory", "%rax", "%rsp");
+	//	printf("h\n");
+	if (currenttask->is_kernel_process != 1)
+		tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp) + 192);
 	//	__asm__ __volatile__("movq %0, %%rsp"
 	//						:
 	//						:"r"(currenttask->state.kernel_rsp)
@@ -951,15 +952,17 @@ uint64_t temp_preempt_wait(int fd, void *buffer, uint64_t size, uint64_t stack_t
 	//	printf("%p", tss.rsp0);
 	last->p_state = STATE_WAITING;
 
-		temp_create_kernel_process_read(read_thread_process, last->pid, fd,buffer, size);//this is actually read, hard to refactor, a mess it is
-		move_process_runq_to_waitq(last->pid);
-		update_cr3((uint64_t *)(currenttask->state.cr3));
+	temp_create_kernel_process_read(read_thread_process, last->pid, fd, buffer,
+			size);	//this is actually read, hard to refactor, a mess it is
+	move_process_runq_to_waitq(last->pid);
+	update_cr3((uint64_t *) (currenttask->state.cr3));
 	//	printf("pid is %d ",currenttask->pid);
 	return (currenttask->state.kernel_rsp);
 }
 
-uint64_t temp_preempt_write(int fd, void *buffer, uint64_t size, uint64_t stack_top){
-	if(currenttask == &taskone && currenttask->next == currenttask){
+uint64_t temp_preempt_write(int fd, void *buffer, uint64_t size,
+		uint64_t stack_top) {
+	if (currenttask == &taskone && currenttask->next == currenttask) {
 		return stack_top;
 	}
 	task_struct_t *last = currenttask;
@@ -967,24 +970,26 @@ uint64_t temp_preempt_write(int fd, void *buffer, uint64_t size, uint64_t stack_
 	__asm__ __volatile__("movq %1, %%rax\n\t"
 			"movq %%rax, %0"
 			:"=r"(last->state.kernel_rsp)
-			 :"r"(stack_top)
-			  :"memory", "%rax", "%rsp");
+			:"r"(stack_top)
+			:"memory", "%rax", "%rsp");
 	//	printf("h\n");
-	if(currenttask->is_kernel_process!=1)
-		tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp)+192);
+	if (currenttask->is_kernel_process != 1)
+		tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp) + 192);
 	last->p_state = STATE_WAITING;
-	temp_create_kernel_process_write(write_thread_process, last->pid, fd,buffer, size);
+	temp_create_kernel_process_write(write_thread_process, last->pid, fd,
+			buffer, size);
 	move_process_runq_to_waitq(last->pid);
-	update_cr3((uint64_t *)(currenttask->state.cr3));
+	update_cr3((uint64_t *) (currenttask->state.cr3));
 	//	printf("pid is %d ",currenttask->pid);
 	return (currenttask->state.kernel_rsp);
 }
-uint64_t temp_preempt_waitpid(int pid, int *status, int options, uint64_t stack_top){
-	if(currenttask == &taskone && currenttask->next == currenttask){
-			return stack_top;
-		}
-		task_struct_t *last = currenttask;
-		currenttask = currenttask->next;
+uint64_t temp_preempt_waitpid(int pid, int *status, int options,
+		uint64_t stack_top) {
+	if (currenttask == &taskone && currenttask->next == currenttask) {
+		return stack_top;
+	}
+	task_struct_t *last = currenttask;
+	currenttask = currenttask->next;
 //		if(currenttask == &taskone){
 //			currenttask = currenttask->next;
 //		}
@@ -997,8 +1002,8 @@ uint64_t temp_preempt_waitpid(int pid, int *status, int options, uint64_t stack_
 			:"r"(stack_top)
 			:"memory", "%rax", "%rsp");
 	//	printf("h\n");
-		if(currenttask->is_kernel_process!=1)
-			tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp)+192);
+	if (currenttask->is_kernel_process != 1)
+		tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp) + 192);
 	//	__asm__ __volatile__("movq %0, %%rsp"
 	//						:
 	//						:"r"(currenttask->state.kernel_rsp)
@@ -1031,8 +1036,8 @@ uint64_t temp_preempt_nanosleep(const struct timespec *rqtp,
 			:"r"(stack_top)
 			:"memory", "%rax", "%rsp");
 	//	printf("h\n");
-		if(currenttask->is_kernel_process!=1)
-			tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp)+192);
+	if (currenttask->is_kernel_process != 1)
+		tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp) + 192);
 	//	__asm__ __volatile__("movq %0, %%rsp"
 	//						:
 	//						:"r"(currenttask->state.kernel_rsp)
@@ -1126,7 +1131,7 @@ void make_new_process(executable_t *executable) {
 		currenttask->next = task;
 		task->next = currenttask;
 //		lasttask = task;
-	}else{
+	} else {
 		task->next = lasttask->next;
 		lasttask->next = task;
 //		lasttask=currenttask->next;
@@ -1288,7 +1293,7 @@ uint64_t temp_preempt_exit(uint64_t stack_top) {
 //							:"%rsp");
 	update_cr3((uint64_t *) (currenttask->state.cr3));
 
-	printf(" num freepages before %d ", num_free_pages());
+//	printf(" num freepages before %d ", num_free_pages());
 //	cleanup_process(last);
 //	printf(" num freepages after %d ", num_free_pages());
 
@@ -1327,9 +1332,9 @@ void init_file_dp_process(task_struct_t* task) {
 	task->filearray[1] = stdout_fd;
 	task->filearray[2] = stdout_fd;
 	for (int i = 0; i < 50; i++) {
-			if(task->filearray[i] != NULL){
-				increment_global_count_fd(task->filearray[i]);
-			}
+		if (task->filearray[i] != NULL) {
+			increment_global_count_fd(task->filearray[i]);
+		}
 	}
 }
 
@@ -1374,7 +1379,7 @@ void temp_init_user_state(task_struct_t *task, task_struct_t *parent_task,
 	temp_init_user_stack(task->state.kernel_rsp, task);
 	//adding fds
 	task->p_state = STATE_RUNNING;
-	copy_file_dp_process(task,parent_task);
+	copy_file_dp_process(task, parent_task);
 }
 
 void temp_init_user_stack(uint64_t rsp, task_struct_t *task) {
@@ -1538,7 +1543,8 @@ void temp_init_kernel_stack(uint64_t rsp, task_struct_t *task) {
 
 //========================================================
 //this is actually read, hard to refactor, a mess it is
-void temp_create_kernel_process_read(void (*main)(), uint64_t ppid, int fd, void *buffer, uint64_t size){
+void temp_create_kernel_process_read(void (*main)(), uint64_t ppid, int fd,
+		void *buffer, uint64_t size) {
 	task_struct_t *task = kmalloc(sizeof(task_struct_t));
 	task_struct_t *temp_start = currenttask->next;
 	task_struct_t *parent_task = NULL;
@@ -1563,7 +1569,8 @@ void temp_create_kernel_process_read(void (*main)(), uint64_t ppid, int fd, void
 
 }
 
-void temp_create_kernel_process_write(void (*main)(), uint64_t ppid, int fd, void *buffer, uint64_t size){
+void temp_create_kernel_process_write(void (*main)(), uint64_t ppid, int fd,
+		void *buffer, uint64_t size) {
 	task_struct_t *task = kmalloc(sizeof(task_struct_t));
 	task_struct_t *temp_start = currenttask->next;
 	task_struct_t *parent_task = NULL;
@@ -1590,7 +1597,7 @@ void temp_create_kernel_process_write(void (*main)(), uint64_t ppid, int fd, voi
 void copy_file_dp_process(task_struct_t *task, task_struct_t *parent_task) {
 	for (uint64_t i = 0; i < MAX_NUMBER_FILES; i++) {
 		task->filearray[i] = parent_task->filearray[i];
-		if(task->filearray[i] != NULL){
+		if (task->filearray[i] != NULL) {
 			increment_global_count_fd(task->filearray[i]);
 		}
 	}
@@ -1599,7 +1606,7 @@ void copy_file_dp_process(task_struct_t *task, task_struct_t *parent_task) {
 void temp_init_kernel_state_read(task_struct_t *task, task_struct_t *parent_task, void (*main)(), int fd, void *buffer, uint64_t size){
 	task->mem_map =parent_task->mem_map;
 	task->pid = get_next_pid();
-	task->ppid = parent_task->pid;//this need to be more involved.
+	task->ppid = parent_task->pid; //this need to be more involved.
 	task->state.rip = (uint64_t) main;
 	strcpy(task->pwd, parent_task->pwd);
 	task->state.cr3 = parent_task->state.cr3;
@@ -1607,13 +1614,13 @@ void temp_init_kernel_state_read(task_struct_t *task, task_struct_t *parent_task
 	task->is_kernel_process = 1;
 	strcpy(task->executable, parent_task->executable);
 	task->state.flags = parent_task->state.flags;
-	task->state.flags |=0x200;
+	task->state.flags |= 0x200;
 	// need to assign a new stack and since it grows down, we need to change taht to the end of the page too.
 	//giving the process a new kernel stack
 	uint64_t stack_kernel_process = (uint64_t) kmalloc(0x1000);
-		task->state.rsp = (uint64_t)(stack_kernel_process + 0xfff);
+	task->state.rsp = (uint64_t) (stack_kernel_process + 0xfff);
 	uint64_t stack_kernel = (uint64_t) kmalloc(0x1000);
-	task->state.kernel_rsp = (uint64_t) (stack_kernel+0xfff);
+	task->state.kernel_rsp = (uint64_t) (stack_kernel + 0xfff);
 
 	temp_init_kernel_stack_read(task->state.kernel_rsp, task, fd, buffer, size);
 //	init_file_dp_process(task);
@@ -1648,63 +1655,10 @@ void temp_init_kernel_state_write(task_struct_t *task, task_struct_t *parent_tas
 	task->p_state = STATE_RUNNING;
 }
 //this is actually read, hard to refactor, a mess it is
-void temp_init_kernel_stack_read(uint64_t rsp, task_struct_t *task, int fd, void *buffer, uint64_t size){
-	uint64_t *temp = (uint64_t *)rsp;
-	*temp =  KERNEL_DATA;//ss
-	temp -= 1;
-	*temp = task->state.rsp; //rsp
-	temp -= 1;
-	*temp = task->state.flags; //flags
-	temp -= 1;
-	*temp = KERNEL_CODE; //cs
-	temp -= 1;
-	*temp = task->state.rip; //ip
-	temp -= 1;
-	*temp = 0; //rax
-	temp -= 1;
-	*temp = 0; //rbx
-	temp -= 1;
-	*temp = 0; //rcx
-	temp -= 1;
-	*temp = (uint64_t)size; //rdx
-	temp -= 1;
-	*temp = fd; //rdi
-	temp -= 1;
-	*temp = (uint64_t)buffer; //rsi
-	temp -= 1;
-	*temp = 0; //rbp
-	temp -= 1;
-	*temp = 0; //r8
-	temp -= 1;
-	*temp = 0; //r9
-	temp -= 1;
-	*temp = 0; //r10
-	temp -= 1;
-	*temp = 0; //r11
-	temp -= 1;
-	*temp = 0; //r12
-	temp -= 1;
-	*temp = 0; //r13
-	temp -= 1;
-	*temp = 0; //r14
-	temp -= 1;
-	*temp = 0; //r15
-	temp -= 1;
-	*temp = KERNEL_DATA; //ds
-	temp -= 1;
-	*temp = KERNEL_DATA; //es
-	temp -= 1;
-	*temp = KERNEL_DATA; //fs
-	temp -= 1;
-	*temp = KERNEL_DATA; //gs
-	task->state.kernel_rsp = (uint64_t)temp;
-//	printf("task: %p\n", task->state.kernel_rsp);
-}
-
-//this is actually read, hard to refactor, a mess it is
-void temp_init_kernel_stack_write(uint64_t rsp, task_struct_t *task, int fd, void *buffer, uint64_t size){
-	uint64_t *temp = (uint64_t *)rsp;
-	*temp =  KERNEL_DATA;//ss
+void temp_init_kernel_stack_read(uint64_t rsp, task_struct_t *task, int fd,
+		void *buffer, uint64_t size) {
+	uint64_t *temp = (uint64_t *) rsp;
+	*temp = KERNEL_DATA;	//ss
 	temp -= 1;
 	*temp = task->state.rsp; //rsp
 	temp -= 1;
@@ -1754,3 +1708,59 @@ void temp_init_kernel_stack_write(uint64_t rsp, task_struct_t *task, int fd, voi
 	task->state.kernel_rsp = (uint64_t) temp;
 //	printf("task: %p\n", task->state.kernel_rsp);
 }
+
+//this is actually read, hard to refactor, a mess it is
+void temp_init_kernel_stack_write(uint64_t rsp, task_struct_t *task, int fd,
+		void *buffer, uint64_t size) {
+	uint64_t *temp = (uint64_t *) rsp;
+	*temp = KERNEL_DATA; //ss
+	temp -= 1;
+	*temp = task->state.rsp; //rsp
+	temp -= 1;
+	*temp = task->state.flags; //flags
+	temp -= 1;
+	*temp = KERNEL_CODE; //cs
+	temp -= 1;
+	*temp = task->state.rip; //ip
+	temp -= 1;
+	*temp = 0; //rax
+	temp -= 1;
+	*temp = 0; //rbx
+	temp -= 1;
+	*temp = 0; //rcx
+	temp -= 1;
+	*temp = (uint64_t) size; //rdx
+	temp -= 1;
+	*temp = fd; //rdi
+	temp -= 1;
+	*temp = (uint64_t) buffer; //rsi
+	temp -= 1;
+	*temp = 0; //rbp
+	temp -= 1;
+	*temp = 0; //r8
+	temp -= 1;
+	*temp = 0; //r9
+	temp -= 1;
+	*temp = 0; //r10
+	temp -= 1;
+	*temp = 0; //r11
+	temp -= 1;
+	*temp = 0; //r12
+	temp -= 1;
+	*temp = 0; //r13
+	temp -= 1;
+	*temp = 0; //r14
+	temp -= 1;
+	*temp = 0; //r15
+	temp -= 1;
+	*temp = KERNEL_DATA; //ds
+	temp -= 1;
+	*temp = KERNEL_DATA; //es
+	temp -= 1;
+	*temp = KERNEL_DATA; //fs
+	temp -= 1;
+	*temp = KERNEL_DATA; //gs
+	task->state.kernel_rsp = (uint64_t) temp;
+//	printf("task: %p\n", task->state.kernel_rsp);
+}
+
