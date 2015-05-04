@@ -812,6 +812,7 @@ void kernel_process_init() {
 	temp_create_kernel_process(waiting_to_running_q, 1);
 	temp_create_kernel_process(check_user_process_waitpid_daemon, 1);
 	temp_create_kernel_process(return_blocking_rw_to_runq, 1);
+	temp_create_kernel_process(clean_up_processes, 1);
 	ENV_SWAP_START = kmalloc(0x1000);
 	STACK_SWAP_START = kmalloc(0x1000);
 	temp_create_user_process("bin/sbush", 1);

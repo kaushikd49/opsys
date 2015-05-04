@@ -7,4 +7,5 @@ void clear_keyboard_busy();
 void check_user_process_waitpid_daemon();
 void return_blocking_rw_to_runq();
 void write_thread_process(int fd, void *buffer, uint64_t size);
+void clean_up_processes();
 #endif

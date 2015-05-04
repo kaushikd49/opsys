@@ -532,7 +532,7 @@ void return_blocking_rw_to_runq(){
 		fake_preempt(1);
 	}
 }
-//void clean_up_processes(){
+void clean_up_processes(){
 //	if(waitingtask == NULL){
 //		return NULL;
 //	}
@@ -547,4 +547,34 @@ void return_blocking_rw_to_runq(){
 //	while(current!=NULL &&current){
 //
 //	}
-//}
+	while(1){
+		__asm__ __volatile__("cli");
+		if(waitingtask!=NULL){
+			task_struct_t *current = waitingtask;
+			task_struct_t *prev = current;
+			while(prev->next != current){
+				prev = prev->next;
+			}
+			do{
+				if(current->p_state == STATE_TERMINATED){
+					task_struct_t *to_be_removed = current;
+					if(prev == current){
+						current = NULL;
+						waitingtask = NULL;
+					}
+					else{
+						prev->next = current->next;
+						current = current->next;
+					}
+					//add function to clean up the to_be_removed task_struct
+				}
+				else{
+					prev = current;
+					current = current->next;
+				}
+			}while(current!=NULL && current!=waitingtask);
+		}
+
+		fake_preempt(1);
+	}
+}
