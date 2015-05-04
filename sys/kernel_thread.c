@@ -557,7 +557,7 @@ void clean_up_processes(){
 			}
 			do{
 				if(current->p_state == STATE_TERMINATED){
-					task_struct_t *to_be_removed = current;
+					//task_struct_t *to_be_removed = current; uncomment when u add code for this
 					if(prev == current){
 						current = NULL;
 						waitingtask = NULL;

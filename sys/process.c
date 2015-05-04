@@ -1594,13 +1594,14 @@ void copy_file_dp_process(task_struct_t *task, task_struct_t *parent_task) {
 }
 //this is actually read, hard to refactor, a mess it is
 void temp_init_kernel_state_read(task_struct_t *task, task_struct_t *parent_task, void (*main)(), int fd, void *buffer, uint64_t size){
-	task->mem_map =NULL;
+	task->mem_map =parent_task->mem_map;
 	task->pid = get_next_pid();
 	task->ppid = parent_task->pid;//this need to be more involved.
 	task->state.rip = (uint64_t) main;
 	task->state.cr3 = parent_task->state.cr3;
 	task->waiting_for = DEFAULT_WAITING_FOR;
 	task->is_kernel_process = 1;
+	strcpy(parent_task->executable, task->executable);
 	task->state.flags = parent_task->state.flags;
 	task->state.flags |=0x200;
 	// need to assign a new stack and since it grows down, we need to change taht to the end of the page too.
@@ -1616,15 +1617,16 @@ void temp_init_kernel_state_read(task_struct_t *task, task_struct_t *parent_task
 	task->p_state = STATE_RUNNING;
 }
 
-//this is actually read, hard to refactor, a mess it is
+
 void temp_init_kernel_state_write(task_struct_t *task, task_struct_t *parent_task, void (*main)(), int fd, void *buffer, uint64_t size){
-	task->mem_map =NULL;
+	task->mem_map =parent_task->mem_map;
 	task->pid = get_next_pid();
 	task->ppid = parent_task->pid; //this need to be more involved.
 	task->state.rip = (uint64_t) main;
 	task->state.cr3 = parent_task->state.cr3;
 	task->waiting_for = DEFAULT_WAITING_FOR;
 	task->is_kernel_process = 1;
+	strcpy(parent_task->executable, task->executable);
 	task->state.flags = parent_task->state.flags;
 	task->state.flags |= 0x200;
 	// need to assign a new stack and since it grows down, we need to change taht to the end of the page too.
