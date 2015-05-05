@@ -1,8 +1,13 @@
 #include <stdio.h>
-int arr[100];
-int b =10;
+#include <stdlib.h>
 int main(int argc, char* argv[], char* envp[]) {
-	printf("Hello World!\n");
-	while(1);
+	char *buffer = malloc(100);
+	buffer = getcwd(buffer, 100);
+	if(buffer != NULL){
+		printf("\npwd: %s\n", buffer);
+	}
+	else{
+		printf("\nerror with pwd\n");
+	}
 	return 0;
 }

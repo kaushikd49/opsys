@@ -427,21 +427,21 @@ void clear_keyboard_busy(){
 
 }
 
-void find_child(task_struct_t *temp){
+void find_child(volatile task_struct_t *temp){
 
 	int ppid = temp->pid;
 	int wait_for = temp->waiting_for;
 	if(wait_for == -1){
 		task_struct_t *temp2 = waitingtask;
 		do{
-			if(temp2->is_kernel_process == 0 && temp2->ppid == ppid){
+			if(temp2->is_kernel_process == 0 && temp2->ppid == ppid && temp2->is_background != 1){
 				return;
 			}
 			temp2 = temp2->next;
 		}while(temp2!=waitingtask);
 		temp2 = currenttask;
 		do{
-			if(temp2->is_kernel_process == 0 && temp2->ppid == ppid){
+			if(temp2->is_kernel_process == 0 && temp2->ppid == ppid && temp2->is_background != 1){
 				return;
 			}
 			temp2 = temp2->next;
@@ -464,7 +464,22 @@ void find_child(task_struct_t *temp){
 		}while(temp2!=currenttask);
 	}
 //	printf("daemon activated");
+	temp->waiting_for = 999;
 	temp->p_state = STATE_READY;
+	printf("%d is back", temp->pid);
+}
+
+void check_user_process_waitpid_daemon_body() {
+	volatile task_struct_t* temp = waitingtask;
+	do {
+		if (temp != NULL && temp->p_state == STATE_WAITING
+				&& temp->is_kernel_process == 0 && temp->waiting_for != 999) {
+			//				printf("found : %d", temp->pid);
+			find_child(temp);
+		}
+		if (temp != NULL)
+			temp = temp->next;
+	} while (temp != waitingtask);
 }
 
 void check_user_process_waitpid_daemon(){
@@ -472,19 +487,7 @@ void check_user_process_waitpid_daemon(){
 
 	while(1){
 		__asm__ __volatile__("cli");
-		task_struct_t *temp = waitingtask;
-
-		do{
-
-			if(temp!=NULL && temp->is_kernel_process == 0 && temp->waiting_for != 999){
-				find_child(temp);
-			}
-			if(temp!=NULL)
-				temp = temp->next;
-		}while(temp!=waitingtask);
-		//	for(int i = 0; i<1000000; i++){
-		//		noop(i);
-		//	}
+		check_user_process_waitpid_daemon_body();
 		fake_preempt(1);
 	}
 }
@@ -499,39 +502,73 @@ task_struct_t *check_unblock_waitq(int pid){
 	}while(temp!=waitingtask);
 	return NULL;
 }
+
+void return_blocking_rw_to_runq_body() {
+
+	read_blocked_t* current = read_blocked_list;
+	if (current != NULL) {
+		do {
+			task_struct_t* temp = NULL;
+			if (current != NULL) {
+				int pid = current->pid;
+				temp = check_unblock_waitq(pid);
+			}
+			if (temp != NULL && temp->p_state == STATE_WAITING) {
+				if (current->read_write == 1) {
+					int fd = current->write_fd;
+					if (temp->filearray[fd]->ready == 1) {
+						temp->p_state = STATE_READY;
+						current = remove_read_blocked_list(current);
+					}
+				} else {
+					int fd = current->read_fd;
+					if (temp->filearray[fd]->ready == 1) {
+						temp->p_state = STATE_READY;
+						current = remove_read_blocked_list(current);
+					}
+				}
+			}
+			if (current != NULL)
+				current = current->next;
+		} while (current != NULL);
+	}
+}
+
 void return_blocking_rw_to_runq(){
 	while(1){
 		__asm__ __volatile__("cli");
-		read_blocked_t *current = read_blocked_list;
-		if(current != NULL){
-			do{
-				task_struct_t *temp = NULL;
-				if(current!=NULL){
-					int pid = current->pid;
-					temp = check_unblock_waitq(pid);}
-				if(temp!=NULL && temp->p_state == STATE_WAITING){
-					if(current->read_write == 1){
-						int fd = current->write_fd;
-						if(temp->filearray[fd]->ready == 1){
-							temp->p_state = STATE_READY;
-							current = remove_read_blocked_list(current);
-						}
-					}
-					else{
-						int fd = current->read_fd;
-						if(temp->filearray[fd]->ready == 1){
-							temp->p_state = STATE_READY;
-							current = remove_read_blocked_list(current);
-						}
-					}
-				}
-				if(current !=NULL)
-					current = current->next;
-			}while(current!= NULL);
-		}
+		return_blocking_rw_to_runq_body();
 		fake_preempt(1);
 	}
 }
+
+void clean_up_process_body() {
+	volatile task_struct_t* wait_task = waitingtask;
+	if (wait_task != NULL) {
+		volatile task_struct_t* current = waitingtask;
+		volatile task_struct_t* prev = current;
+		while (prev->next != current) {
+			prev = prev->next;
+		}
+		do {
+			if (current->p_state == STATE_TERMINATED) {
+				//task_struct_t *to_be_removed = current; uncomment when u add code for this
+				if (prev == current) {
+					current = NULL;
+					waitingtask = NULL;
+				} else {
+					prev->next = current->next;
+					current = current->next;
+				}
+				//add function to clean up the to_be_removed task_struct
+			} else {
+				prev = current;
+				current = current->next;
+			}
+		} while (current != NULL && current != waitingtask);
+	}
+}
+
 void clean_up_processes(){
 //	if(waitingtask == NULL){
 //		return NULL;
@@ -549,32 +586,7 @@ void clean_up_processes(){
 //	}
 	while(1){
 		__asm__ __volatile__("cli");
-		if(waitingtask!=NULL){
-			task_struct_t *current = waitingtask;
-			task_struct_t *prev = current;
-			while(prev->next != current){
-				prev = prev->next;
-			}
-			do{
-				if(current->p_state == STATE_TERMINATED){
-					//task_struct_t *to_be_removed = current; uncomment when u add code for this
-					if(prev == current){
-						current = NULL;
-						waitingtask = NULL;
-					}
-					else{
-						prev->next = current->next;
-						current = current->next;
-					}
-					//add function to clean up the to_be_removed task_struct
-				}
-				else{
-					prev = current;
-					current = current->next;
-				}
-			}while(current!=NULL && current!=waitingtask);
-		}
-
+		clean_up_process_body();
 		fake_preempt(1);
 	}
 }

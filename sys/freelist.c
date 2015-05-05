@@ -265,7 +265,7 @@ uint64_t * get_free_frames(int order) {
 	uint64_t freePage = get_free_pages(free_list, order);
 	if(freePage == 0){
 		while(1){
-			printf("ff");
+			printf("no free physical frames");
 		}
 	}
 //	printf("returning freepages:%p ", freePage);

@@ -368,6 +368,8 @@ void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to,
 		uint64_t stack_top) {
 	to->pid = pid;
 	to->ppid = from->pid;
+	to->is_background = from->is_background;
+	strcpy(to->pwd, from->pwd);
 	cp_executable(from, to);
 	cp_pstate(from, to);
 	cp_mem_desc(from, to);
