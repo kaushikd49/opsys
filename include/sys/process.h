@@ -83,6 +83,8 @@ typedef struct task_struct {
 	file_desc_t *filearray[MAX_NUMBER_FILES];
 	int waiting_for;
 	int is_kernel_process;
+	char pwd[100];
+	int is_background;
 } task_struct_t;
 
 void load_executable(task_struct_t *);
@@ -131,6 +133,7 @@ uint64_t execve_process(char *binary, char **argv, char **envp, uint64_t stack_t
 ////////////////////////////////////////
 void init_file_dp_process(task_struct_t* task);
 void copy_file_dp_process(task_struct_t *task, task_struct_t *parent_task);
+void copy_file_dp_process_background(task_struct_t *task, task_struct_t *parent_task);
 int increment_global_count_fd(file_desc_t *fd);
 void decrement_global_count_fd(file_desc_t *fd);
 int add_to_global_fd(file_desc_t *fd);

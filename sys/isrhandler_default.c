@@ -94,6 +94,11 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 		return ps_system_call();
 	} else if (regs.rax == SYS_kill) {
 		return kill_system_call((pid_t) regs.rdi);
+	} else if (regs.rax == SYS_getcwd){
+		return pwd_system_call((char *)(regs.rdi), (uint64_t)(regs.rsi));
+	}
+	else if (regs.rax == SYS_chdir) {
+		return cd_system_call((char *)(regs.rdi));
 	}
 	return 0;
 }

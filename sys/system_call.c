@@ -3,7 +3,35 @@
 #include<sys/system_calls.h>
 #include<sys/fork.h>
 #include<sys/process.h>
+#include<errno.h>
+#include<sys/tarfs_FS.h>
+#include<sys/tarfs.h>
+uint64_t strlen(const char *str) {
+	uint64_t current = 0;
+	uint64_t i = 0;
+	while (str[i] != '\0') {
+		i++;
+		current++;
+	}
+	return current;
+}
+int strcmp_lazy(char *string1, char *string2) {
+	size_t len = 0;
+	while (string1[len] != '\0' && string2[len] != '\0') {
+		if (string1[len] != string2[len])
+			break;
+		len++;
+	}
+	if (string1[len] == string2[len])
+		return 0;
+	else if (string1[len] == '\0'
+			|| (string2[len] != '\0' && string1[len] < string2[len])) {
+		return (int) string2[len];
+	} else {
+		return (int) string1[len];
+	}
 
+}
 int kill_system_call(pid_t pid) {
 	int visited = 0;
 	for (task_struct_t *t = currenttask; t != currenttask || visited == 0;
@@ -175,4 +203,177 @@ uint64_t execve_sys_call(char *binary, char **argv, char **envp,
 
 int pipe_system_call(int pipe[2]) {
 	return pipe_tarfs(pipe);
+}
+
+int pwd_system_call(char *buffer, uint64_t size){
+	if((buffer == NULL) ||(size == 0 && buffer != NULL)){
+		return -EINVAL;
+	}
+	if(strlen(currenttask->pwd) > size){
+		return -ERANGE;
+	}
+	strcpy(buffer, currenttask->pwd);
+	return 0;
+}
+int cd_errno = 0;
+void clear_this_segment(char *this_segment){
+	for(uint64_t i = 0; i < 100; i++){
+		this_segment[i] = '\0';
+	}
+}
+int remove_prev_segment(char *prefix,int prefix_index){
+	if(prefix_index == 0){
+		return -1;
+	}
+	else{
+		prefix_index--;
+		prefix[prefix_index] = '\0';
+		while(prefix[prefix_index] != '/' && prefix_index>=0){
+			prefix[prefix_index--] = '\0';
+		}
+
+	}
+	prefix_index++;
+	return prefix_index;
+}
+int add_to_prefix(char *prefix, char *this_segment, int p_index){
+	int i = 0;
+	while(p_index < 100 && this_segment[i] != '\0'){
+		prefix[p_index] = this_segment[i];
+		p_index++;
+		i++;
+	}
+	if(this_segment[i] == '\0'){
+		return p_index;
+	}
+	else if(p_index == 100){
+		cd_errno = -ENAMETOOLONG;
+	}
+	return p_index;
+}
+
+char *expand_cd_buffer(char *buffer, int len, char *prefix){
+	char this_segment[100];
+	int j = 0;
+	int prefix_index = 0;
+	clear_this_segment(prefix);
+	clear_this_segment(this_segment);
+	if(buffer[0] == '/'){
+		buffer = buffer + 1;
+		len = len -1;
+	}
+	else{
+		strcpy(prefix, currenttask->pwd);
+		prefix_index = strlen(prefix);
+	}
+
+	for(uint64_t i = 0; i < len; i++){
+		if(buffer[i] == '/'){
+			if(strcmp_lazy(this_segment, "..") == 0){
+				prefix_index = remove_prev_segment(prefix, prefix_index);
+				if(prefix_index == -1){
+					cd_errno = -EFAULT;
+					return NULL;
+				}
+			}
+			else if(strcmp_lazy(this_segment, ".") != 0){
+				prefix_index = add_to_prefix(prefix, this_segment,  prefix_index);
+				if(prefix_index == -1){
+					return NULL;
+				}
+				prefix[prefix_index] = '/';
+				prefix_index++;
+			}
+			j = 0;
+			clear_this_segment(this_segment);
+		}
+		else{
+			this_segment[j++] = buffer[i];
+		}
+	}
+	if(this_segment[0] != '\0'){
+		strcpy(&prefix[prefix_index], this_segment);
+		prefix_index = prefix_index + j;
+		prefix[prefix_index] = '/';
+		prefix_index++;
+		prefix[prefix_index] = '\0';
+	}
+	else{
+		prefix[prefix_index] = '\0';
+	}
+	return prefix;
+}
+int is_valid_directory(char *file_name){
+	struct posix_header_ustar *current =
+				(struct posix_header_ustar *) &_binary_tarfs_start;
+		int i =0;
+		while ((uint64_t) current < (uint64_t) (&_binary_tarfs_end)) {
+			if(strcmp_lazy(file_name, current->name) == 0){
+				if(current->typeflag[0] != '5'){
+					cd_errno = -ENOTDIR;
+					return 0;
+				}
+				printf("%s %s: found file", current->name, current->magic);
+				return 1;
+			}
+	//			if(i %5 == 0)
+	//				printf("\n");
+
+				//	printf("elf header: %x\n",*(current + (uint64_t)sizeof(struct posix_header_ustar)));
+			uint64_t header_next = (uint64_t) ((align(
+					convert_ocatalstr_todecimal(current->size), TARFS_ALIGNMENT))
+					+ sizeof(struct posix_header_ustar) + (uint64_t) current);
+			//		printf("header : %x", header_next);
+			current = (struct posix_header_ustar *) (header_next);
+			i++;
+		}
+		cd_errno = -ENOENT;
+		return 0;
+}
+task_struct_t *find_parent(int pid){
+	task_struct_t *current = waitingtask;
+	if(current !=NULL){
+		do{
+			if(current->pid == pid){
+				return current;
+			}
+			current = current->next;
+		}while(current!=waitingtask);
+
+	}
+	current = currenttask;
+	if(currenttask != NULL){
+		do{
+			if(current->pid == pid){
+				return current;
+			}
+			current = current->next;
+		}while(current!=currenttask);
+	}
+	return NULL;
+}
+int cd_system_call(char *buffer){
+	int len = strlen(buffer);
+	if(len > 100){
+		return -ENAMETOOLONG;
+	}
+	char *answer = kmalloc(100);
+	answer = expand_cd_buffer(buffer, len, answer);
+	if(answer == NULL){
+		return cd_errno;
+	}
+	if(is_valid_directory(answer)){
+		task_struct_t *parent_process = find_parent(currenttask->ppid);
+		if(parent_process == NULL){
+			return -EIO;
+		}
+		printf("answer: %s pwd: %s %d %d %d\n", answer, parent_process->pwd, parent_process->pid, currenttask->pid, currenttask->ppid);
+		strcpy(currenttask->pwd, answer);
+		printf("answer: %s pwd: %s\n", answer, parent_process->pwd);
+
+	}
+	else{
+		return cd_errno;
+	}
+	return 0;
 }
