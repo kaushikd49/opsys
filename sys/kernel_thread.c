@@ -6,9 +6,11 @@
 #include <sys/kmalloc.h>
 #include<sys/tarfs_FS.h>
 #include<sys/kernel_thread.h>
+#include<sys/cleanup.h>
+
 extern uint64_t *global_keyboard;
 #define mask(addr, mask) ((addr | (mask))+1)
-struct read_blocked{
+struct read_blocked {
 	int pid;
 	int read_fd;
 	int write_fd;
@@ -17,14 +19,21 @@ struct read_blocked{
 };
 typedef struct read_blocked read_blocked_t;
 read_blocked_t *read_blocked_list = NULL;
-int need_wait(int fd){
-	uint64_t c_pointer = (uint64_t)(currenttask->filearray[fd]->current_pointer) & ~(0xfff);
-	for(uint64_t i = 0; i < MAX_FILES_OS; i++){
+int need_wait(int fd) {
+	uint64_t c_pointer =
+			(uint64_t) (currenttask->filearray[fd]->current_pointer) & ~(0xfff);
+	for (uint64_t i = 0; i < MAX_FILES_OS; i++) {
 		file_desc_t *current = global_fd_array[i].fd;
 		int count = global_fd_array[i].count;
-		if(current != NULL&& (current->flags &~(2)) != 0){
-			if((((uint64_t)(current->current_pointer)& ~(0xfff)) == c_pointer) && count>0){
-				if(((uint64_t)(currenttask->filearray[fd]->current_pointer)+1)%mask((uint64_t)(currenttask->filearray[fd]->current_pointer), 0xfff) == (uint64_t)(current->current_pointer)){
+		if (current != NULL && (current->flags & ~(2)) != 0) {
+			if ((((uint64_t) (current->current_pointer) & ~(0xfff)) == c_pointer)
+					&& count > 0) {
+				if (((uint64_t) (currenttask->filearray[fd]->current_pointer)
+						+ 1)
+						% mask(
+								(uint64_t )(currenttask->filearray[fd]->current_pointer),
+								0xfff)
+						== (uint64_t) (current->current_pointer)) {
 					return 1;
 				}
 			}
@@ -33,55 +42,59 @@ int need_wait(int fd){
 	return 0;
 }
 
-int no_read_end(int fd){
-	uint64_t c_pointer = (uint64_t)(currenttask->filearray[fd]->current_pointer) & ~(0xfff);
-	for(uint64_t i = 0; i < MAX_FILES_SYSTEM; i++){
+int no_read_end(int fd) {
+	uint64_t c_pointer =
+			(uint64_t) (currenttask->filearray[fd]->current_pointer) & ~(0xfff);
+	for (uint64_t i = 0; i < MAX_FILES_SYSTEM; i++) {
 		file_desc_t *current = global_fd_array[i].fd;
 		int count = global_fd_array[i].count;
-		if(current != NULL&& (current->flags &~(2)) != 0){
-			if((((uint64_t)(current->current_pointer)& ~(0xfff)) == c_pointer) && count > 0){
-					return 0;
+		if (current != NULL && (current->flags & ~(2)) != 0) {
+			if ((((uint64_t) (current->current_pointer) & ~(0xfff)) == c_pointer)
+					&& count > 0) {
+				return 0;
 			}
 		}
 	}
 	return 1;
 }
-void *find_write_end(int fd){
-	uint64_t c_pointer = (uint64_t)(currenttask->filearray[fd]->current_pointer) & ~(0xfff);
-	for(uint64_t i = 0; i < MAX_FILES_OS; i++){
+void *find_write_end(int fd) {
+	uint64_t c_pointer =
+			(uint64_t) (currenttask->filearray[fd]->current_pointer) & ~(0xfff);
+	for (uint64_t i = 0; i < MAX_FILES_OS; i++) {
 		file_desc_t *current = global_fd_array[i].fd;
 		int count = global_fd_array[i].count;
-		if(current != NULL && i != fd && (current->flags &~(2)) != 0 && count>0){
-			if(((uint64_t)(current->current_pointer)& ~(0xfff)) == c_pointer){
-					return current->current_pointer;
+		if (current != NULL && i != fd && (current->flags & ~(2)) != 0
+				&& count > 0) {
+			if (((uint64_t) (current->current_pointer) & ~(0xfff))
+					== c_pointer) {
+				return current->current_pointer;
 			}
 		}
 	}
 	return NULL;
 }
-void add_read_blocked_list(read_blocked_t *node){
-	if(read_blocked_list == NULL){
+void add_read_blocked_list(read_blocked_t *node) {
+	if (read_blocked_list == NULL) {
 		read_blocked_list = node;
 		return;
 	}
 	node->next = read_blocked_list;
 	read_blocked_list = node;
 }
-read_blocked_t *remove_read_blocked_list(read_blocked_t *current){
+read_blocked_t *remove_read_blocked_list(read_blocked_t *current) {
 	read_blocked_t *prev = read_blocked_list;
-	if(prev == current){
+	if (prev == current) {
 		read_blocked_list = current->next;
 		current->next = NULL;
 //		kfree(current);
 		return read_blocked_list;
-	}
-	else{
-		while(prev->next != current){
+	} else {
+		while (prev->next != current) {
 			prev = prev->next;
 		}
 		prev->next = current->next;
 //		kfree(current);
-		return prev->next	;
+		return prev->next;
 	}
 	return NULL;
 }
@@ -98,24 +111,25 @@ read_blocked_t *remove_read_blocked_list(read_blocked_t *current){
 //	}
 //	quit_kernel_thread();
 //}
-void noop(int i){
+void noop(int i) {
 
 }
-inline void fake_preempt(int flag){
+inline void fake_preempt(int flag) {
 	__asm__ __volatile__(
 			"int $99"
 			:
 			:"S"(flag));
 
 }
-void waiting_to_running_q(){
+void waiting_to_running_q() {
 
-	while(1){
+	while (1) {
 		__asm__ __volatile__("cli");
 		volatile task_struct_t *current_waiting = waitingtask;
-		do{
+		do {
 
-			if(current_waiting != NULL && current_waiting->p_state == STATE_READY){
+			if (current_waiting != NULL
+					&& current_waiting->p_state == STATE_READY) {
 
 //				printf("\n moving back bitchas");
 				move_process_waitq_to_runq(current_waiting->pid);
@@ -123,47 +137,50 @@ void waiting_to_running_q(){
 				current_waiting = waitingtask;
 
 			}
-			if(current_waiting !=NULL)
+			if (current_waiting != NULL)
 				current_waiting = current_waiting->next;
-		}while(waitingtask !=NULL && current_waiting != waitingtask);
+		} while (waitingtask != NULL && current_waiting != waitingtask);
 		fake_preempt(1);
 	}
 }
-int check_ready(file_desc_t *current_fd){
+int check_ready(file_desc_t *current_fd) {
 	return current_fd->ready;
 }
-int check_busy(file_desc_t *current_fd){
+int check_busy(file_desc_t *current_fd) {
 	return current_fd->busy;
 }
-int empty_buffer(void *read_end, void *write_end){
-	if((uint64_t)read_end > (uint64_t)write_end){
+int empty_buffer(void *read_end, void *write_end) {
+	if ((uint64_t) read_end > (uint64_t) write_end) {
 		return 1;
 	}
 	return 0;
 }
 
-int write_end_pipe_status(int fd, int status){
-	uint64_t c_pointer = (uint64_t)(currenttask->filearray[fd]->current_pointer) & ~(0xfff);
+int write_end_pipe_status(int fd, int status) {
+	uint64_t c_pointer =
+			(uint64_t) (currenttask->filearray[fd]->current_pointer) & ~(0xfff);
 	uint64_t i = 0;
 	int check = 0;
-	for(i = 0; i < MAX_FILES_OS; i++){
+	for (i = 0; i < MAX_FILES_OS; i++) {
 		file_desc_t *current = global_fd_array[i].fd;
 		int count = global_fd_array[i].count;
-		if(current != NULL && ((current->flags &O_WRONLY) != 0) && count > 0){
-			if(mask((uint64_t)(current->current_pointer), 0xfff) == c_pointer){
+		if (current != NULL && ((current->flags & O_WRONLY) != 0)
+				&& count > 0) {
+			if (mask((uint64_t )(current->current_pointer), 0xfff)
+					== c_pointer) {
 				current->ready = 1;
 				check = 1;
 				break;
 			}
 		}
 	}
-	if(check == 0){
+	if (check == 0) {
 		return -1;
 	}
 	read_blocked_t *new_node = kmalloc(sizeof(read_blocked_t));
 	new_node->pid = currenttask->pid;
-	new_node->read_fd = fd;//local
-	new_node->write_fd = i;//global
+	new_node->read_fd = fd; //local
+	new_node->write_fd = i; //global
 	new_node->read_write = 2; // read end is going to be blocked
 	new_node->next = NULL;
 	add_read_blocked_list(new_node);
@@ -172,9 +189,11 @@ int write_end_pipe_status(int fd, int status){
 	return 1;
 
 }
-void read_thread_process(int fd, char *buffer, uint64_t size){ //todo: run bin/bar | bin/wc see the faults
+void read_thread_process(int fd, char *buffer, uint64_t size) { //todo: run bin/bar | bin/wc see the faults
 	file_desc_t *current_fd = currenttask->filearray[fd];
-	while(check_busy(current_fd) == 1 && current_fd->current_process !=currenttask->pid);
+	while (check_busy(current_fd) == 1
+			&& current_fd->current_process != currenttask->pid)
+		;
 	//lock resource
 	__asm__ __volatile__("cli");
 	current_fd->busy = 1;
@@ -194,16 +213,17 @@ void read_thread_process(int fd, char *buffer, uint64_t size){ //todo: run bin/b
 //		ready_check = current_fd->ready;
 //	}
 //	__asm__ __volatile__("sti");
-	while(check_ready(current_fd) == 0){
+	while (check_ready(current_fd) == 0) {
 		fake_preempt(1);
 	}
 	__asm__ __volatile__("cli");
 	char *current_pointer = currenttask->filearray[fd]->current_pointer;
 	int copied = 0;
-	if((int)(currenttask->filearray[fd]->size)!=-999){
+	if ((int) (currenttask->filearray[fd]->size) != -999) {
 		char *end_file = current_pointer + currenttask->filearray[fd]->size;
-		char *buff = (char *)buffer;
-		while(copied < size && current_pointer < end_file && *current_pointer != '\0'){
+		char *buff = (char *) buffer;
+		while (copied < size && current_pointer < end_file
+				&& *current_pointer != '\0') {
 			buff[copied] = *current_pointer;
 			current_pointer++;
 			currenttask->filearray[fd]->current_pointer++;
@@ -211,57 +231,59 @@ void read_thread_process(int fd, char *buffer, uint64_t size){ //todo: run bin/b
 		}
 		buff[copied] = '\0';
 //		printf("%s", buff);
-	}
-	else{
+	} else {
 		char *read_end = current_fd->current_pointer;
 		char *write_end = find_write_end(fd);
-		if(write_end != NULL){
-			if(empty_buffer(read_end, write_end)){
+		if (write_end != NULL) {
+			if (empty_buffer(read_end, write_end)) {
 				volatile int check = 0;
-				while(check == 0){
+				while (check == 0) {
 					currenttask->filearray[fd]->ready = 0;
 					currenttask->p_state = STATE_WAITING;
 					int res = write_end_pipe_status(fd, 1);
-					if(res == -1)
+					if (res == -1)
 						break;
 					check = currenttask->filearray[fd]->ready;
 				}
 			}
-			while(copied < size){
-				char character  = *read_end;
+			while (copied < size) {
+				char character = *read_end;
 				buffer[copied] = character;
-				uint64_t mod_val = mask((uint64_t)read_end, 0xfff);
+				uint64_t mod_val = mask((uint64_t )read_end, 0xfff);
 				read_end++;
-				read_end = (char *)((uint64_t)read_end%mod_val);
+				read_end = (char *) ((uint64_t) read_end % mod_val);
 				current_fd->current_pointer = read_end;
 				copied++;
-				if(character == '\0'){
+				if (character == '\0') {
 					break;
 				}
-				if(empty_buffer(read_end, write_end)){
+				if (empty_buffer(read_end, write_end)) {
 					volatile int check = 0;
-					while(check == 0){
+					while (check == 0) {
 						currenttask->filearray[fd]->ready = 0;
 						currenttask->p_state = STATE_WAITING;
 						int res = write_end_pipe_status(fd, 1);
-						if(res == -1)
+						if (res == -1)
 							break;
 						check = currenttask->filearray[fd]->ready;
 					}
 				}
 
-
 			}
-			if(read_end == write_end+1){
+			if (read_end == write_end + 1) {
 				current_fd->current_pointer = write_end;
 			}
-			uint64_t c_pointer = (uint64_t)(currenttask->filearray[fd]->current_pointer) & ~(0xfff);
+			uint64_t c_pointer =
+					(uint64_t) (currenttask->filearray[fd]->current_pointer)
+							& ~(0xfff);
 			uint64_t i = 0;
-			for(i = 0; i < MAX_FILES_OS; i++){
+			for (i = 0; i < MAX_FILES_OS; i++) {
 				file_desc_t *current = global_fd_array[i].fd;
 				int count = global_fd_array[i].count;
-				if(current != NULL && (current->flags &O_WRONLY) != 0 && count > 0){
-					if(((uint64_t)(current->current_pointer)& ~(0xfff)) == c_pointer){
+				if (current != NULL && (current->flags & O_WRONLY) != 0
+						&& count > 0) {
+					if (((uint64_t) (current->current_pointer) & ~(0xfff))
+							== c_pointer) {
 						current->ready = 1;
 						break;
 					}
@@ -271,22 +293,23 @@ void read_thread_process(int fd, char *buffer, uint64_t size){ //todo: run bin/b
 	}
 	int ppid = currenttask->ppid;
 	task_struct_t *current_waiting = waitingtask;
-	do{
-		if(current_waiting!=NULL){
-			if(current_waiting->pid == ppid){
-				regs_syscall_t *regs = (regs_syscall_t *)(current_waiting->state.kernel_rsp);
+	do {
+		if (current_waiting != NULL) {
+			if (current_waiting->pid == ppid) {
+				regs_syscall_t *regs =
+						(regs_syscall_t *) (current_waiting->state.kernel_rsp);
 				regs->rax = copied;
 				current_waiting->p_state = STATE_READY;
 				break;
 			}
 		}
-		if(current_waiting!=NULL)
+		if (current_waiting != NULL)
 			current_waiting = current_waiting->next;
-	}while(current_waiting!=waitingtask);
-	if(currenttask->filearray[fd] == stdin_fd)
+	} while (current_waiting != waitingtask);
+	if (currenttask->filearray[fd] == stdin_fd)
 		clear_keyboard_busy();
 
-	if(current_fd->posix_header == NULL)
+	if (current_fd->posix_header == NULL)
 		current_fd->ready = 0;
 	current_fd->busy = 0;
 	quit_kernel_thread();
@@ -294,28 +317,30 @@ void read_thread_process(int fd, char *buffer, uint64_t size){ //todo: run bin/b
 
 }
 
-int read_end_pipe_status(int fd, int status){
-	uint64_t c_pointer = (uint64_t)(currenttask->filearray[fd]->current_pointer) & ~(0xfff);
+int read_end_pipe_status(int fd, int status) {
+	uint64_t c_pointer =
+			(uint64_t) (currenttask->filearray[fd]->current_pointer) & ~(0xfff);
 	uint64_t i = 0;
 	int check = 0;
-	for(i = 0; i < MAX_FILES_OS; i++){
+	for (i = 0; i < MAX_FILES_OS; i++) {
 		file_desc_t *current = global_fd_array[i].fd;
 		int count = global_fd_array[i].count;
-		if(current != NULL && ((current->flags &~(2)) != 0) && count>0){
-			if(((uint64_t)(current->current_pointer)& ~(0xfff)) == c_pointer){
+		if (current != NULL && ((current->flags & ~(2)) != 0) && count > 0) {
+			if (((uint64_t) (current->current_pointer) & ~(0xfff))
+					== c_pointer) {
 				current->ready = 1;
 				check = 1;
 				break;
 			}
 		}
 	}
-	if(check == 0){
+	if (check == 0) {
 		return -1;
 	}
 	read_blocked_t *new_node = kmalloc(sizeof(read_blocked_t));
 	new_node->pid = currenttask->pid;
-	new_node->read_fd = i;//global
-	new_node->write_fd = fd;//local
+	new_node->read_fd = i; //global
+	new_node->write_fd = fd; //local
 	new_node->read_write = 1; // 1 is write end is blocked
 	new_node->next = NULL;
 	add_read_blocked_list(new_node);
@@ -324,53 +349,55 @@ int read_end_pipe_status(int fd, int status){
 	return 1;
 }
 
-void write_thread_process(int fd, void *buffer, uint64_t size){
+void write_thread_process(int fd, void *buffer, uint64_t size) {
 	file_desc_t *current_fd = currenttask->filearray[fd];
-	while(check_busy(current_fd) == 1 && current_fd->current_process != currenttask->pid);
+	while (check_busy(current_fd) == 1
+			&& current_fd->current_process != currenttask->pid)
+		;
 	__asm__ __volatile__("cli");
 	current_fd->busy = 1;
 	current_fd->current_process = currenttask->pid;
 	int printed = 0;
-	if(currenttask->filearray[fd] == stdout_fd){
+	if (currenttask->filearray[fd] == stdout_fd) {
 		char *print_buffer = (char *) buffer;
 		while (printed < size && print_buffer[printed] != '\0') {
 			char character = print_buffer[printed];
 			write_char_to_vid_mem(character, 0);
 			printed++;
 		}
-		write_char_to_vid_mem('\0',0);
-	}else{
-		char *copy_buf = (char *)buffer;
+		write_char_to_vid_mem('\0', 0);
+	} else {
+		char *copy_buf = (char *) buffer;
 //		char *start = (char *)currenttask->filearray[fd]->current_pointer;
-		while(printed < size && copy_buf[printed] != '\0'){
+		while (printed < size && copy_buf[printed] != '\0') {
 //			if(no_read_end(fd)){
 //				printf("inside no read end");
 //				break;
 //			}
 
-			char character  = copy_buf[printed];
-			char *copy_to = (char *)currenttask->filearray[fd]->current_pointer;
+			char character = copy_buf[printed];
+			char *copy_to = (char *) currenttask->filearray[fd]->current_pointer;
 			*copy_to = character;
 			printed++;
-			if(need_wait(fd)){
+			if (need_wait(fd)) {
 				volatile int check = 0;
-				while(check == 0){
+				while (check == 0) {
 					currenttask->filearray[fd]->ready = 0;
 					currenttask->p_state = STATE_WAITING;
 					int res = read_end_pipe_status(fd, 1);
-					if(res == -1)
+					if (res == -1)
 						break;
 					check = currenttask->filearray[fd]->ready;
 				}
 			}
-			uint64_t mod_val = mask((uint64_t)copy_to, 0xfff);
+			uint64_t mod_val = mask((uint64_t )copy_to, 0xfff);
 			copy_to++;
-			copy_to = (char *)((uint64_t)copy_to%mod_val);
+			copy_to = (char *) ((uint64_t) copy_to % mod_val);
 			currenttask->filearray[fd]->current_pointer = copy_to;
 		}
 
-		if(copy_buf[printed] == '\0'){
-			char *copy_to = (char *)currenttask->filearray[fd]->current_pointer;
+		if (copy_buf[printed] == '\0') {
+			char *copy_to = (char *) currenttask->filearray[fd]->current_pointer;
 			*copy_to = '\0';
 //			printf("\nstr:%s\n", start);
 //			uint64_t mod_val = mask((uint64_t)copy_to, 0xfff);
@@ -378,16 +405,19 @@ void write_thread_process(int fd, void *buffer, uint64_t size){
 //			copy_to = (uint64_t)copy_to%mod_val;
 //			currenttask->filearray[fd]->current_pointer = copy_to;
 		}
-		uint64_t c_pointer = (uint64_t)(currenttask->filearray[fd]->current_pointer) & ~(0xfff);
+		uint64_t c_pointer =
+				(uint64_t) (currenttask->filearray[fd]->current_pointer)
+						& ~(0xfff);
 		uint64_t i = 0;
-		for(i = 0; i < MAX_FILES_OS; i++){
+		for (i = 0; i < MAX_FILES_OS; i++) {
 			file_desc_t *current = global_fd_array[i].fd;
 
 //			int count = global_fd_array[i].count;
 //			printf("%x-%d", current, count);
-			if(current != NULL && ((current->flags &~(2)) == 0)){//~(2) means at most only RDWR
+			if (current != NULL && ((current->flags & ~(2)) == 0)) { //~(2) means at most only RDWR
 //				printf("ff");
-				if(((uint64_t)(current->current_pointer) & (~0xfff)) == c_pointer){
+				if (((uint64_t) (current->current_pointer) & (~0xfff))
+						== c_pointer) {
 					current->ready = 1;
 //					printf("found");
 					break;
@@ -397,71 +427,73 @@ void write_thread_process(int fd, void *buffer, uint64_t size){
 	}
 	int ppid = currenttask->ppid;
 	task_struct_t *current_waiting = waitingtask;
-	do{
-		if(current_waiting!=NULL){
-			if(current_waiting->pid == ppid){
-				regs_syscall_t *regs = (regs_syscall_t *)(current_waiting->state.kernel_rsp);
+	do {
+		if (current_waiting != NULL) {
+			if (current_waiting->pid == ppid) {
+				regs_syscall_t *regs =
+						(regs_syscall_t *) (current_waiting->state.kernel_rsp);
 				regs->rax = printed;
 				current_waiting->p_state = STATE_READY;
 				break;
 			}
 		}
-		if(current_waiting!=NULL)
+		if (current_waiting != NULL)
 			current_waiting = current_waiting->next;
-	}while(current_waiting!=waitingtask);
+	} while (current_waiting != waitingtask);
 //	if(currenttask->filearray[fd] == stdout_fd)
 //		clear_keyboard_busy();
-	if(current_fd !=stdout_fd)
+	if (current_fd != stdout_fd)
 		current_fd->ready = 0;
 	current_fd->busy = 0;
 	quit_kernel_thread();
 }
 //clears keyoard buffer when a new process begins writing
-void clear_keyboard_busy(){
-	char *current = (char *)(input_buffer);
-	for(uint64_t i = 0; i < 0x1000 ; i++){
+void clear_keyboard_busy() {
+	char *current = (char *) (input_buffer);
+	for (uint64_t i = 0; i < 0x1000; i++) {
 		*current = 0;
 		current++;
 	}
-	currenttask->filearray[0]->current_pointer = (char *)global_keyboard;
+	currenttask->filearray[0]->current_pointer = (char *) global_keyboard;
 
 }
 
-void find_child(volatile task_struct_t *temp){
+void find_child(volatile task_struct_t *temp) {
 
 	int ppid = temp->pid;
 	int wait_for = temp->waiting_for;
-	if(wait_for == -1){
+	if (wait_for == -1) {
 		task_struct_t *temp2 = waitingtask;
-		do{
-			if(temp2->is_kernel_process == 0 && temp2->ppid == ppid && temp2->is_background != 1){
+		do {
+			if (temp2->is_kernel_process == 0 && temp2->ppid == ppid
+					&& temp2->is_background != 1) {
 				return;
 			}
 			temp2 = temp2->next;
-		}while(temp2!=waitingtask);
+		} while (temp2 != waitingtask);
 		temp2 = currenttask;
-		do{
-			if(temp2->is_kernel_process == 0 && temp2->ppid == ppid && temp2->is_background != 1){
+		do {
+			if (temp2->is_kernel_process == 0 && temp2->ppid == ppid
+					&& temp2->is_background != 1) {
 				return;
 			}
 			temp2 = temp2->next;
-		}while(temp2!=currenttask);
-	}
-	else{
+		} while (temp2 != currenttask);
+	} else {
 		task_struct_t *temp2 = waitingtask;
-		do{
-			if(temp2->is_kernel_process == 0 && temp2->pid == wait_for){
+		do {
+			if (temp2->is_kernel_process == 0 && temp2->pid == wait_for) {
 				return;
 			}
 			temp2 = temp2->next;
-		}while(temp2!=waitingtask);
+		} while (temp2 != waitingtask);
 		temp2 = currenttask;
-		do{
-			if(temp2->is_kernel_process == 0 && temp2->pid == wait_for){
+		do {
+			if (temp2->is_kernel_process == 0 && temp2->pid == wait_for) {
 				return;
 			}
 			temp2 = temp2->next;
-		}while(temp2!=currenttask);
+		} while (temp2 != currenttask);
 	}
 //	printf("daemon activated");
 	temp->waiting_for = 999;
@@ -482,24 +514,23 @@ void check_user_process_waitpid_daemon_body() {
 	} while (temp != waitingtask);
 }
 
-void check_user_process_waitpid_daemon(){
+void check_user_process_waitpid_daemon() {
 
-
-	while(1){
+	while (1) {
 		__asm__ __volatile__("cli");
 		check_user_process_waitpid_daemon_body();
 		fake_preempt(1);
 	}
 }
-task_struct_t *check_unblock_waitq(int pid){
+task_struct_t *check_unblock_waitq(int pid) {
 	task_struct_t *temp = waitingtask;
-	do{
-		if(temp!=NULL && temp->pid == pid){
+	do {
+		if (temp != NULL && temp->pid == pid) {
 			return temp;
 		}
-		if(temp!=NULL)
+		if (temp != NULL)
 			temp = temp->next;
-	}while(temp!=waitingtask);
+	} while (temp != waitingtask);
 	return NULL;
 }
 
@@ -534,8 +565,8 @@ void return_blocking_rw_to_runq_body() {
 	}
 }
 
-void return_blocking_rw_to_runq(){
-	while(1){
+void return_blocking_rw_to_runq() {
+	while (1) {
 		__asm__ __volatile__("cli");
 		return_blocking_rw_to_runq_body();
 		fake_preempt(1);
@@ -552,7 +583,7 @@ void clean_up_process_body() {
 		}
 		do {
 			if (current->p_state == STATE_TERMINATED) {
-				//task_struct_t *to_be_removed = current; uncomment when u add code for this
+				volatile task_struct_t *to_be_removed = current;
 				if (prev == current) {
 					current = NULL;
 					waitingtask = NULL;
@@ -560,6 +591,7 @@ void clean_up_process_body() {
 					prev->next = current->next;
 					current = current->next;
 				}
+				cleanup_process(to_be_removed);
 				//add function to clean up the to_be_removed task_struct
 			} else {
 				prev = current;
@@ -569,7 +601,7 @@ void clean_up_process_body() {
 	}
 }
 
-void clean_up_processes(){
+void clean_up_processes() {
 //	if(waitingtask == NULL){
 //		return NULL;
 //	}
@@ -584,7 +616,7 @@ void clean_up_processes(){
 //	while(current!=NULL &&current){
 //
 //	}
-	while(1){
+	while (1) {
 		__asm__ __volatile__("cli");
 		clean_up_process_body();
 		fake_preempt(1);

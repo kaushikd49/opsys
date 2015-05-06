@@ -25,6 +25,7 @@ void return_page(uint64_t page, page_t *free_list);
 //no checks done, programmer care required.
 void return_pages(uint64_t page, page_t *free_list, int order);
 uint64_t * get_free_frame();
+uint64_t * get_free_zeroed_frame();
 uint64_t * get_free_frames(int order);
 int get_ref_count(uint64_t physical_addr_page);
 
@@ -32,5 +33,5 @@ void decrease_ref_count(uint64_t physical_addr_page);
 
 void increase_ref_count(uint64_t physical_addr_page);
 
-int num_free_pages();
+int num_free_pages(int isdirty);
 #endif

@@ -189,9 +189,9 @@ void create_all_paging_entities(const struct paging_entities* pe,
 		int rw, int us, uint64_t* (*addr_map_func)(uint64_t*, void *),
 		void * pv_map) {
 	// No entities are present for this linear address
-	uint64_t* pdir_ptr = get_free_frame();
-	uint64_t* pdir = get_free_frame();
-	uint64_t* ptable = get_free_frame();
+	uint64_t* pdir_ptr = get_free_zeroed_frame();
+	uint64_t* pdir = get_free_zeroed_frame();
+	uint64_t* ptable = get_free_zeroed_frame();
 
 	uint64_t* mapped_pdir_ptr = addr_map_func(pdir_ptr, pv_map);
 	uint64_t* mapped_pdir = addr_map_func(pdir, pv_map);
@@ -213,8 +213,8 @@ void create_all_but_pml(const struct paging_entities* pe,
 	// only pml is present for this linear address
 
 	uint64_t* pdir_ptr_base = (uint64_t*) (*deepest_entity_base);
-	uint64_t* pdir = get_free_frame();
-	uint64_t* ptable = get_free_frame();
+	uint64_t* pdir = get_free_zeroed_frame();
+	uint64_t* ptable = get_free_zeroed_frame();
 
 	uint64_t* mapped_pdir = addr_map_func(pdir, pv_map);
 	uint64_t* mapped_ptable = addr_map_func(ptable, pv_map);
@@ -232,7 +232,7 @@ void create_pdir_and_ptable(const struct paging_entities* pe,
 		void * pv_map) {
 	// pml and pdir_ptr are present for this linear address
 	uint64_t* pdir_base = (uint64_t*) (*deepest_entity_base);
-	uint64_t* ptable = get_free_frame();
+	uint64_t* ptable = get_free_zeroed_frame();
 
 	uint64_t* mapped_ptable = addr_map_func(ptable, pv_map);
 
@@ -267,7 +267,7 @@ void setup_page_table_from_outside(uint64_t linear_addr, uint64_t physical_addr,
 	struct paging_entities pe;
 	get_paging_entity_indexes(&pe, linear_addr);
 	if (*pml_base_dbl_ptr == NULL)
-		*pml_base_dbl_ptr = get_free_frame();
+		*pml_base_dbl_ptr = get_free_zeroed_frame();
 
 	// USE OF THE LOCAL VARS BELOW IS VERY IMPOROTANT.
 	// USED NULL TO INITIALIZE PTRS BELOW AND CHANGE
@@ -449,7 +449,7 @@ void setup_page_tables_after_cr3_update(uint64_t linear_addr,
 //	printf("\nlinear_addr is %p, physical:%p\n", linear_addr, physical_addr);
 	uint64_t * pml4e_virtual_addr = virtual_addr_pml4e(linear_addr);
 	if (is_entry_not_created((uint64_t *) pml4e_virtual_addr)) {
-		uint64_t* pdir_ptr = get_free_frame();
+		uint64_t* pdir_ptr = get_free_zeroed_frame();
 		*pml4e_virtual_addr = get_pml4_entry((uint64_t) pdir_ptr, p, rw, us);
 //		uint64_t* virtualAddrPdirptre = virtual_addr_pdirptre(linear_addr);
 //		cleanup_page(virtualAddrPdirptre);
@@ -459,7 +459,7 @@ void setup_page_tables_after_cr3_update(uint64_t linear_addr,
 
 	uint64_t * pdir_ptre_virtual_addr = virtual_addr_pdirptre(linear_addr);
 	if (is_entry_not_created((uint64_t *) pdir_ptre_virtual_addr)) {
-		uint64_t* pdir = get_free_frame();
+		uint64_t* pdir = get_free_zeroed_frame();
 		*pdir_ptre_virtual_addr = get_pdpt_entry((uint64_t) pdir, p, rw, us);
 	}
 //	printf("\npdir_ptre_virtual_addr:%p, value:%p\n", pdir_ptre_virtual_addr,
@@ -467,7 +467,7 @@ void setup_page_tables_after_cr3_update(uint64_t linear_addr,
 
 	uint64_t * pdire_virtual_addr = virtual_addr_pdire(linear_addr);
 	if (is_entry_not_created((uint64_t *) pdire_virtual_addr)) {
-		uint64_t* ptable = get_free_frame();
+		uint64_t* ptable = get_free_zeroed_frame();
 		*pdire_virtual_addr = get_pd_entry((uint64_t) ptable, p, rw, us);
 	}
 //	printf("\npdire_virtual_addr:%p, value:%p\n", pdire_virtual_addr,
@@ -557,7 +557,7 @@ void update_cr3(uint64_t * pml_base_ptr) {
 //	printf("post cr3 update");
 }
 void manage_memory_test_suite() {
-	uint64_t *ret = get_free_frames(0);
+	uint64_t *ret = get_free_zeroed_frame();
 //	printf("\nans1: %p", ret);
 	uint64_t virtual_test_addr = VIRTUAL_PHYSFREE_OFFSET + (uint64_t) ret;
 	uint64_t test_addr = (uint64_t) ret;
@@ -578,20 +578,20 @@ void manage_memory_test_suite() {
 //	test[0].ref_count = 2;
 //	test[0].virtual_address = NULL;
 //	printf("YAYYYY:  %d", test[0].ref_count);
-//	ret = get_free_frames(1);
+//	ret = get_free_zeroed_frames(1);
 //	printf("\nans2: %p", ret);
-//	ret = get_free_frames(2);
+//	ret = get_free_zeroed_frames(2);
 //	printf("\nans3: %p", ret);
-//	ret = get_free_frames(3);
+//	ret = get_free_zeroed_frames(3);
 //	printf("\nans3: %p", ret);
-//	ret = get_free_frames(4);
+//	ret = get_free_zeroed_frames(4);
 //	printf("\nans3: %p", ret);
 //
-//	ret = get_free_frames(5);
+//	ret = get_free_zeroed_frames(5);
 //	printf("\nans3: %p", ret);
-//	ret = get_free_frames(6);
+//	ret = get_free_zeroed_frames(6);
 //	printf("\nans3: %p", ret);
-//	uint64_t *ret2 = get_free_frames(2);
+//	uint64_t *ret2 = get_free_zeroed_frames(2);
 //	printf("\n%x", ret2);
 }
 
@@ -613,7 +613,7 @@ uint64_t* get_pml4_base_addrs_for_process(uint64_t* process_pml_base_virtual) {
 // copy the kernel's pml4 base frame into
 // a new frame and return the physical address
 // so that the task_struct can store the same
-	uint64_t* process_pml_base_physical = get_free_frame(0);
+	uint64_t* process_pml_base_physical = get_free_zeroed_frame(0);
 	uint64_t* virtual_addr = (uint64_t*) get_virtual_location_cr3(0);
 //	printf("va : %p\n", virtual_addr);
 // we are copying the kernel's address space to the process'
@@ -695,7 +695,7 @@ void manage_memory(void* physbase, void* physfree, uint32_t* modulep) {
 //	update_cr3(temp);
 //	printf("process_pml4: %p ", temp);
 //	uint64_t * q = (uint64_t *) 0x400038;
-//	setup_process_page_tables((uint64_t)q, (uint64_t)get_free_frame());
+//	setup_process_page_tables((uint64_t)q, (uint64_t)get_free_zeroed_frame());
 //	*q = 0xf00d;
 //	printf("new var: %p ", *q);
 //	printf("fasaf");
@@ -710,7 +710,7 @@ void process_stuff() {
 	update_cr3(temp);
 	printf("process_pml4: %p ", temp);
 	uint64_t* q = (uint64_t *) 0x400038;
-	setup_process_page_tables((uint64_t) q, (uint64_t) get_free_frame());
+	setup_process_page_tables((uint64_t) q, (uint64_t) get_free_zeroed_frame());
 
 	printf("ismapped %d \n", is_linear_addr_mapped((uint64_t) q));
 	*q = 0xf00d;

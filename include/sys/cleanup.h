@@ -1,1 +1,1 @@
-void cleanup_process(task_struct_t * task);
+void cleanup_process(volatile task_struct_t * task);

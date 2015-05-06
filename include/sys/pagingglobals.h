@@ -25,6 +25,7 @@ typedef struct page_t {
 	uint32_t is_free;
 	uint64_t frame_addr;
 	uint32_t ref_count;//number of references to this page
+	uint32_t dirty;
 }page_t;
 typedef struct physical_map_node{
 	uint64_t start;

@@ -29,6 +29,7 @@ void mark_frame_used(uint64_t address) {
 		if (free_list[index].frame_addr == address) {
 			free_list[index].is_free = 0;
 			free_list[index].ref_count = 1;
+			free_list[index].dirty = 1;
 			break;
 		}
 	}
@@ -71,11 +72,13 @@ void create_free_list_test(uint32_t* modulep, page_t *free_list, void *physbase,
 			free_list[index].frame_addr = current_addr;
 			free_list[index].is_free = 1; //the page is free
 			free_list[index].ref_count = 0;
+			free_list[index].dirty = 0;
 //			blank_space_baby(current_addr);
 		} else {
 			free_list[index].frame_addr = current_addr;
 			free_list[index].is_free = 0; //the page is not free
 			free_list[index].ref_count = 1; //something is occupying, now kernel
+			free_list[index].dirty = 1;
 		}
 
 	}
@@ -171,35 +174,65 @@ void clear_array_range(page_t *free_list, uint64_t start, uint64_t end) {
 	for (uint64_t i = start; i <= end; i++) {
 		free_list[i].is_free = 0;
 		free_list[i].ref_count = 1;
+		free_list[i].dirty = 1;
 	}
 }
-uint64_t get_free_pages(page_t *free_list, int order) {
+
+uint64_t get_free_pages_logic(int order, page_t* free_list, int zeroed_only) {
 	uint64_t limit = 1 << order;
-	for (uint64_t i = 0; i < MAX_NUMBER_PAGES - limit + 1; i++) { //todo: optimize
+	uint64_t result = 0;
+	for (uint64_t i = 0; i < MAX_NUMBER_PAGES - limit + 1; i++) {
+		//todo: optimize
 		if (free_list[i].is_free == 1 && free_list[i + limit - 1].is_free == 1
-				&& check_array_range(free_list, i, i + limit - 1) == 1) {
+				&& check_array_range(free_list, i, i + limit - 1) == 1
+				&& (!zeroed_only || !free_list[i].dirty)) {
 			clear_array_range(free_list, i, i + limit - 1);
 			uint64_t phys_page = free_list[i].frame_addr;
-			if (currenttask != 0){
-//				printf(" pid:%d returning frame %p \n", currenttask->pid, phys_page);
-			}
-			return phys_page;
+			result = phys_page;
+
+//			if(free_list[i].dirty == 1){
+//				printf ("using dirty %p %d %d %d \n", phys_page, free_list[i].is_free, free_list[i].dirty, zeroed_only);
+//			}
+			break;
 		}
 	}
-	printf("danger");
-	while(1);
-	return 0;
+	if (result == 0) {
+		if (zeroed_only)
+			printf("danger, no zero'ed frames available!");
+		else
+			printf("danger, no frames available!!");
+		while (1)
+			;
+	}
+
+	return result;
 }
+
+// returns pages that are free, may or may not be dirty
+uint64_t get_free_pages(page_t *free_list, int order) {
+	uint64_t result = get_free_pages_logic(order, free_list, 0);
+	return result;
+}
+
+// returns only zeroed pages. Use this for your page tables
+uint64_t get_free_zeroed_pages(page_t *free_list, int order) {
+	uint64_t result = get_free_pages_logic(order, free_list, 1);
+	return result;
+}
+
 void return_page(uint64_t page, page_t *free_list) {
 	for (uint64_t i = 0; i < MAX_NUMBER_PAGES; i++) {
 		if (free_list[i].frame_addr == page) {
 			free_list[i].ref_count -= 1;
+
 			if (free_list[i].ref_count < 0) {
 				printf(
 						"free_page deallocation you have made a mistake here  mostly.\n");
 			}
-			if (free_list[i].ref_count == 0)
+			if (free_list[i].ref_count == 0) {
 				free_list[i].is_free = 1;
+			}
+
 			break;
 		}
 	}
@@ -261,10 +294,18 @@ uint64_t * get_free_frame() {
 //	printf("returning freepage:%p ", freePage);
 	return (uint64_t *) freePage;
 }
+
+uint64_t * get_free_zeroed_frame() {
+	uint64_t freePage = get_free_zeroed_pages(free_list, 0);
+
+//	printf("returning zeroed freepage:%p ", freePage);
+	return (uint64_t *) freePage;
+}
+
 uint64_t * get_free_frames(int order) {
 	uint64_t freePage = get_free_pages(free_list, order);
-	if(freePage == 0){
-		while(1){
+	if (freePage == 0) {
+		while (1) {
 			printf("no free physical frames");
 		}
 	}
@@ -272,12 +313,19 @@ uint64_t * get_free_frames(int order) {
 	return (uint64_t *) freePage;
 }
 
-int num_free_pages() {
+int num_free_pages(int isdirty) {
 	int count = 0;
 	for (uint64_t i = 0; i < MAX_NUMBER_PAGES; i++) {
-		if (free_list[i].ref_count == 0) {
-			count++;
+		if (isdirty < 2) {
+			if (free_list[i].ref_count == 0 && free_list[i].dirty == isdirty) {
+				count++;
+			}
+		} else {
+			if (free_list[i].ref_count == 0) {
+				count++;
+			}
 		}
+
 	}
 	return count;
 }
@@ -303,5 +351,4 @@ void increase_ref_count(uint64_t physical_addr_page) {
 			return;
 		}
 	}
-
 }
