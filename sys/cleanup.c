@@ -21,6 +21,11 @@ void cleanup_vmas(vma_t * vma) {
 	}
 	free_vma(q);
 }
+void space_msg() {
+	printf(" #dirty free-pages %d \n", num_free_pages(1));
+	printf(" #zeroed free-pages %d \n", num_free_pages(0));
+	printf(" #tot free-pages %d \n", num_free_pages(2));
+}
 
 void cleanup_mem_map(task_struct_t * task) {
 	mem_desc_t * mem_map = task->mem_map;
@@ -187,15 +192,18 @@ void cleanup_process(task_struct_t * task) {
 		pv_map_t* pv_map_node = init_pv_map();
 
 		cleanup_process_pages(task, pv_map_node, pml_virt);
+
 		cleanup_mem_map(task);
-		cleanup_kernel_stack(task);
+//		cleanup_kernel_stack(task);
+
 		cleanup_ptables(task, pv_map_node, pml_virt);
 
-		free_pv_map(pv_map_node);
+//		free_pv_map(pv_map_node); --> infinite loop of get free pages called if this is enabled
 
 	} else {
-//		cleanup_both_stk_kernel_process(task);
+		cleanup_both_stk_kernel_process(task);
 	}
-	cleanup_fds(task);
+	//cleanup_fds(task);
 	kfree(task);
+//	space_msg();
 }

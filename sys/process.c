@@ -1437,11 +1437,11 @@ void mark_as_terminated(task_struct_t* last) {
 	check_parent_waiting(last);
 }
 
-void space_msg() {
-//	printf(" #dirty free-pages %d \n", num_free_pages(1));
-//	printf(" #zeroed free-pages %d \n", num_free_pages(0));
-//	printf(" #tot free-pages %d \n", num_free_pages(2));
-}
+//void space_msg() {
+////	printf(" #dirty free-pages %d \n", num_free_pages(1));
+////	printf(" #zeroed free-pages %d \n", num_free_pages(0));
+////	printf(" #tot free-pages %d \n", num_free_pages(2));
+//}
 
 uint64_t temp_preempt_exit(uint64_t stack_top) {
 	//printf("inside preempt exit %d iskernel:%d", currenttask->pid, currenttask->is_kernel_process);
@@ -1458,7 +1458,7 @@ uint64_t temp_preempt_exit(uint64_t stack_top) {
 //							:"%rsp");
 	update_cr3((uint64_t *) (currenttask->state.cr3));
 
-	space_msg();
+//	space_msg();
 //	cleanup_process(last);
 //	printf(" num freepages after %d ", num_free_pages());
 
