@@ -162,8 +162,8 @@ void cleanup_ptables(volatile task_struct_t * task, pv_map_t* pv_map_node,
 }
 
 void cleanup_kernel_stack(volatile task_struct_t * task) {
-//	uint64_t kernel_stack_base = task->state.kernel_rsp & (~0xfff);
-//	kfree((uint64_t *) kernel_stack_base);
+	uint64_t kernel_stack_base = task->state.kernel_rsp & (~0xfff);
+	kfree((uint64_t *) kernel_stack_base);
 }
 
 void cleanup_process(volatile task_struct_t * task) {
@@ -181,8 +181,8 @@ void cleanup_process(volatile task_struct_t * task) {
 		cleanup_mem_map(task);
 		cleanup_fds(task);
 		cleanup_kernel_stack(task);
-//		cleanup_ptables(task, pv_map_node, pml_virt);
+		cleanup_ptables(task, pv_map_node, pml_virt);
 
-//		free_pv_map(pv_map_node);
+		free_pv_map(pv_map_node);
 	}
 }
