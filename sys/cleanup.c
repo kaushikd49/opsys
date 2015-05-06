@@ -7,7 +7,7 @@
 
 void free_vma(vma_t* q) {
 	if (q != NULL) {
-//		kfree(q);
+		kfree(q);
 	}
 }
 
@@ -22,14 +22,14 @@ void cleanup_vmas(vma_t * vma) {
 	free_vma(q);
 }
 
-void cleanup_mem_map(volatile task_struct_t * task) {
+void cleanup_mem_map(task_struct_t * task) {
 	mem_desc_t * mem_map = task->mem_map;
 	cleanup_vmas(mem_map->vma_list);
 	cleanup_vmas(mem_map->vma_cache);
-//	kfree(mem_map);
+	kfree(mem_map);
 }
 
-void cleanup_fds(volatile task_struct_t * task) {
+void cleanup_fds(task_struct_t * task) {
 	// todo: this. also, need to keep the ptr for beginning of buffer
 
 	for (uint64_t i = 0; i < MAX_NUMBER_FILES; i++) {
@@ -41,8 +41,8 @@ void cleanup_fds(volatile task_struct_t * task) {
 //	kfree(task->filearray);
 }
 
-void free_frame(volatile task_struct_t * task, uint64_t phys_addr, uint64_t vaddr) {
-//	printf(" freeing actual frame %p \n", phys_addr);
+void free_frame(task_struct_t * task, uint64_t phys_addr, uint64_t vaddr) {
+	printf(" freeing actual frame %p \n", phys_addr);
 	decrease_ref_count(phys_addr);
 }
 
@@ -68,7 +68,7 @@ uint64_t get_phys_from_virt_of_other_process(uint64_t *pml4_base_virt,
 
 }
 
-void free_if_not_freed(volatile task_struct_t * task, pv_map_t* pv_map_node,
+void free_if_not_freed(task_struct_t * task, pv_map_t* pv_map_node,
 		uint64_t vaddr, uint64_t page_phys_addr) {
 	if (if_not_contains_phys_addr(pv_map_node, vaddr, page_phys_addr)) {
 		free_frame(task, page_phys_addr, vaddr);
@@ -76,7 +76,7 @@ void free_if_not_freed(volatile task_struct_t * task, pv_map_t* pv_map_node,
 	}
 }
 
-void free_process_page_for_process_virt_addr(volatile task_struct_t * task,
+void free_process_page_for_process_virt_addr(task_struct_t * task,
 		uint64_t* pml_virt, uint64_t vaddr, pv_map_t* pv_map_node) {
 	// actual physical address of the page vaddr for the process with cr3 task->state.cr3
 	uint64_t page_phys_addr = get_phys_from_virt_of_other_process(pml_virt,
@@ -89,7 +89,7 @@ void free_process_page_for_process_virt_addr(volatile task_struct_t * task,
 	}
 }
 
-void cleanup_process_pages(volatile task_struct_t * task, pv_map_t* pv_map_node,
+void cleanup_process_pages(task_struct_t * task, pv_map_t* pv_map_node,
 		uint64_t* pml_virt) {
 	mem_desc_t * mem_map = task->mem_map;
 	vma_t * vma = mem_map->vma_list;
@@ -105,7 +105,7 @@ void cleanup_process_pages(volatile task_struct_t * task, pv_map_t* pv_map_node,
 	}
 }
 
-void free_ptables(volatile task_struct_t * task, pv_map_t* pv_map_node,
+void free_ptables(task_struct_t * task, pv_map_t* pv_map_node,
 		uint64_t* pml_virt) {
 	pv_map_t* pt_pv_map = init_pv_map();
 	for (pv_map_t* p = pv_map_node; p != NULL; p = p->next) {
@@ -116,7 +116,7 @@ void free_ptables(volatile task_struct_t * task, pv_map_t* pv_map_node,
 	}
 }
 
-void free_pdirs(volatile task_struct_t * task, pv_map_t* pv_map_node, uint64_t* pml_virt) {
+void free_pdirs(task_struct_t * task, pv_map_t* pv_map_node, uint64_t* pml_virt) {
 	pv_map_t* pdir_pv_map = init_pv_map();
 
 	for (pv_map_t* p = pv_map_node; p != NULL; p = p->next) {
@@ -127,7 +127,7 @@ void free_pdirs(volatile task_struct_t * task, pv_map_t* pv_map_node, uint64_t* 
 	}
 }
 
-void free_pdir_ptrs(volatile task_struct_t * task, pv_map_t* pv_map_node,
+void free_pdir_ptrs(task_struct_t * task, pv_map_t* pv_map_node,
 		uint64_t* pml_virt) {
 	pv_map_t* pdir_ptr_pv_map = init_pv_map();
 
@@ -139,7 +139,7 @@ void free_pdir_ptrs(volatile task_struct_t * task, pv_map_t* pv_map_node,
 	}
 }
 
-void cleanup_ptables(volatile task_struct_t * task, pv_map_t* pv_map_node,
+void cleanup_ptables(task_struct_t * task, pv_map_t* pv_map_node,
 		uint64_t *pml_virt) {
 	// pv_map_node list has all virtual and phys addrs of all pages
 	// present for the process we are trying to free and not that
@@ -155,7 +155,7 @@ void cleanup_ptables(volatile task_struct_t * task, pv_map_t* pv_map_node,
 
 	free_pdir_ptrs(task, pv_map_node, pml_virt);
 
-	printf(" trying to free pml %p \n", pml4_base_vaddr);
+//	printf(" trying to free pml %p \n", pml4_base_vaddr);
 	// free pml base
 	free_process_page_for_process_virt_addr(task, pml_virt, pml4_base_vaddr,
 			pml_pv_map);
@@ -166,7 +166,16 @@ void cleanup_kernel_stack(volatile task_struct_t * task) {
 //	kfree((uint64_t *) kernel_stack_base);
 }
 
-void cleanup_process(volatile task_struct_t * task) {
+void cleanup_both_stk_kernel_process(task_struct_t *task) {
+	if (task->kernel_stk_kmalloc_addr != 0) {
+		kfree((uint64_t *) task->kernel_stk_kmalloc_addr);
+	}
+	if (task->user_stk_kmalloc_addr != 0) {
+		kfree((uint64_t *) task->user_stk_kmalloc_addr);
+	}
+}
+
+void cleanup_process(task_struct_t * task) {
 	if (task->is_kernel_process == 0) {
 		// cleanup the mem_map, vmas, file descriptors,
 		// page tables and then the task_struct itself
@@ -179,10 +188,14 @@ void cleanup_process(volatile task_struct_t * task) {
 
 		cleanup_process_pages(task, pv_map_node, pml_virt);
 		cleanup_mem_map(task);
-		cleanup_fds(task);
 		cleanup_kernel_stack(task);
 		cleanup_ptables(task, pv_map_node, pml_virt);
 
 		free_pv_map(pv_map_node);
+
+	} else {
+//		cleanup_both_stk_kernel_process(task);
 	}
+	cleanup_fds(task);
+	kfree(task);
 }

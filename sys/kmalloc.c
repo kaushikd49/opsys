@@ -156,7 +156,8 @@ void dealloc_in_cache(int order, void *ptr) {
 		new_free_node->next_free = free;
 		cache->free = ptr;
 	} else {
-		return_pages((uint64_t) ptr, free_list, order); //is there any change to page table entries ? It shdn't be I am still in kernel space
+		uint64_t phys_addr = phys_addr_of_frame((uint64_t)ptr);
+		return_pages(phys_addr, free_list, order - 12); //is there any change to page table entries ? It shdn't be I am still in kernel space
 	}
 }
 //http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2

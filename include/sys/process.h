@@ -85,6 +85,8 @@ typedef struct task_struct {
 	int is_kernel_process;
 	char pwd[100];
 	int is_background;
+	uint64_t kernel_stk_kmalloc_addr;
+	uint64_t user_stk_kmalloc_addr;
 } task_struct_t;
 
 void load_executable(task_struct_t *);

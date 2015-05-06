@@ -97,6 +97,18 @@ int strcmp(char *string1, char *string2) {
 
 }
 
+uint64_t set_get_usr_stck_addr(task_struct_t *task) {
+	uint64_t addr = (uint64_t) kmalloc(0x1000);
+	task->user_stk_kmalloc_addr = addr;
+	return addr;
+}
+
+uint64_t set_get_kernel_stck_addr(task_struct_t *task) {
+	uint64_t addr = (uint64_t) kmalloc(0x1000);
+	task->kernel_stk_kmalloc_addr = addr;
+	return addr;
+}
+
 void copy_string(char *current, char **current_environ) {
 
 	while (*current != '\0') {
@@ -1138,7 +1150,7 @@ void make_new_process_state_background(task_struct_t *task,
 	void *free_frame = (void *) get_free_frames(0);
 	setup_process_page_tables((uint64_t) stack_page, (uint64_t) free_frame);
 
-	uint64_t stack_kernel = (uint64_t) kmalloc(0x1000);
+	uint64_t stack_kernel = set_get_kernel_stck_addr(task);
 	task->state.kernel_rsp = (uint64_t) (stack_kernel + 0xfff);
 	temp_init_user_stack(task->state.kernel_rsp, task);
 	task->p_state = STATE_RUNNING;
@@ -1527,7 +1539,7 @@ void temp_init_user_state(task_struct_t *task, task_struct_t *parent_task,
 		load_executable(task);
 	update_cr3((uint64_t *) (oldcr3));
 	//giving the process a new kernel stack
-	uint64_t stack_kernel = (uint64_t) kmalloc(0x1000);
+	uint64_t stack_kernel = set_get_kernel_stck_addr(task);
 	task->state.kernel_rsp = (uint64_t) (stack_kernel + 0xfff);
 
 	temp_init_user_stack(task->state.kernel_rsp, task);
@@ -1616,6 +1628,7 @@ void temp_create_kernel_process(void (*main)(), uint64_t ppid) {
 
 }
 
+
 void temp_init_kernel_state(task_struct_t *task, task_struct_t *parent_task,
 		void (*main)()) {
 	task->mem_map = NULL;
@@ -1633,9 +1646,9 @@ void temp_init_kernel_state(task_struct_t *task, task_struct_t *parent_task,
 	task->state.flags |= 0x200;
 	// need to assign a new stack and since it grows down, we need to change taht to the end of the page too.
 	//giving the process a new kernel stack
-	uint64_t stack_kernel_process = (uint64_t) kmalloc(0x1000);
+	uint64_t stack_kernel_process = set_get_usr_stck_addr(task);
 	task->state.rsp = (uint64_t) (stack_kernel_process + 0xfff);
-	uint64_t stack_kernel = (uint64_t) kmalloc(0x1000);
+	uint64_t stack_kernel = set_get_kernel_stck_addr(task);
 	task->state.kernel_rsp = (uint64_t) (stack_kernel + 0xfff);
 
 	temp_init_kernel_stack(task->state.kernel_rsp, task);
@@ -1790,9 +1803,9 @@ void temp_init_kernel_state_read(task_struct_t *task,
 	task->state.flags |= 0x200;
 	// need to assign a new stack and since it grows down, we need to change taht to the end of the page too.
 	//giving the process a new kernel stack
-	uint64_t stack_kernel_process = (uint64_t) kmalloc(0x1000);
+	uint64_t stack_kernel_process = set_get_usr_stck_addr(task);
 	task->state.rsp = (uint64_t) (stack_kernel_process + 0xfff);
-	uint64_t stack_kernel = (uint64_t) kmalloc(0x1000);
+	uint64_t stack_kernel = set_get_kernel_stck_addr(task);
 	task->state.kernel_rsp = (uint64_t) (stack_kernel + 0xfff);
 
 	temp_init_kernel_stack_read(task->state.kernel_rsp, task, fd, buffer, size);
@@ -1818,9 +1831,9 @@ void temp_init_kernel_state_write(task_struct_t *task,
 	task->state.flags |= 0x200;
 	// need to assign a new stack and since it grows down, we need to change taht to the end of the page too.
 	//giving the process a new kernel stack
-	uint64_t stack_kernel_process = (uint64_t) kmalloc(0x1000);
+	uint64_t stack_kernel_process =set_get_usr_stck_addr(task);
 	task->state.rsp = (uint64_t) (stack_kernel_process + 0xfff);
-	uint64_t stack_kernel = (uint64_t) kmalloc(0x1000);
+	uint64_t stack_kernel = set_get_kernel_stck_addr(task);
 	task->state.kernel_rsp = (uint64_t) (stack_kernel + 0xfff);
 
 	temp_init_kernel_stack_write(task->state.kernel_rsp, task, fd, buffer,
