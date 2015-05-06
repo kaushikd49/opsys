@@ -110,7 +110,7 @@ void free_ptables(volatile task_struct_t * task, pv_map_t* pv_map_node,
 	pv_map_t* pt_pv_map = init_pv_map();
 	for (pv_map_t* p = pv_map_node; p != NULL; p = p->next) {
 		uint64_t ptable = vaddr_of_ptable(p->virtual_addr);
-		printf(" trying to free ptable %p \n", ptable);
+//		printf(" trying to free ptable %p \n", ptable);
 		free_process_page_for_process_virt_addr(task, pml_virt, ptable,
 				pt_pv_map);
 	}
@@ -121,7 +121,7 @@ void free_pdirs(volatile task_struct_t * task, pv_map_t* pv_map_node, uint64_t* 
 
 	for (pv_map_t* p = pv_map_node; p != NULL; p = p->next) {
 		uint64_t pdir = vaddr_of_pdir(p->virtual_addr);
-		printf(" trying to free pdir %p \n", pdir);
+//		printf(" trying to free pdir %p \n", pdir);
 		free_process_page_for_process_virt_addr(task, pml_virt, pdir,
 				pdir_pv_map);
 	}
@@ -133,7 +133,7 @@ void free_pdir_ptrs(volatile task_struct_t * task, pv_map_t* pv_map_node,
 
 	for (pv_map_t* p = pv_map_node; p != NULL; p = p->next) {
 		uint64_t pdir_ptr_base = vaddr_of_pdir_ptr(p->virtual_addr);
-		printf(" trying to free pdir_ptr_base %p \n", pdir_ptr_base);
+//		printf(" trying to free pdir_ptr_base %p \n", pdir_ptr_base);
 		free_process_page_for_process_virt_addr(task, pml_virt, pdir_ptr_base,
 				pdir_ptr_pv_map);
 	}
@@ -162,8 +162,8 @@ void cleanup_ptables(volatile task_struct_t * task, pv_map_t* pv_map_node,
 }
 
 void cleanup_kernel_stack(volatile task_struct_t * task) {
-	uint64_t kernel_stack_base = task->state.kernel_rsp & (~0xfff);
-	kfree((uint64_t *) kernel_stack_base);
+//	uint64_t kernel_stack_base = task->state.kernel_rsp & (~0xfff);
+//	kfree((uint64_t *) kernel_stack_base);
 }
 
 void cleanup_process(volatile task_struct_t * task) {
