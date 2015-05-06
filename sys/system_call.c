@@ -32,19 +32,39 @@ int strcmp_lazy(char *string1, char *string2) {
 	}
 
 }
-int kill_system_call(pid_t pid) {
+
+
+
+int kill_from_queue(pid_t pid, task_struct_t *queue) {
 	int visited = 0;
-	for (task_struct_t *t = currenttask; t != currenttask || visited == 0;
+	for (task_struct_t *t = queue; t != queue || visited == 0;
 			t = t->next) {
 		visited = 1;
 		if (t->pid == pid) {
+			if(t->is_kernel_process)
+				return -2;
+
 			mark_as_terminated(t);
 			return 0;
 		}
 		// todo: return value conventions
 	}
-	return -1;
+	return 999;
 }
+
+int kill_system_call(pid_t pid) {
+	int rQRes = kill_from_queue(pid, currenttask); 
+	int wQRes = kill_from_queue(pid, waitingtask); 
+	
+	if(rQRes <= 0) {
+		return rQRes;
+	} else if(wQRes <= 0){
+		return wQRes;
+	} else {
+		return -1;
+	}
+}
+
 void print_state(char state[], task_struct_t *t) {
 	printf("|  %d  |  %d   | %s |   %d   |\n", t->pid, t->ppid, state,
 			t->is_kernel_process);

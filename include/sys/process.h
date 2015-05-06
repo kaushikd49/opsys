@@ -111,15 +111,25 @@ void temp_init_kernel_state(task_struct_t *task, task_struct_t *parent_task,
 		void (*main)());
 void temp_init_kernel_stack(uint64_t rsp, task_struct_t *task);
 ///////////////////////////////////////////
-uint64_t temp_preempt_wait(int fd, void *buffer, uint64_t size, uint64_t stack_top);
-void temp_create_kernel_process_read(void (*main)(), uint64_t ppid, int fd, void *buffer, uint64_t size);
-void temp_init_kernel_state_read(task_struct_t *task, task_struct_t *parent_task, void (*main)(), int fd, void *buffer, uint64_t size);
-void temp_init_kernel_stack_read(uint64_t rsp, task_struct_t *task, int fd, void *buffer, uint64_t size);
+uint64_t temp_preempt_wait(int fd, void *buffer, uint64_t size,
+		uint64_t stack_top);
+void temp_create_kernel_process_read(void (*main)(), uint64_t ppid, int fd,
+		void *buffer, uint64_t size);
+void temp_init_kernel_state_read(task_struct_t *task,
+		task_struct_t *parent_task, void (*main)(), int fd, void *buffer,
+		uint64_t size);
+void temp_init_kernel_stack_read(uint64_t rsp, task_struct_t *task, int fd,
+		void *buffer, uint64_t size);
 //////////////////////////////////////////
-uint64_t temp_preempt_write(int fd, void *buffer, uint64_t size, uint64_t stack_top);
-void temp_create_kernel_process_write(void (*main)(), uint64_t ppid, int fd, void *buffer, uint64_t size);
-void temp_init_kernel_state_write(task_struct_t *task, task_struct_t *parent_task, void (*main)(), int fd, void *buffer, uint64_t size);
-void temp_init_kernel_stack_write(uint64_t rsp, task_struct_t *task, int fd, void *buffer, uint64_t size);
+uint64_t temp_preempt_write(int fd, void *buffer, uint64_t size,
+		uint64_t stack_top);
+void temp_create_kernel_process_write(void (*main)(), uint64_t ppid, int fd,
+		void *buffer, uint64_t size);
+void temp_init_kernel_state_write(task_struct_t *task,
+		task_struct_t *parent_task, void (*main)(), int fd, void *buffer,
+		uint64_t size);
+void temp_init_kernel_stack_write(uint64_t rsp, task_struct_t *task, int fd,
+		void *buffer, uint64_t size);
 /////////////////////////////////////////
 uint64_t temp_preempt_read_block(uint64_t stack_top);
 uint64_t get_next_pid();
@@ -128,12 +138,15 @@ int strcmp(char *string1, char *string2);
 char *strcpy(char *dst, char *src);
 void quit_kernel_thread();
 void mark_as_terminated(task_struct_t* last);
-uint64_t temp_preempt_waitpid(int pid, int *status, int options, uint64_t stack_top);
-uint64_t execve_process(char *binary, char **argv, char **envp, uint64_t stack_top);
+uint64_t temp_preempt_waitpid(int pid, int *status, int options,
+		uint64_t stack_top);
+uint64_t execve_process(char *binary, char **argv, char **envp,
+		uint64_t stack_top);
 ////////////////////////////////////////
 void init_file_dp_process(task_struct_t* task);
 void copy_file_dp_process(task_struct_t *task, task_struct_t *parent_task);
-void copy_file_dp_process_background(task_struct_t *task, task_struct_t *parent_task);
+void copy_file_dp_process_background(task_struct_t *task,
+		task_struct_t *parent_task);
 int increment_global_count_fd(file_desc_t *fd);
 void decrement_global_count_fd(file_desc_t *fd);
 int add_to_global_fd(file_desc_t *fd);

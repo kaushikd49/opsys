@@ -583,7 +583,7 @@ void clean_up_process_body() {
 		}
 		do {
 			if (current->p_state == STATE_TERMINATED) {
-				volatile task_struct_t *to_be_removed = current;
+			//	volatile task_struct_t *to_be_removed = current;
 				if (prev == current) {
 					current = NULL;
 					waitingtask = NULL;
@@ -591,7 +591,7 @@ void clean_up_process_body() {
 					prev->next = current->next;
 					current = current->next;
 				}
-				cleanup_process(to_be_removed);
+			//	cleanup_process(to_be_removed);
 				//add function to clean up the to_be_removed task_struct
 			} else {
 				prev = current;
