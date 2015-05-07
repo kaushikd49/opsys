@@ -666,9 +666,10 @@ void clean_up_process_body() {
 					waitingtask = NULL;
 				} else {
 					prev->next = current->next;
+					volatile task_struct_t *rem_proc = current;
 					current = current->next;
 					volatile task_struct_t *waiting_task = get_waiting_task();
-					if(waiting_task == current){
+					if(waiting_task == rem_proc){
 						waitingtask = (task_struct_t *)prev;
 					}
 				}
