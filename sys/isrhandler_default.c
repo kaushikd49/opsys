@@ -11,6 +11,14 @@
 #include<sys/tarfs_FS.h>
 #include <sys/isr_stuff.h>
 typedef struct {
+	uint64_t gs;
+	uint64_t fs;
+	uint64_t es;
+	uint64_t ds;
+	uint64_t r15;
+	uint64_t r14;
+	uint64_t r13;
+	uint64_t r12;
 	uint64_t r11;
 	uint64_t r10;
 	uint64_t r9;
@@ -94,11 +102,10 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 		return ps_system_call();
 	} else if (regs.rax == SYS_kill) {
 		return kill_system_call((pid_t) regs.rdi);
-	} else if (regs.rax == SYS_getcwd){
-		return pwd_system_call((char *)(regs.rdi), (uint64_t)(regs.rsi));
-	}
-	else if (regs.rax == SYS_chdir) {
-		return cd_system_call((char *)(regs.rdi));
+	} else if (regs.rax == SYS_getcwd) {
+		return pwd_system_call((char *) (regs.rdi), (uint64_t) (regs.rsi));
+	} else if (regs.rax == SYS_chdir) {
+		return cd_system_call((char *) (regs.rdi));
 	}
 	return 0;
 }
@@ -161,12 +168,23 @@ void traphandler_twelve() {
 void traphandler_thirteen() {
 	printf("trap thirteen");
 }
-void traphandler_fourteen(regs_pushd_t regs) {
+uint64_t traphandler_fourteen(regs_pushd_t regs) {
 //	printf("trap fourteen");
 //	uint64_t stack_top = (uint64_t)(&regs.r11)
-	uint64_t *rsp_loc = (uint64_t *) ((uint64_t) &regs.error_code + 32);
+	uint64_t *rsp_loc = &regs.error_code + 4;
 	uint64_t *rsp_val = (uint64_t *) (*rsp_loc);
-	do_handle_pagefault(regs.error_code, rsp_val);
+	uint64_t stack_top = (uint64_t)(&(regs.gs));
+	uint64_t new_stack_top = do_handle_pagefault(regs.error_code, rsp_val, stack_top);
+	if(stack_top == new_stack_top){
+		return new_stack_top;
+	}
+	uint64_t i = 0;
+	for( i = 0; i < 19 ; i++){
+		*(((uint64_t *)new_stack_top) - 1 + i*1) = *(((uint64_t *)new_stack_top) + i*1);
+	}
+	*(((uint64_t *)new_stack_top) + (i-1)*1) = 0;
+	return (new_stack_top - 8);
+
 }
 void traphandler_fifteen() {
 	printf("trap fifteen");

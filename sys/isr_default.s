@@ -515,7 +515,37 @@ trap_fourteen:
 	pushq %r9
 	pushq %r10
 	pushq %r11
+	pushq %r12
+	pushq %r13
+	pushq %r14
+	pushq %r15
+	movq $0, %rax
+	movq %ds, %rax
+	pushq %rax
+	movq $0, %rax
+	movq %es, %rax
+	pushq %rax
+	movq $0, %rax
+	movq %fs, %rax
+	pushq %rax
+	movq $0, %rax
+	movq %gs, %rax
+	pushq %rax
+	movq %rsp, %rdi
 	call traphandler_fourteen
+	movq %rax, %rsp
+	popq %rax
+	movq %rax, %gs
+	popq %rax
+	movq %rax, %fs
+	popq %rax
+	movq %rax, %es
+	popq %rax
+	movq %rax, %ds
+	popq %r15
+	popq %r14
+	popq %r13
+	popq %r12
 	popq %r11
 	popq %r10
 	popq %r9
@@ -527,14 +557,11 @@ trap_fourteen:
 	popq %rcx
 	popq %rbx
 	popq %rax
-
 	// Pop the stack top to clear the errorcode
 	// Need to do this for interrupts that push
 	// errorcodes before call to handler, else
 	// GeneralProtectionFault happens
 	xchg (%rsp), %rax
-
-
 	movb $0x20, %al
 	outb  %al, $0x20  # see whether this has to be in the beginning or the end.
 	popq %rax

@@ -51,9 +51,10 @@ void copy_byte_from_apt_elf(char *vaddr, vma_t* temp_vma, mem_desc_t * mem_ptr) 
 	*vaddr = *elf_ptr;
 }
 
-void seg_fault(uint64_t addr, uint64_t *rsp_val) {
+uint64_t seg_fault(uint64_t addr, uint64_t *rsp_val, uint64_t stack_top) {
 	printf("SEG FAULT!\n");
-//	temp_preempt_exit((uint64_t) rsp_val); ----> not correct todo
+	return 0;// todo: change this !!!!!!!!!
+//	return temp_preempt_exit((uint64_t) stack_top); ----> not correct todo
 }
 
 int is_addr_in_vma(uint64_t virtual_addr, mem_desc_t* mem_ptr,
@@ -91,15 +92,15 @@ int is_addr_writable_in_vma(uint64_t virtual_addr, mem_desc_t* mem_ptr) {
 inline uint64_t max(uint64_t a, uint64_t b) {
 	return a > b ? a : b;
 }
-void do_demand_paging(task_struct_t * task, uint64_t virtual_addr,
-		uint64_t *rsp_val) {
+uint64_t do_demand_paging(task_struct_t * task, uint64_t virtual_addr,
+		uint64_t *rsp_val, uint64_t stack_top) {
 	mem_desc_t * mem_ptr = task->mem_map;
 
 	if (!is_addr_in_vma(virtual_addr, mem_ptr, rsp_val)) {
 		printf("No valid VMAs for this addr %p, pid:%d, iskrnl:%d",
 				virtual_addr, currenttask->pid, currenttask->is_kernel_process);
-		seg_fault(virtual_addr, rsp_val);
-		return;
+		return seg_fault(virtual_addr, rsp_val, stack_top);
+
 	}
 	uint64_t heap_end = 0;
 	if (virtual_addr >= (uint64_t) rsp_val - 8) {
@@ -113,7 +114,7 @@ void do_demand_paging(task_struct_t * task, uint64_t virtual_addr,
 				temp_vma->vma_next) {
 			if (temp_vma->type == 4) {
 				if (virtual_addr <= heap_end) {
-					seg_fault(virtual_addr, rsp_val);
+					return seg_fault(virtual_addr, rsp_val, stack_top);
 				} else {
 					uint64_t page_virtual_addr = virtual_page_base(
 							virtual_addr);
@@ -153,12 +154,13 @@ void do_demand_paging(task_struct_t * task, uint64_t virtual_addr,
 			temp++;
 		}
 	}
+	return stack_top;
 }
 
-void bad_kernel_access(uint64_t addr, uint64_t *rsp_val) {
+uint64_t bad_kernel_access(uint64_t addr, uint64_t *rsp_val, uint64_t stack_top) {
 	//trying to access kernel data
 	printf(" Kernel access by user\n");
-	seg_fault(addr, rsp_val);
+	return seg_fault(addr, rsp_val, stack_top);
 }
 
 int user_access(int us) {
@@ -195,12 +197,12 @@ uint64_t* duplicate_page(uint64_t addr) {
 	return frame;
 }
 
-int is_cow_possible(uint64_t addr, uint64_t *rsp_val) {
+int is_cow_possible(uint64_t addr, uint64_t *rsp_val, uint64_t stack_top) {
 	mem_desc_t * mem_ptr = currenttask->mem_map;
 
 	if (!is_addr_writable_in_vma(addr, mem_ptr)) {
 		printf("No write perm in VMAs for this addr %p", addr);
-		seg_fault(addr, rsp_val);
+		seg_fault(addr, rsp_val, stack_top);
 		return 0;
 	}
 	return 1;
@@ -226,7 +228,7 @@ int copy_on_write(uint64_t addr) {
 	return 1;
 }
 
-void do_handle_pagefault(uint64_t error_code, uint64_t *rsp_val) {
+uint64_t do_handle_pagefault(uint64_t error_code, uint64_t *rsp_val, uint64_t stack_top) {
 	int present = get_bit(error_code, 0);
 //	int rw = get_bit(error_code, 1);
 	int us = get_bit(error_code, 2);
@@ -237,7 +239,7 @@ void do_handle_pagefault(uint64_t error_code, uint64_t *rsp_val) {
 	if (present == 0) {
 		if (kernel_addr) {
 			if (user_access(us)) {
-				bad_kernel_access(addr, rsp_val);
+				bad_kernel_access(addr, rsp_val, stack_top);
 			} else {
 				printf(" Pid:%d, kernel page fault. Do not reach here unless"
 						" testing.page fault at %p, error_code: %x  \n",
@@ -247,27 +249,28 @@ void do_handle_pagefault(uint64_t error_code, uint64_t *rsp_val) {
 		} else {
 //			printf(" Demand paging for process %d for addr %p\n",
 //					currenttask->pid, addr);
-			do_demand_paging(currenttask, addr, rsp_val);
+			do_demand_paging(currenttask, addr, rsp_val, stack_top);
 		}
 	} else {
 		if (kernel_addr) {
 			if (user_access(us)) {
-				bad_kernel_access(addr, rsp_val);
+				bad_kernel_access(addr, rsp_val, stack_top);
 			} else {
 				printf(
 						" Something wrong, kernel cant read its own mem pid:%d\n",
 						currenttask->pid);
-				seg_fault(addr, rsp_val);
+				return seg_fault(addr, rsp_val, stack_top);
 			}
 		} else {
-			if (is_cow_possible(addr, rsp_val)) {
+			if (is_cow_possible(addr, rsp_val, stack_top)) {
 //				printf(" Performing COW ");
 				copy_on_write(addr);
 			} else {
 				printf("\nProcess %d trying to write into protected area %p ",
 						currenttask->pid, addr);
-				seg_fault(addr, rsp_val);
+				return seg_fault(addr, rsp_val, stack_top);
 			}
 		}
 	}
+	return stack_top;
 }

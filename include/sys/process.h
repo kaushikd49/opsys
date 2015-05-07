@@ -153,4 +153,9 @@ int increment_global_count_fd(file_desc_t *fd);
 void decrement_global_count_fd(file_desc_t *fd);
 int add_to_global_fd(file_desc_t *fd);
 int get_global_count_fd(file_desc_t *fd);
+
+uint64_t set_get_usr_stck_addr(task_struct_t *task);
+
+uint64_t set_get_kernel_stck_addr(task_struct_t *task);
+
 #endif
