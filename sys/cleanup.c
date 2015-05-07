@@ -22,9 +22,9 @@ void cleanup_vmas(vma_t * vma) {
 	free_vma(q);
 }
 void space_msg() {
-	printf(" #dirty free-pages %d \n", num_free_pages(1));
-	printf(" #zeroed free-pages %d \n", num_free_pages(0));
-	printf(" #tot free-pages %d \n", num_free_pages(2));
+//	printf(" #dirty free-pages %d \n", num_free_pages(1));
+//	printf(" #zeroed free-pages %d \n", num_free_pages(0));
+//	printf(" #tot free-pages %d \n", num_free_pages(2));
 }
 
 void cleanup_mem_map(task_struct_t * task) {

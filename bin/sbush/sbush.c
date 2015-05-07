@@ -331,7 +331,9 @@ char ** take_action(char** tokens, char *envpp[]) {
 	} else if (contains_pipe(tokens)) {
 		handle_pipe(tokens, envpp);
 	} else {
-		handleChildExec(tokens, envpp);
+		int i= 0;
+		for (i = 0; i < 50; i++)
+			handleChildExec(tokens, envpp);
 	}
 	return envpp;
 }
@@ -485,7 +487,8 @@ void pipetest(char *envpp[]) {
 //Set and use PATH and PS1 variables
 
 int main(int argc, char* argv[], char* envpp[]) {
-	printf("Sbush-MSKD version 1.0, Copyright (C) 2015 Muthukumar Suresh and\n \
+	printf(
+			"Sbush-MSKD version 1.0, Copyright (C) 2015 Muthukumar Suresh and\n \
 Kaushik Devarajaiah. This comes with ABSOLUTELY NO WARRANTY.\n \
 This is free software, and you are welcome to redistribute it\n \
 under certain conditions.\n");

@@ -491,6 +491,11 @@ uint64_t create_stack_vma(task_struct_t* currenttask) {
 	return stack_page;
 }
 
+void safe_kfree(void* ptr) {
+	if (ptr != NULL)
+		kfree(ptr);
+}
+
 //when processes are ready, I would like to make this a procedure where given the mem_desc I can load the executable into the memstruct
 void load_executable(task_struct_t *currenttask) {
 	char *str = currenttask->executable;
@@ -537,10 +542,13 @@ void load_executable(task_struct_t *currenttask) {
 	load_from_elf(currenttask, text_info, temp, rodata_info, data_info,
 			bss_info, ehframe_info, got_info, gotplt_info);
 
-//	kfree(text_info);
-//	kfree(rodata_info);
-//	kfree(data_info);
-//	kfree(bss_info);
+	safe_kfree(text_info);
+	safe_kfree(rodata_info);
+	safe_kfree(data_info);
+	safe_kfree(bss_info);
+	safe_kfree(ehframe_info);
+	safe_kfree(find_got_elf(temp));
+	safe_kfree(find_gotplt_elf(temp));
 
 	currenttask->state.rip = (uint64_t) (temp->e_entry);
 
@@ -1628,7 +1636,6 @@ void temp_create_kernel_process(void (*main)(), uint64_t ppid) {
 
 }
 
-
 void temp_init_kernel_state(task_struct_t *task, task_struct_t *parent_task,
 		void (*main)()) {
 	task->mem_map = NULL;
@@ -1831,7 +1838,7 @@ void temp_init_kernel_state_write(task_struct_t *task,
 	task->state.flags |= 0x200;
 	// need to assign a new stack and since it grows down, we need to change taht to the end of the page too.
 	//giving the process a new kernel stack
-	uint64_t stack_kernel_process =set_get_usr_stck_addr(task);
+	uint64_t stack_kernel_process = set_get_usr_stck_addr(task);
 	task->state.rsp = (uint64_t) (stack_kernel_process + 0xfff);
 	uint64_t stack_kernel = set_get_kernel_stck_addr(task);
 	task->state.kernel_rsp = (uint64_t) (stack_kernel + 0xfff);

@@ -380,20 +380,23 @@ int cd_system_call(char *buffer){
 	char *answer = kmalloc(100);
 	answer = expand_cd_buffer(buffer, len, answer);
 	if(answer == NULL){
+		kfree(answer);
 		return cd_errno;
 	}
 	if(is_valid_directory(answer)){
 		task_struct_t *parent_process = find_parent(currenttask->ppid);
 		if(parent_process == NULL){
+			kfree(answer);
 			return -EIO;
 		}
 		printf("answer: %s pwd: %s %d %d %d\n", answer, parent_process->pwd, parent_process->pid, currenttask->pid, currenttask->ppid);
 		strcpy(currenttask->pwd, answer);
 		printf("answer: %s pwd: %s\n", answer, parent_process->pwd);
-
 	}
 	else{
+		kfree(answer);
 		return cd_errno;
 	}
+	kfree(answer);
 	return 0;
 }
