@@ -15,7 +15,7 @@
 #include <sys/nanosleep_functions.h>
 #include <errno.h>
 #include <sys/cleanup.h>
-
+#include <sys/system_calls.h>
 #define THIRTY_TWO_PAGES 0x32000
 #define ENV_START 0x7002000
 #define ENV_END 0x701ffff
@@ -564,6 +564,14 @@ inline int is_ELF(Elf64_Ehdr *temp) {
 		return 1;
 	return 0;
 }
+inline int is_script(char *file){
+	if((file[0] = '#') && (file[1] == '!')){
+		return 1;
+	}
+	else{
+		return 0;
+	}
+}
 int execve_error = 0;
 executable_t *check_binary(char *binary) {
 	struct posix_header_ustar *current =
@@ -583,11 +591,11 @@ executable_t *check_binary(char *binary) {
 
 	while ((uint64_t) current < (uint64_t) (&_binary_tarfs_end)) {
 		if (strcmp(current->name, binary) == 0) {
-			//			printf("%s", current->name);
-//			char amb = '5';
-//			if(current->typeflag == &amb){
-//				return NULL;
-//			}
+						printf("%s", current->name);
+			char amb = '5';
+			if(current->typeflag[0] == amb){
+				return NULL;
+			}
 			uint64_t next = (uint64_t) ((uint64_t) current
 					+ (uint64_t) sizeof(struct posix_header_ustar));
 
@@ -615,7 +623,73 @@ executable_t *check_binary(char *binary) {
 				//================================
 				temp1->is_script = 0;
 				return temp1;
-			} else {
+			} else if(is_script((void *)temp) == 1){
+				temp1->is_script = 1;
+				return temp1;
+			}
+		}
+		//	printf("elf header: %x\n",*(current + (uint64_t)sizeof(struct posix_header_ustar)));
+		uint64_t header_next = (uint64_t) ((align(
+				convert_ocatalstr_todecimal(current->size), TARFS_ALIGNMENT))
+				+ sizeof(struct posix_header_ustar) + (uint64_t) current);
+		//		printf("header : %x", header_next);
+		current = (struct posix_header_ustar *) (header_next);
+		i++;
+
+	}
+	return NULL;
+}
+
+executable_t *check_binary_with_path(char *binary) {
+	struct posix_header_ustar *current =
+			(struct posix_header_ustar *) &_binary_tarfs_start;
+	int i = 0;
+	char new_binary[100];
+	for(i = 0; i < 100 ; i++){
+		new_binary[i] = '\0';
+	}
+
+	strcpy(new_binary, currenttask->pwd);
+	int len = strlen(new_binary);
+	strcpy(new_binary+len, binary);
+	i = 0;
+	Elf64_Ehdr *temp = NULL;
+	binary = new_binary;
+	while ((uint64_t) current < (uint64_t) (&_binary_tarfs_end)) {
+		if (strcmp(current->name, binary) == 0) {
+						printf("%s", current->name);
+			char amb = '5';
+			if(current->typeflag[0] == amb){
+				return NULL;
+			}
+			uint64_t next = (uint64_t) ((uint64_t) current
+					+ (uint64_t) sizeof(struct posix_header_ustar));
+
+			temp = (Elf64_Ehdr *) (next);
+			executable_t *temp1 = kmalloc(sizeof(executable_t));
+			temp1->bss_info = NULL;
+			temp1->data_info = NULL;
+			temp1->ehframe_info = NULL;
+			temp1->got_info = NULL;
+			temp1->gotplt_info = NULL;
+			temp1->rodata_info = NULL;
+			temp1->text_info = NULL;
+			temp1->is_script = 0;
+			temp1->temp = temp;
+			if (is_ELF(temp) == 1) {
+				temp1->text_info = find_text_elf(temp);
+				temp1->rodata_info = find_rodata_elf(temp);
+				temp1->data_info = find_data_elf(temp);
+				temp1->bss_info = find_bss_elf(temp);
+				//================================
+				temp1->ehframe_info = find_ehframe_elf(temp);
+				temp1->got_info = find_got_elf(temp);
+				temp1->gotplt_info = find_gotplt_elf(temp);
+				temp1->temp = temp;
+				//================================
+				temp1->is_script = 0;
+				return temp1;
+			} else if(is_script((void *)temp) == 1){
 				temp1->is_script = 1;
 				return temp1;
 			}
@@ -757,9 +831,17 @@ int increment_global_count_fd(file_desc_t *fd) {
 	}
 	return 1;
 }
-void decrement_global_count_fd(file_desc_t *fd) {
-	for (uint64_t i = 0; i < MAX_FILES_OS; i++) {
-		if (global_fd_array[i].fd != NULL && global_fd_array[i].fd == fd) {
+int get_global_count_fd(file_desc_t *fd){
+	for(uint64_t i = 0; i<MAX_FILES_OS; i++){
+		if(global_fd_array[i].fd != NULL && global_fd_array[i].fd == fd){
+			return (global_fd_array[i].count);
+		}
+	}
+	return -1;
+}
+void decrement_global_count_fd(file_desc_t *fd){
+	for(uint64_t i = 0; i < MAX_FILES_OS; i++){
+		if(global_fd_array[i].fd != NULL && global_fd_array[i].fd == fd){
 			(global_fd_array[i].count)--;
 		}
 		//todo: add code to delete an fd if the count drops to 0
@@ -1193,13 +1275,15 @@ task_struct_t* get_parent_from_ppid() {
 	return parent_task;
 }
 
-void make_new_process(executable_t *executable) {
+void make_new_process(char *binary, executable_t *executable) {
 	task_struct_t *task = kmalloc(sizeof(task_struct_t));
 	copy_file_dp_process(task, currenttask);
 	int pid = currenttask->pid;
 	task->pid = pid;
 	task->ppid = currenttask->ppid;
-	printf(" 1: task pid : %d task ppid: %d \n", task->pid, task->ppid);
+	strcpy(task->executable, binary);
+	printf(" 1: task pid : %d task ppid: %d %s\n", task->pid, task->ppid, task->executable);
+
 	task_struct_t* parent_task = get_parent_from_ppid();
 	if (currenttask->next == currenttask) {
 		currenttask->next = task;
@@ -1305,7 +1389,7 @@ uint64_t setup_new_process(char *binary, char *argv[], char *envp[],
 
 	}
 	*current_stack = 0;
-	make_new_process(executable);
+	make_new_process(binary, executable);
 //	load_from_elf_execve(currenttask, executable->text_info, executable->temp, executable->rodata_info, executable->data_info,
 //			executable->bss_info, executable->ehframe_info, executable->got_info, execuatable->gotplt_info);
 
@@ -1379,6 +1463,72 @@ uint64_t setup_new_background_process(char *binary, char *argv[], char *envp[],
 
 }
 
+char *get_shell(executable_t *executable, char **envp){
+	char **temp_envp = envp;
+	int i = 0;
+	while(temp_envp[i+1] != NULL){
+		i++;
+	}
+	char *end_envp_str = (char *)(temp_envp[i]);
+	while(*(end_envp_str)!= '\0'){
+		end_envp_str++;
+	}
+	end_envp_str++;
+	char *return_addr = (char *)end_envp_str;
+	char *addr = ((char *)(executable->temp)+2);
+
+	while(*(addr) != '/'){
+		addr++;
+	}
+	char *write_shell_path = return_addr;
+	addr++;
+	while(*(addr) != '\n'){
+		*write_shell_path = *(addr);
+		addr++;
+		write_shell_path++;
+	}
+	*write_shell_path = '\0';
+	return return_addr;
+}
+void modify_envp_stack(executable_t *executable, char **argv, char **envp, char **new_argv){
+//	char **envp_temp = envp;
+//	int i = 0;
+//	while(envp_temp[i]!= NULL){
+//		i++;
+//	}
+//	i--;
+//	do{
+//		envp_temp[i+1] = envp_temp[i];
+//		i--;
+//	}while(i!=0);
+//	char *addr = get_shell(executable, envp);
+//	char **argv_temp = argv;
+//	i = 0;
+//	while(argv_temp[i] != NULL){
+//		i++;
+//	}
+//	i--;
+//	do{
+//		argv_temp[i+1] = argv_temp[i];
+//		i--;
+//	}while(i!=0);
+//	argv_temp[0] = addr;
+	// assuming argv is pretty small
+	char *addr = get_shell(executable, envp);
+	int i = 0;
+	char **argv_temp = argv;
+	while(argv_temp[i] != NULL){
+		i++;
+	}
+	i++;
+	int j;
+	new_argv[0] = addr;
+	for(j = 1; j < i; j++){
+		new_argv[j] = argv[j-1];
+	}
+	new_argv[j] = NULL;
+}
+
 uint64_t execve_process(char *binary, char **argv, char **envp,
 		uint64_t stack_top) {
 	__asm__ __volatile__("movq %1, %%rax\n\t"
@@ -1390,20 +1540,55 @@ uint64_t execve_process(char *binary, char **argv, char **envp,
 	regs_syscall_t *regs = (regs_syscall_t *) (currenttask->state.kernel_rsp);
 
 	if (executable == NULL) {
-		regs->rax = (uint64_t) -EACCES;
-		return (uint64_t) regs;
+		executable = check_binary_with_path(binary);//not bothering changing the binary in argv first argv
+		if(executable == NULL){
+			regs->rax = (uint64_t) -EACCES;
+			return (uint64_t) regs;
+		}
 	}
-	char **argv_temp = argv;
+
+	if(executable->is_script == 1){
+		char **argv_temp = argv;
+		int i = 0;
+		while(argv_temp[i] != NULL){
+			i++;
+		}
+		i++;
+		i++;
+		char *new_argv[i];
+		modify_envp_stack(executable, argv, envp,new_argv);
+		argv =new_argv;
+		binary = argv[0];
+		executable = check_binary(argv[0]);
+		char **argv_temp3 = argv;
+		i = 0;
+		while(argv_temp3[i] != NULL){
+
+			i++;
+		}
+		char amb = '&';
+		//	if(argv[0] != NULL)
+		//		printf("executable: %s", argv[0]);
+		if(*(argv_temp3[i-1]) == amb){
+			argv_temp3[i-1] = NULL;
+
+			return setup_new_background_process(binary, (char **) argv, (char **) envp, executable);
+		}
+		return setup_new_process(binary, (char **) argv, (char **) envp, executable);
+	}
+	char **argv_temp2 = argv;
 	int i = 0;
-	while (argv_temp[i] != NULL) {
+	while(argv_temp2[i] != NULL){
 
 		i++;
 	}
 	char amb = '&';
-	if (*(argv_temp[i - 1]) == amb) {
-		argv_temp[i - 1] = NULL;
-		return setup_new_background_process(binary, (char **) argv,
-				(char **) envp, executable);
+//	if(argv[0] != NULL)
+//		printf("executable: %s", argv[0]);
+	if(*(argv_temp2[i-1]) == amb){
+		argv_temp2[i-1] = NULL;
+
+		return setup_new_background_process(binary, (char **) argv, (char **) envp, executable);
 	}
 	return setup_new_process(binary, (char **) argv, (char **) envp, executable);
 
@@ -1441,6 +1626,11 @@ void mark_as_terminated(task_struct_t* last) {
 	last->next = last;
 	last->p_state = STATE_TERMINATED;
 	last->pid = -1;
+	//todo: remove the proper kill is done
+	for(uint64_t i = 0; i < MAX_FILES_SYSTEM; i++){
+		file_desc_t *fd = last->filearray[i];
+		decrement_global_count_fd(fd);
+	}
 	add_process_waitq(last);
 	check_parent_waiting(last);
 }

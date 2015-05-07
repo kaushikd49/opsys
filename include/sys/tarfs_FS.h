@@ -44,6 +44,13 @@ enum {
 	O_DIRECTORY = 0x10000,
 
 };
+struct pipe_struct{
+	file_desc_t *write_end;
+	file_desc_t *read_end;
+	uint64_t size;
+	struct pipe_struct *next;
+};
+typedef struct pipe_struct pipe_struct_t;
 uint64_t *find_file_tarfs(char *);
 uint64_t open_tarfs(char *file_name, int flags);
 uint64_t read_tarfs(int fd, void *buffer, uint64_t size, uint64_t stack_top);

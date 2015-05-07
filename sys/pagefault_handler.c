@@ -232,8 +232,8 @@ void do_handle_pagefault(uint64_t error_code, uint64_t *rsp_val) {
 	int us = get_bit(error_code, 2);
 	uint64_t addr = get_faulted_addr();
 	int kernel_addr = is_kernel_addr(addr);
-//	printf(" pid:%d page fault at %p, error_code: %d, iskrnl:%d \n",
-//			currenttask->pid, addr, error_code, currenttask->is_kernel_process);
+//	printf(" pid:%d page fault at %p, error_code: %x ", currenttask->pid, addr,
+//			error_code);
 	if (present == 0) {
 		if (kernel_addr) {
 			if (user_access(us)) {

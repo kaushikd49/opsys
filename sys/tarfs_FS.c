@@ -7,6 +7,10 @@
 #include<sys/process.h>
 #include<sys/scheduling.h>
 #include<errno.h>
+#include<sys/freelist.h>
+#include<sys/paging.h>
+
+pipe_struct_t *pipe_list = NULL;
 uint64_t *find_file_tarfs(char *file_name){
 	struct posix_header_ustar *current =
 			(struct posix_header_ustar *) &_binary_tarfs_start;
@@ -188,6 +192,16 @@ int dup2_tarfs(int fd_old, int fd_new){
 	return -1;
 }
 
+void add_to_pipe_list(pipe_struct_t *node){
+	if(pipe_list == NULL){
+		pipe_list = node;
+		return;
+	}
+	node->next = pipe_list;
+	pipe_list = node;
+
+}
+
 int pipe_tarfs(int pipe[2]){
 	int pipe_read = get_free_fd();
 	int pipe_write = get_free_fd();
@@ -196,7 +210,11 @@ int pipe_tarfs(int pipe[2]){
 	}
 	pipe[0] = pipe_read;
 	pipe[1] = pipe_write;
-	void *pipe_buffer = (void *)kmalloc(0x1000);
+	void *free_frame = (void *) get_free_frames(0);
+	void *virtual_addr = (void *) get_virtual_location(0);
+	setup_kernel_page_tables((uint64_t) virtual_addr,
+					(uint64_t) free_frame);
+	void *pipe_buffer = virtual_addr;
 	currenttask->filearray[pipe_write]->current_pointer = (char *)pipe_buffer;
 	currenttask->filearray[pipe_write]->flags = O_WRONLY;
 	currenttask->filearray[pipe_write]->size = -999;//differentiates pipe from a file buffer
@@ -211,6 +229,14 @@ int pipe_tarfs(int pipe[2]){
 	currenttask->filearray[pipe_read]->busy = 0;
 	currenttask->filearray[pipe_read]->current_process = currenttask->pid;
 	currenttask->filearray[pipe_read]->ready = 0;
+	struct pipe_struct *new_node = kmalloc(sizeof(struct pipe_struct));
+	new_node->read_end = currenttask->filearray[pipe_read];
+	new_node->write_end = currenttask->filearray[pipe_write];
+	new_node->size = 0;
+	new_node->next = NULL;
+	add_to_pipe_list(new_node);
+//	increment_global_count_fd(new_node->read_end);
+//	increment_global_count_fd(new_node->write_end);
 	return 0;
 }
 

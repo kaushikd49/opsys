@@ -9,8 +9,8 @@ int main(int argc, char* argv[], char* envp[]) {
 	for(int i = 0; i < 10000; i++){
 		str[i] = '\0';
 	}
-	read(fd,str, 499);
+	read(fd,str, 5000);
 	close(fd);
-	write(1, str, 500);
+	write(1, str, 5000);
 	return 0;
 }

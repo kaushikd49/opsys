@@ -152,4 +152,5 @@ void copy_file_dp_process_background(task_struct_t *task,
 int increment_global_count_fd(file_desc_t *fd);
 void decrement_global_count_fd(file_desc_t *fd);
 int add_to_global_fd(file_desc_t *fd);
+int get_global_count_fd(file_desc_t *fd);
 #endif

@@ -331,8 +331,6 @@ char ** take_action(char** tokens, char *envpp[]) {
 	} else if (contains_pipe(tokens)) {
 		handle_pipe(tokens, envpp);
 	} else {
-		int i= 0;
-		for (i = 0; i < 50; i++)
 			handleChildExec(tokens, envpp);
 	}
 	return envpp;
