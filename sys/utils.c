@@ -85,3 +85,9 @@ uint64_t* phys_to_virt_map(uint64_t* physaddr, void * pv_map) {
 
 }
 
+void unmap_vaddr(uint64_t SPARE_ADDR) {
+	// now unmap the page, SPARE's job is done
+	uint64_t* pte = virtual_addr_pte(SPARE_ADDR);
+	*pte = 0;
+}
+

@@ -205,5 +205,7 @@ void cleanup_process(task_struct_t * task) {
 	}
 	//cleanup_fds(task);
 	kfree(task);
-//	space_msg();
+	space_msg();
+
+	zero_dirty_free_pages(10);
 }

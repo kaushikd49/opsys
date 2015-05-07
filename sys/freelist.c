@@ -2,9 +2,18 @@
 #include<sys/sbunix.h>
 #include<sys/pagingglobals.h>
 #include <sys/process.h>
+#include <sys/paging.h>
+#include <sys/utils.h>
+
 page_t * free_list = NULL;
 uint64_t *free_list_location = NULL;
 uint64_t MAX_NUMBER_PAGES = 0;
+
+// using this as a temporary spare address
+// for mapping physical addresses just
+// so that you can access them
+uint64_t SPARE_ADDR = 0xffffffffa0000000;
+
 int check_physical_frame(uint64_t current_addr, physical_map_node *test,
 		uint64_t num_physical_regions, uint64_t physbase, uint64_t physfree) {
 	uint64_t current_index = 0;
@@ -207,6 +216,29 @@ uint64_t get_free_pages_logic(int order, page_t* free_list, int zeroed_only) {
 	}
 
 	return result;
+}
+
+void zero_frame(uint64_t phys_page) {
+	// this method will even take care of clearing the phys_page
+	setup_kernel_page_tables(SPARE_ADDR, phys_page);
+
+	// now unmap the page, SPARE's job is done
+	unmap_vaddr(SPARE_ADDR);
+}
+
+int zero_dirty_free_pages(int num) {
+	int count = 0;
+	for (uint64_t i = 0; i < MAX_NUMBER_PAGES; i++) {
+		if (count >= num)
+			break;
+		if (free_list[i].is_free == 1 && free_list[i].dirty == 1) {
+			zero_frame(free_list[i].frame_addr);
+			free_list[i].dirty = 0;
+			count++;
+		}
+	}
+//	printf(" zeroed %d dirty free-pages\n", count);
+	return count;
 }
 
 // returns pages that are free, may or may not be dirty

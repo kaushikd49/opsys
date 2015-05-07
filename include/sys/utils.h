@@ -22,3 +22,5 @@ pv_map_t* init_pv_map();
 void free_pv_map(pv_map_t* pv_map_node);
 
 uint64_t* phys_to_virt_map(uint64_t* physaddr, void * pv_map);
+
+void unmap_vaddr(uint64_t SPARE_ADDR);
