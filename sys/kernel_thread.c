@@ -20,6 +20,10 @@ struct read_blocked{
 typedef struct read_blocked read_blocked_t;
 read_blocked_t *read_blocked_list = NULL;
 /////////////////////////////////////////////////////
+volatile task_struct_t *get_waiting_task(){
+	volatile task_struct_t *wait = waitingtask;
+	return wait;
+}
 pipe_struct_t *find_pipe_from_write(file_desc_t *fd_write){
 	pipe_struct_t *current = pipe_list;
 	if(current == NULL){
@@ -113,7 +117,7 @@ void add_read_blocked_list(read_blocked_t *node) {
 	read_blocked_list = node;
 }
 read_blocked_t *remove_read_blocked_list(volatile read_blocked_t *current){
-	read_blocked_t *prev = read_blocked_list;
+	volatile read_blocked_t *prev = read_blocked_list;
 	if (prev == current) {
 		read_blocked_list = current->next;
 		current->next = NULL;
@@ -155,6 +159,7 @@ inline void fake_preempt(int flag) {
 
 void waiting_to_running_q_body() {
 	volatile task_struct_t* current_waiting = waitingtask;
+	volatile task_struct_t *check = waitingtask;
 	do {
 		if (current_waiting != NULL
 				&& current_waiting->p_state == STATE_READY) {
@@ -162,9 +167,11 @@ void waiting_to_running_q_body() {
 			move_process_waitq_to_runq(current_waiting->pid);
 			current_waiting = waitingtask;
 		}
-		if (current_waiting != NULL)
+		if (current_waiting != NULL){
 			current_waiting = current_waiting->next;
-	} while (waitingtask != NULL && current_waiting != waitingtask);
+		}
+		check = get_waiting_task();
+	} while (waitingtask != NULL && current_waiting != check);
 }
 
 void waiting_to_running_q(){
@@ -547,15 +554,19 @@ void find_child(volatile task_struct_t *temp) {
 
 void check_user_process_waitpid_daemon_body() {
 	volatile task_struct_t* temp = waitingtask;
+	volatile task_struct_t *check = waitingtask;
 	do {
 		if (temp != NULL && temp->p_state == STATE_WAITING
 				&& temp->is_kernel_process == 0 && temp->waiting_for != 999) {
 			//				printf("found : %d", temp->pid);
 			find_child(temp);
 		}
-		if (temp != NULL)
+		if (temp != NULL){
+//			printf("b");
 			temp = temp->next;
-	} while (temp != waitingtask);
+		}
+		check = get_waiting_task();
+	} while (temp != check);
 }
 
 void check_user_process_waitpid_daemon() {
@@ -572,8 +583,10 @@ task_struct_t *check_unblock_waitq(int pid) {
 		if (temp != NULL && temp->pid == pid) {
 			return temp;
 		}
-		if (temp != NULL)
+		if (temp != NULL){
+//			printf("c");
 			temp = temp->next;
+		}
 	} while (temp != waitingtask);
 	return NULL;
 }
@@ -620,8 +633,10 @@ void return_blocking_rw_to_runq_body() {
 					}
 				}
 			}
-			if (current != NULL)
+			if (current != NULL){
+//				printf("d");
 				current = current->next;
+			}
 		} while (current != NULL);
 	}
 }
@@ -636,6 +651,7 @@ void return_blocking_rw_to_runq() {
 
 void clean_up_process_body() {
 	volatile task_struct_t* wait_task = waitingtask;
+	volatile task_struct_t *wait2;
 	if (wait_task != NULL) {
 		volatile task_struct_t* current = waitingtask;
 		volatile task_struct_t* prev = current;
@@ -651,6 +667,10 @@ void clean_up_process_body() {
 				} else {
 					prev->next = current->next;
 					current = current->next;
+					volatile task_struct_t *waiting_task = get_waiting_task();
+					if(waiting_task == current){
+						waitingtask = (task_struct_t *)prev;
+					}
 				}
 	//			cleanup_process(to_be_removed);
 				//add function to clean up the to_be_removed task_struct
@@ -658,7 +678,8 @@ void clean_up_process_body() {
 				prev = current;
 				current = current->next;
 			}
-		} while (current != NULL && current != waitingtask);
+			wait2 = get_waiting_task();
+		} while (current != NULL && current != wait2);
 	}
 }
 
