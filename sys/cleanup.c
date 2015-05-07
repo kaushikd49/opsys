@@ -22,9 +22,9 @@ void cleanup_vmas(vma_t * vma) {
 	free_vma(q);
 }
 void space_msg() {
-//	printf(" #dirty free-pages %d \n", num_free_pages(1));
-//	printf(" #zeroed free-pages %d \n", num_free_pages(0));
-//	printf(" #tot free-pages %d \n", num_free_pages(2));
+	printf(" #dirty free-pages %d \n", num_free_pages(1));
+	printf(" #zeroed free-pages %d \n", num_free_pages(0));
+	printf(" #tot free-pages %d \n", num_free_pages(2));
 }
 
 void cleanup_mem_map(task_struct_t * task) {
@@ -34,20 +34,20 @@ void cleanup_mem_map(task_struct_t * task) {
 	kfree(mem_map);
 }
 
-void cleanup_fds(task_struct_t * task) {
-	// todo: this. also, need to keep the ptr for beginning of buffer
-
-	for (uint64_t i = 0; i < MAX_NUMBER_FILES; i++) {
-		if (task->filearray[i] != NULL) {
-			decrement_global_count_fd(task->filearray[i]);
-			task->filearray[i] = NULL;
-		}
-	}
-//	kfree(task->filearray);
-}
+//void cleanup_fds(task_struct_t * task) {
+//	// todo: this. also, need to keep the ptr for beginning of buffer
+//
+//	for (uint64_t i = 0; i < MAX_NUMBER_FILES; i++) {
+//		if (task->filearray[i] != NULL) {
+//			decrement_global_count_fd(task->filearray[i]);
+//			task->filearray[i] = NULL;
+//		}
+//	}
+////	kfree(task->filearray);
+//}
 
 void free_frame(task_struct_t * task, uint64_t phys_addr, uint64_t vaddr) {
-	printf(" freeing actual frame %p \n", phys_addr);
+//	printf(" freeing actual frame %p \n", phys_addr);
 	decrease_ref_count(phys_addr);
 }
 
@@ -167,8 +167,10 @@ void cleanup_ptables(task_struct_t * task, pv_map_t* pv_map_node,
 }
 
 void cleanup_kernel_stack(volatile task_struct_t * task) {
-//	uint64_t kernel_stack_base = task->state.kernel_rsp & (~0xfff);
-//	kfree((uint64_t *) kernel_stack_base);
+	if (task->kernel_stk_kmalloc_addr != 0) {
+		printf(" kernel stack freeing %p ", task->kernel_stk_kmalloc_addr);
+		kfree((uint64_t *) task->kernel_stk_kmalloc_addr);
+	}
 }
 
 void cleanup_both_stk_kernel_process(task_struct_t *task) {
@@ -194,6 +196,7 @@ void cleanup_process(task_struct_t * task) {
 		cleanup_process_pages(task, pv_map_node, pml_virt);
 
 		cleanup_mem_map(task);
+
 //		cleanup_kernel_stack(task);
 
 		cleanup_ptables(task, pv_map_node, pml_virt);
@@ -205,7 +208,7 @@ void cleanup_process(task_struct_t * task) {
 	}
 	//cleanup_fds(task);
 	kfree(task);
-	space_msg();
+//	space_msg();
 
 	zero_dirty_free_pages(10);
 }

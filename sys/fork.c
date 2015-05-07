@@ -59,6 +59,8 @@ void cp_process_stack(task_struct_t * from, task_struct_t * to,
 		target++;
 		source++;
 	}
+
+	to->user_stk_kmalloc_addr = 0; // we dont need this field for user processes
 }
 
 void cp_kernel_stack(task_struct_t * from, task_struct_t * to,
@@ -67,6 +69,7 @@ void cp_kernel_stack(task_struct_t * from, task_struct_t * to,
 
 	uint64_t stack_kernel = set_get_kernel_stck_addr(to);
 	to->state.kernel_rsp = (stack_kernel + 0xfff);
+
 
 	// 2 pages of kernel stack will be mapped in page table
 	cache_pv_mapping(krnl_stk_pv, stack_kernel,
@@ -388,10 +391,11 @@ void copy_tsk(uint64_t pid, task_struct_t * from, task_struct_t * to,
 //	free_pv_map(usr_stk_pv);
 //	free_pv_map(krnl_stk_pv);
 }
-
+void foob(){}
 void copy_process(uint64_t pid, uint64_t stack_top) {
 	task_struct_t *task = kmalloc(sizeof(task_struct_t));
 	copy_tsk(pid, currenttask, task, stack_top);
+	foob();
 }
 
 int do_fork(uint64_t stack_top) {

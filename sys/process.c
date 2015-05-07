@@ -1196,7 +1196,7 @@ void make_new_process_state(task_struct_t *task, task_struct_t *parent_task,
 	void *free_frame = (void *) get_free_frames(0);
 	setup_process_page_tables((uint64_t) stack_page, (uint64_t) free_frame);
 
-	uint64_t stack_kernel = (uint64_t) kmalloc(0x1000);
+	uint64_t stack_kernel = set_get_kernel_stck_addr(task);
 	task->state.kernel_rsp = (uint64_t) (stack_kernel + 0xfff);
 	temp_init_user_stack(task->state.kernel_rsp, task);
 	task->p_state = STATE_RUNNING;
@@ -1797,6 +1797,7 @@ void temp_init_user_stack(uint64_t rsp, task_struct_t *task) {
 	temp -= 1;
 	*temp = USER_DATA; //gs
 	task->state.kernel_rsp = (uint64_t) temp;
+
 //	printf("task: %p\n", task->state.kernel_rsp);
 }
 
