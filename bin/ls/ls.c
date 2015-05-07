@@ -19,10 +19,10 @@ int main(int argc, char *argv[], char *envp[]) {
 		if (temp != NULL) {
 			strcpy(name, temp->d_name);
 			int len = strlen(name);
-			name[len] = '\n';
-			name[len + 1] = '\0';
-			write(1, name, len + 1);
-//			printf("temp:%s ", temp->d_name);
+			name[len] = '\0';
+//			name[len] = '\n';
+//			write(1, name, len);
+			printf("temp:%s ", temp->d_name);
 		}
 	} while (temp != NULL);
 

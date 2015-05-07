@@ -169,13 +169,13 @@ uint64_t brk_system_call(uint64_t value) {
 		}	//not sure what is the stack top vma_start or end so marking both
 		if (!(new_brk > heap_vma->vma_end && new_brk < stack_vma->vma_start
 				&& new_brk < stack_vma->vma_end)) {
-			printf("cb: %x", current_brk);
+//			printf("cb: %x", current_brk);
 			return current_brk;
 		}
 		if (heap_vma != NULL) {
 			heap_vma->vma_end = new_brk;
 			mem_ptr->brk = new_brk;
-			printf("nb: %x", current_brk);
+//			printf("nb: %x", current_brk);
 			return new_brk;
 		}
 

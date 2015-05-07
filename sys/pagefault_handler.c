@@ -54,6 +54,7 @@ void copy_byte_from_apt_elf(char *vaddr, vma_t* temp_vma, mem_desc_t * mem_ptr) 
 
 void seg_fault(uint64_t addr) {
 	printf("DO PAGE FAULT\n");
+	return;
 }
 
 int is_addr_in_vma(uint64_t virtual_addr, mem_desc_t* mem_ptr,
@@ -230,8 +231,8 @@ void do_handle_pagefault(uint64_t error_code, uint64_t *rsp_val) {
 	int us = get_bit(error_code, 2);
 	uint64_t addr = get_faulted_addr();
 	int kernel_addr = is_kernel_addr(addr);
-	printf(" pid:%d page fault at %p, error_code: %x ", currenttask->pid, addr,
-			error_code);
+//	printf(" pid:%d page fault at %p, error_code: %x ", currenttask->pid, addr,
+//			error_code);
 	if (present == 0) {
 		if (kernel_addr) {
 			if (user_access(us)) {
