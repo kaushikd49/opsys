@@ -15,4 +15,5 @@ uint64_t execve_sys_call(char *binary, char **argv, char **envp, uint64_t stack_
 int pipe_system_call(int pipe[2]);
 int cd_system_call(char *buffer);
 uint64_t strlen(const char *str);
+int lseek_system_call(int fd,int offset, int whence);
 #endif

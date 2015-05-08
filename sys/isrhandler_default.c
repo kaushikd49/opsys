@@ -106,6 +106,8 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 		return pwd_system_call((char *) (regs.rdi), (uint64_t) (regs.rsi));
 	} else if (regs.rax == SYS_chdir) {
 		return cd_system_call((char *) (regs.rdi));
+	} else if (regs.rax == SYS_lseek) {
+		return lseek_system_call((int)(regs.rdi), (uint64_t)(regs.rsi), (int)regs.rdx);
 	}
 	return 0;
 }

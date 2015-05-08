@@ -1,16 +1,32 @@
 #include <stdio.h>
 #include<stdlib.h>
+#include<errno.h>
 int arr[100];
 int b =10;
 int main(int argc, char* argv[], char* envp[]) {
-	char pathname[20] ="test/test.txt";
-	int fd = open(pathname, O_RDONLY);
-	char *str = malloc(10000);
-	for(int i = 0; i < 10000; i++){
-		str[i] = '\0';
+	uint64_t old_brk = get_brk(0);
+	char *str = malloc(100000000);
+	if(str == NULL){
+		printf("cannot malloc so much hitting stack");
+
 	}
-	read(fd,str, 5000);
-	close(fd);
-	write(1, str, 5000);
+	str[5000] = 'c';
+	str[5001] = 'a';
+	str[5002] = 't';
+	str[5003] = '\0';
+	int x = getpid();
+	int y = getppid();
+	uint64_t new_brk = get_brk(0);
+	sleep(10);
+	int fd = open("test/test.txt", O_WRONLY);
+	if(fd == -1){
+		//		int backupErrno = errno;
+		printf("error: %d", errno);
+	}
+	int rd = read(fd, str, 100);
+	if(rd == -1){
+		printf("error: %d", errno);
+	}
+	printf("\n %x - %s %x - %x %x - %x \n",str, str+5000, x, y, old_brk, new_brk);
 	return 0;
 }

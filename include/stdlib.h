@@ -12,7 +12,7 @@ void exit(int status);
 void *malloc(size_t size);
 void free(void *ptr);
 int brk(void *end_data_segment);
-
+uint64_t get_brk(uint64_t size);
 // processes
 //typedef uint32_t pid_t;
 struct timespec {
