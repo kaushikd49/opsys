@@ -4,7 +4,7 @@
 #include <sys/utils.h>
 #include <sys/process.h>
 #include <sys/sbunix.h>
-
+#include <sys/freelist.h>
 void free_vma(vma_t* q) {
 	if (q != NULL) {
 		kfree(q);
@@ -22,9 +22,8 @@ void cleanup_vmas(vma_t * vma) {
 	free_vma(q);
 }
 void space_msg() {
-	printf(" #dirty free-pages %d \n", num_free_pages(1));
-	printf(" #zeroed free-pages %d \n", num_free_pages(0));
-	printf(" #tot free-pages %d \n", num_free_pages(2));
+	printf(" #zeroed free-pages %d \n", get_zerod_pages_count());
+	printf(" #tot free-pages %d \n", get_unused_pages_count());
 }
 
 void cleanup_mem_map(task_struct_t * task) {

@@ -3,7 +3,6 @@
 #include<sys/defs.h>
 #include<sys/pagingglobals.h>
 
-
 int check_physical_frame(uint64_t current_addr, physical_map_node *test,
 		uint64_t num_physical_regions, uint64_t physbase, uint64_t physfree);
 //marks the address that that you provide as argument. If the address is not physically aligned then it does nothing.
@@ -41,5 +40,10 @@ void increase_ref_count(uint64_t physical_addr_page);
 int num_free_pages(int isdirty);
 
 int zero_dirty_free_pages(int num);
+
+int get_unused_pages_count();
+
+int get_zerod_pages_count();
+
 #endif
 

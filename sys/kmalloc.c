@@ -67,7 +67,7 @@ void init_caches() {
 	cache_info.head = cache_list; // this marks the beginning of cache_list it is a global variables. needed to access specific cache information.
 	cache_info.current_virtual = (void *) (BASE_MEMORY_MANAGER + 0x10000); //arbitrarily starting the actual virtual addresses at 10 pages apart. We can change it if something comes up
 	init_cache_list(cache_list); // this initialized the cache list
-	printf("cache location: %p\n", cache_list);
+//	printf("cache location: %p\n", cache_list);
 }
 //gives the current memory location in virtual space. Also, we increase the virtual address to the next location order distance away.
 void *get_virtual_location(int order) {
@@ -102,8 +102,8 @@ void prepare_page(int order, void *address) { //order max 11
 void *get_mem_alloc(int order) {
 	cache_t *cache = (cache_t *)((uint64_t)cache_info.head + sizeof(cache_t) * (order - 5));
 	cache->count = cache->count + 1;
-	if(cache->order == 6 && (cache->count)%64 == 0)
-		printf("cache info: %d %d\n", cache->order, cache->count);
+//	if(cache->order == 6 && (cache->count)%64 == 0)
+//		printf("cache info: %d %d\n", cache->order, cache->count);
 	void *return_addr = (void *) (cache->free);
 	free_t *free_address = (free_t *) return_addr;
 	cache->free = free_address->next_free;

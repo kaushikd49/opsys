@@ -10,6 +10,8 @@
 #include<sys/syscall.h>
 #include<sys/tarfs_FS.h>
 #include <sys/isr_stuff.h>
+#include <sys/freelist.h>
+
 typedef struct {
 	uint64_t gs;
 	uint64_t fs;
@@ -64,8 +66,16 @@ uint64_t handle_execve(regs_syscall_t regs) {
 }
 uint64_t handle_kill(regs_syscall_t regs) {
 	uint64_t stack_top = (uint64_t) (&(regs.gs));
-	return kill_sys_call((int)regs.rdi, (uint64_t)stack_top);
+	return kill_sys_call((int) regs.rdi, (uint64_t) stack_top);
 }
+
+int is_mem_not_enough() {
+	// zeroed pages, total free pages threshold
+	return ((get_zerod_pages_count() <= 512)
+			|| (get_unused_pages_count() <= 1024));
+
+}
+
 uint64_t handle_syscall(regs_syscall_t regs) {
 	currenttask->state.kernel_rsp = (uint64_t) (&(regs.gs));
 //	if (regs.rax == ) {
@@ -77,7 +87,13 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 		uint64_t stack_top = (uint64_t) (&(regs.gs));
 //		printf("rip in parent %p ", regs.rip);
 		currenttask->state.rsp = regs.rsp;
+
+		if (is_mem_not_enough()) {
+			return -1;
+		}
+		kill_processes();
 		int abc = fork_sys_call(stack_top);
+
 		return abc;
 	}
 //	else if(regs.rax == SYS_write){

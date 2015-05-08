@@ -9,10 +9,21 @@ page_t * free_list = NULL;
 uint64_t *free_list_location = NULL;
 uint64_t MAX_NUMBER_PAGES = 0;
 
+int zero_pages = 0;
+int unused_pages = 0;
+
 // using this as a temporary spare address
 // for mapping physical addresses just
 // so that you can access them
-uint64_t SPARE_ADDR = 0xffffffffa0000000;
+uint64_t SPARE_ADDR = 0xffffffff90000000;
+
+int get_unused_pages_count() {
+	return unused_pages;
+}
+
+int get_zerod_pages_count() {
+	return zero_pages;
+}
 
 int check_physical_frame(uint64_t current_addr, physical_map_node *test,
 		uint64_t num_physical_regions, uint64_t physbase, uint64_t physfree) {
@@ -38,7 +49,11 @@ void mark_frame_used(uint64_t address) {
 		if (free_list[index].frame_addr == address) {
 			free_list[index].is_free = 0;
 			free_list[index].ref_count = 1;
+			if(free_list[index].dirty == 0)
+				zero_pages--;
 			free_list[index].dirty = 1;
+
+			unused_pages--;
 			break;
 		}
 	}
@@ -82,6 +97,8 @@ void create_free_list_test(uint32_t* modulep, page_t *free_list, void *physbase,
 			free_list[index].is_free = 1; //the page is free
 			free_list[index].ref_count = 0;
 			free_list[index].dirty = 0;
+			zero_pages++;
+			unused_pages++;
 //			blank_space_baby(current_addr);
 		} else {
 			free_list[index].frame_addr = current_addr;
@@ -103,10 +120,13 @@ void create_free_list_test(uint32_t* modulep, page_t *free_list, void *physbase,
 //				blank_space_baby(current_addr);
 //			if(i == 63 || i == 64 || i == 65)
 //				printf("current_addr %x", current_addr);
+			zero_pages++;
+			unused_pages++;
 		} else {
 			free_list[index].frame_addr = current_addr;
 			free_list[index].is_free = 0; //the page is not free
 			free_list[index].ref_count = 1; //something is occupying, now kernel
+
 		}
 	}
 //	printf("iiiii %d \n", i);
@@ -183,12 +203,15 @@ void clear_array_range(page_t *free_list, uint64_t start, uint64_t end) {
 	for (uint64_t i = start; i <= end; i++) {
 		free_list[i].is_free = 0;
 		free_list[i].ref_count = 1;
+		if(free_list[i].dirty == 0)
+			zero_pages--;
 		free_list[i].dirty = 1;
+		unused_pages--;
 	}
 }
 
 uint64_t get_free_pages_logic(int order, page_t* free_list, int zeroed_only) {
-	reclaim_resource_if_needed();
+//	reclaim_resource_if_needed();
 	uint64_t limit = 1 << order;
 	uint64_t result = 0;
 	for (uint64_t i = 0; i < MAX_NUMBER_PAGES - limit + 1; i++) {
@@ -233,12 +256,15 @@ int zero_dirty_free_pages(int num) {
 		if (count >= num)
 			break;
 		if (free_list[i].is_free == 1 && free_list[i].dirty == 1) {
-			zero_frame(free_list[i].frame_addr);
+			uint64_t frameAddr = free_list[i].frame_addr;
+			zero_frame(frameAddr);
 			free_list[i].dirty = 0;
 			count++;
 		}
 	}
 //	printf(" zeroed %d dirty free-pages\n", count);
+	zero_pages += count;
+
 	return count;
 }
 
@@ -265,6 +291,8 @@ void return_page(uint64_t page, page_t *free_list) {
 			}
 			if (free_list[i].ref_count == 0) {
 				free_list[i].is_free = 1;
+				unused_pages++;
+
 			}
 
 			break;
@@ -305,8 +333,10 @@ void return_pages(uint64_t page, page_t *free_list, int order) {
 				printf(
 						"free_page deallocation you have made a mistake here  mostly.\n");
 			}
-			if (free_list[i].ref_count == 0)
+			if (free_list[i].ref_count == 0){
 				free_list[i].is_free = 1;
+				unused_pages++;
+			}
 			index = i;
 			for (uint64_t i = index + 1; i < index + limit; i++) {
 				free_list[i].ref_count -= 1;
@@ -314,8 +344,10 @@ void return_pages(uint64_t page, page_t *free_list, int order) {
 					printf(
 							"free_page deallocation you have made a mistake here  mostly.\n");
 				}
-				if (free_list[i].ref_count == 0)
+				if (free_list[i].ref_count == 0){
 					free_list[i].is_free = 1;
+					unused_pages++;
+				}
 			}
 			break;
 		}

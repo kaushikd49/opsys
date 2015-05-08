@@ -3,11 +3,24 @@
 
 int arr[100];
 int b = 10;
-int main(int argc, char* argv[], char* envp[]) {
-//	char * ptr = (char *) malloc(100);
-	printf("should fault now \n");
-//	*(ptr + 0x2000) = 'a';
-	*((char *) (0xffffffffb0000000)) = 'a';
 
+void func(int param) {
+	pid_t res;
+	res = fork();
+	if (res == 0) {
+		param = -param;
+		printf("%d\n", param);
+	} else if (res > 0) {
+		func(param + 1);
+
+	} else {
+		printf("Error, kill somne\n");
+		sleep(100);
+	}
+
+}
+
+int main(int argc, char* argv[], char* envp[]) {
+	func(5);
 	return 0;
 }
