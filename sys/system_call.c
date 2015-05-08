@@ -33,15 +33,12 @@ int strcmp_lazy(char *string1, char *string2) {
 
 }
 
-
-
 int kill_from_queue(pid_t pid, task_struct_t *queue) {
 	int visited = 0;
-	for (task_struct_t *t = queue; t != queue || visited == 0;
-			t = t->next) {
+	for (task_struct_t *t = queue; t != queue || visited == 0; t = t->next) {
 		visited = 1;
 		if (t->pid == pid) {
-			if(t->is_kernel_process)
+			if (t->is_kernel_process)
 				return -2;
 
 			mark_as_terminated(t);
@@ -53,12 +50,12 @@ int kill_from_queue(pid_t pid, task_struct_t *queue) {
 }
 
 int kill_system_call(pid_t pid) {
-	int rQRes = kill_from_queue(pid, currenttask); 
-	int wQRes = kill_from_queue(pid, waitingtask); 
-	
-	if(rQRes <= 0) {
+	int rQRes = kill_from_queue(pid, currenttask);
+	int wQRes = kill_from_queue(pid, waitingtask);
+
+	if (rQRes <= 0) {
 		return rQRes;
-	} else if(wQRes <= 0){
+	} else if (wQRes <= 0) {
 		return wQRes;
 	} else {
 		return -1;
@@ -225,30 +222,29 @@ int pipe_system_call(int pipe[2]) {
 	return pipe_tarfs(pipe);
 }
 
-int pwd_system_call(char *buffer, uint64_t size){
-	if((buffer == NULL) ||(size == 0 && buffer != NULL)){
+int pwd_system_call(char *buffer, uint64_t size) {
+	if ((buffer == NULL) || (size == 0 && buffer != NULL)) {
 		return -EINVAL;
 	}
-	if(strlen(currenttask->pwd) > size){
+	if (strlen(currenttask->pwd) > size) {
 		return -ERANGE;
 	}
 	strcpy(buffer, currenttask->pwd);
 	return 0;
 }
 int cd_errno = 0;
-void clear_this_segment(char *this_segment){
-	for(uint64_t i = 0; i < 100; i++){
+void clear_this_segment(char *this_segment) {
+	for (uint64_t i = 0; i < 100; i++) {
 		this_segment[i] = '\0';
 	}
 }
-int remove_prev_segment(char *prefix,int prefix_index){
-	if(prefix_index == 0){
+int remove_prev_segment(char *prefix, int prefix_index) {
+	if (prefix_index == 0) {
 		return -1;
-	}
-	else{
+	} else {
 		prefix_index--;
 		prefix[prefix_index] = '\0';
-		while(prefix[prefix_index] != '/' && prefix_index>=0){
+		while (prefix[prefix_index] != '/' && prefix_index >= 0) {
 			prefix[prefix_index--] = '\0';
 		}
 
@@ -256,49 +252,47 @@ int remove_prev_segment(char *prefix,int prefix_index){
 	prefix_index++;
 	return prefix_index;
 }
-int add_to_prefix(char *prefix, char *this_segment, int p_index){
+int add_to_prefix(char *prefix, char *this_segment, int p_index) {
 	int i = 0;
-	while(p_index < 100 && this_segment[i] != '\0'){
+	while (p_index < 100 && this_segment[i] != '\0') {
 		prefix[p_index] = this_segment[i];
 		p_index++;
 		i++;
 	}
-	if(this_segment[i] == '\0'){
+	if (this_segment[i] == '\0') {
 		return p_index;
-	}
-	else if(p_index == 100){
+	} else if (p_index == 100) {
 		cd_errno = -ENAMETOOLONG;
 	}
 	return p_index;
 }
 
-char *expand_cd_buffer(char *buffer, int len, char *prefix){
+char *expand_cd_buffer(char *buffer, int len, char *prefix) {
 	char this_segment[100];
 	int j = 0;
 	int prefix_index = 0;
 	clear_this_segment(prefix);
 	clear_this_segment(this_segment);
-	if(buffer[0] == '/'){
+	if (buffer[0] == '/') {
 		buffer = buffer + 1;
-		len = len -1;
-	}
-	else{
+		len = len - 1;
+	} else {
 		strcpy(prefix, currenttask->pwd);
 		prefix_index = strlen(prefix);
 	}
 
-	for(uint64_t i = 0; i < len; i++){
-		if(buffer[i] == '/'){
-			if(strcmp_lazy(this_segment, "..") == 0){
+	for (uint64_t i = 0; i < len; i++) {
+		if (buffer[i] == '/') {
+			if (strcmp_lazy(this_segment, "..") == 0) {
 				prefix_index = remove_prev_segment(prefix, prefix_index);
-				if(prefix_index == -1){
+				if (prefix_index == -1) {
 					cd_errno = -EFAULT;
 					return NULL;
 				}
-			}
-			else if(strcmp_lazy(this_segment, ".") != 0){
-				prefix_index = add_to_prefix(prefix, this_segment,  prefix_index);
-				if(prefix_index == -1){
+			} else if (strcmp_lazy(this_segment, ".") != 0) {
+				prefix_index = add_to_prefix(prefix, this_segment,
+						prefix_index);
+				if (prefix_index == -1) {
 					return NULL;
 				}
 				prefix[prefix_index] = '/';
@@ -306,94 +300,92 @@ char *expand_cd_buffer(char *buffer, int len, char *prefix){
 			}
 			j = 0;
 			clear_this_segment(this_segment);
-		}
-		else{
+		} else {
 			this_segment[j++] = buffer[i];
 		}
 	}
-	if(this_segment[0] != '\0'){
+	if (this_segment[0] != '\0') {
 		strcpy(&prefix[prefix_index], this_segment);
 		prefix_index = prefix_index + j;
 		prefix[prefix_index] = '/';
 		prefix_index++;
 		prefix[prefix_index] = '\0';
-	}
-	else{
+	} else {
 		prefix[prefix_index] = '\0';
 	}
 	return prefix;
 }
-int is_valid_directory(char *file_name){
+int is_valid_directory(char *file_name) {
 	struct posix_header_ustar *current =
-				(struct posix_header_ustar *) &_binary_tarfs_start;
-		int i =0;
-		while ((uint64_t) current < (uint64_t) (&_binary_tarfs_end)) {
-			if(strcmp_lazy(file_name, current->name) == 0){
-				if(current->typeflag[0] != '5'){
-					cd_errno = -ENOTDIR;
-					return 0;
-				}
-				printf("%s %s: found file", current->name, current->magic);
-				return 1;
+			(struct posix_header_ustar *) &_binary_tarfs_start;
+	int i = 0;
+	while ((uint64_t) current < (uint64_t) (&_binary_tarfs_end)) {
+		if (strcmp_lazy(file_name, current->name) == 0) {
+			if (current->typeflag[0] != '5') {
+				cd_errno = -ENOTDIR;
+				return 0;
 			}
-	//			if(i %5 == 0)
-	//				printf("\n");
-
-				//	printf("elf header: %x\n",*(current + (uint64_t)sizeof(struct posix_header_ustar)));
-			uint64_t header_next = (uint64_t) ((align(
-					convert_ocatalstr_todecimal(current->size), TARFS_ALIGNMENT))
-					+ sizeof(struct posix_header_ustar) + (uint64_t) current);
-			//		printf("header : %x", header_next);
-			current = (struct posix_header_ustar *) (header_next);
-			i++;
+			printf("%s %s: found file", current->name, current->magic);
+			return 1;
 		}
-		cd_errno = -ENOENT;
-		return 0;
+		//			if(i %5 == 0)
+		//				printf("\n");
+
+		//	printf("elf header: %x\n",*(current + (uint64_t)sizeof(struct posix_header_ustar)));
+		uint64_t header_next = (uint64_t) ((align(
+				convert_ocatalstr_todecimal(current->size), TARFS_ALIGNMENT))
+				+ sizeof(struct posix_header_ustar) + (uint64_t) current);
+		//		printf("header : %x", header_next);
+		current = (struct posix_header_ustar *) (header_next);
+		i++;
+	}
+	cd_errno = -ENOENT;
+	return 0;
 }
-task_struct_t *find_parent(int pid){
+task_struct_t *find_parent(int pid) {
 	task_struct_t *current = waitingtask;
-	if(current !=NULL){
-		do{
-			if(current->pid == pid){
+	if (current != NULL) {
+		do {
+			if (current->pid == pid) {
 				return current;
 			}
 			current = current->next;
-		}while(current!=waitingtask);
+		} while (current != waitingtask);
 
 	}
 	current = currenttask;
-	if(currenttask != NULL){
-		do{
-			if(current->pid == pid){
+	if (currenttask != NULL) {
+		do {
+			if (current->pid == pid) {
 				return current;
 			}
 			current = current->next;
-		}while(current!=currenttask);
+		} while (current != currenttask);
 	}
 	return NULL;
 }
-int cd_system_call(char *buffer){
+int cd_system_call(char *buffer) {
 	int len = strlen(buffer);
-	if(len > 100){
+	if (len > 100) {
 		return -ENAMETOOLONG;
 	}
 	char *answer = kmalloc(100);
 	answer = expand_cd_buffer(buffer, len, answer);
-	if(answer == NULL){
+	if (answer == NULL) {
 		kfree(answer);
 		return cd_errno;
 	}
-	if(is_valid_directory(answer)){
+	if (is_valid_directory(answer)) {
 		task_struct_t *parent_process = find_parent(currenttask->ppid);
-		if(parent_process == NULL){
+		if (parent_process == NULL) {
 			kfree(answer);
 			return -EIO;
 		}
-		printf("answer: %s pwd: %s %d %d %d\n", answer, parent_process->pwd, parent_process->pid, currenttask->pid, currenttask->ppid);
+		printf("answer: %s pwd: %s %d %d %d\n", answer, parent_process->pwd,
+				parent_process->pid, currenttask->pid, currenttask->ppid);
 		strcpy(currenttask->pwd, answer);
 		printf("answer: %s pwd: %s\n", answer, parent_process->pwd);
-	}
-	else{
+	} else {
 		kfree(answer);
 		return cd_errno;
 	}
@@ -403,42 +395,47 @@ int cd_system_call(char *buffer){
 enum {
 	SEEK_SET = 0, SEEK_CUR = 1, SEEK_END = 2
 };
-int lseek_system_call(int fd,int offset, int whence){
-	if(currenttask->filearray[fd] == NULL){
+int lseek_system_call(int fd, int offset, int whence) {
+	if (currenttask->filearray[fd] == NULL) {
 		return -EBADF;
 	}
-	if(currenttask->filearray[fd]->size == -999){
+	if (currenttask->filearray[fd]->size == -999) {
 		return -EINVAL;
 	}
 	char *start = 0;
 
-	if(whence ==SEEK_SET){
-		start = (char *)((uint64_t)currenttask->filearray[fd]->posix_header + (uint64_t)(sizeof(struct posix_header_ustar)));
-	}
-	else if(whence == SEEK_CUR){
-		start = (char *)(currenttask->filearray[fd]->current_pointer);
-	}
-	else if(whence == SEEK_END){
-		start = (char *)((uint64_t)((uint64_t)currenttask->filearray[fd]->posix_header + (uint64_t)(sizeof(struct posix_header_ustar))) + (uint64_t)currenttask->filearray[fd]->size - 1);
-	}
-	else{
+	if (whence == SEEK_SET) {
+		start = (char *) ((uint64_t) currenttask->filearray[fd]->posix_header
+				+ (uint64_t) (sizeof(struct posix_header_ustar)));
+	} else if (whence == SEEK_CUR) {
+		start = (char *) (currenttask->filearray[fd]->current_pointer);
+	} else if (whence == SEEK_END) {
+		start =
+				(char *) ((uint64_t) ((uint64_t) currenttask->filearray[fd]->posix_header
+						+ (uint64_t) (sizeof(struct posix_header_ustar)))
+						+ (uint64_t) currenttask->filearray[fd]->size - 1);
+	} else {
 		return -EINVAL;
 	}
 	char *new_pointer = 0;
-	if(offset < 0){
+	if (offset < 0) {
 		offset = -offset;
-		new_pointer = (char *)((uint64_t)start - (uint64_t)(offset));//being safe
+		new_pointer = (char *) ((uint64_t) start - (uint64_t) (offset));//being safe
+	} else {
+		new_pointer = (char *) ((uint64_t) start + (uint64_t) (offset));//being safe
 	}
-	else{
-		new_pointer = (char *)((uint64_t)start + (uint64_t)(offset));//being safe
-	}
-	uint64_t st = ((uint64_t)currenttask->filearray[fd]->posix_header + (uint64_t)(sizeof(struct posix_header_ustar)));
-	uint64_t end = (uint64_t)((uint64_t)((uint64_t)currenttask->filearray[fd]->posix_header + (uint64_t)(sizeof(struct posix_header_ustar))) + (uint64_t)currenttask->filearray[fd]->size - 1);
-	if((uint64_t)new_pointer >= st && (uint64_t)new_pointer <= end){
+	uint64_t st = ((uint64_t) currenttask->filearray[fd]->posix_header
+			+ (uint64_t) (sizeof(struct posix_header_ustar)));
+	uint64_t end =
+			(uint64_t) ((uint64_t) ((uint64_t) currenttask->filearray[fd]->posix_header
+					+ (uint64_t) (sizeof(struct posix_header_ustar)))
+					+ (uint64_t) currenttask->filearray[fd]->size - 1);
+	if ((uint64_t) new_pointer >= st && (uint64_t) new_pointer <= end) {
 		currenttask->filearray[fd]->current_pointer = new_pointer;
-		return (int)((uint64_t)(new_pointer) - (uint64_t)((uint64_t)currenttask->filearray[fd]->posix_header + (uint64_t)(sizeof(struct posix_header_ustar))));
-	}
-	else{
+		return (int) ((uint64_t) (new_pointer)
+				- (uint64_t) ((uint64_t) currenttask->filearray[fd]->posix_header
+						+ (uint64_t) (sizeof(struct posix_header_ustar))));
+	} else {
 		return -EINVAL;
 	}
 }
