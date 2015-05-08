@@ -16,10 +16,12 @@ uint64_t get_faulted_addr() {
 	return virtual_addr;
 }
 
-void page_alloc(task_struct_t * task, uint64_t virtual_addr) {
+uint64_t page_alloc(task_struct_t * task, uint64_t virtual_addr,
+		uint64_t stack_top) {
 	uint64_t* frame = get_free_frame();
 	uint64_t base_virtual_addr = virtual_addr & (~0xfff);
 	setup_process_page_tables(base_virtual_addr, (uint64_t) frame);
+	return stack_top;
 }
 
 void get_elf_ptr(char** elf_dptr, mem_desc_t* mem_ptr, int type) {
@@ -52,9 +54,8 @@ void copy_byte_from_apt_elf(char *vaddr, vma_t* temp_vma, mem_desc_t * mem_ptr) 
 }
 
 uint64_t seg_fault(uint64_t addr, uint64_t *rsp_val, uint64_t stack_top) {
-	printf("SEG FAULT!\n");
-	return 0;// todo: change this !!!!!!!!!
-//	return temp_preempt_exit((uint64_t) stack_top); ----> not correct todo
+	printf("Segmentation fault. Killing %d\n", currenttask->pid);
+	return temp_preempt_exit((uint64_t) stack_top);
 }
 
 int is_addr_in_vma(uint64_t virtual_addr, mem_desc_t* mem_ptr,
@@ -69,7 +70,7 @@ int is_addr_in_vma(uint64_t virtual_addr, mem_desc_t* mem_ptr,
 		}
 	}
 //	printf("rspval:%x", rsp_val);
-	if (virtual_addr >= (uint64_t) rsp_val - 8) {
+	if (virtual_addr >= ((uint64_t) rsp_val - 8)) {
 		flag = 1;
 	}
 	return flag;
@@ -123,7 +124,7 @@ uint64_t do_demand_paging(task_struct_t * task, uint64_t virtual_addr,
 			}
 		}
 	}
-	page_alloc(task, virtual_addr);
+	page_alloc(task, virtual_addr, stack_top);
 
 	vma_t * temp_vma = mem_ptr->vma_list;
 	if (temp_vma != NULL) {
@@ -202,13 +203,14 @@ int is_cow_possible(uint64_t addr, uint64_t *rsp_val, uint64_t stack_top) {
 
 	if (!is_addr_writable_in_vma(addr, mem_ptr)) {
 		printf("No write perm in VMAs for this addr %p", addr);
-		seg_fault(addr, rsp_val, stack_top);
+//		seg_fault(addr, rsp_val, stack_top);
+
 		return 0;
 	}
 	return 1;
 }
 
-int copy_on_write(uint64_t addr) {
+uint64_t copy_on_write(uint64_t addr, uint64_t stack_top) {
 	// addr is a valid one that has write
 	// permission in vma, so lets perform COW
 	uint64_t phys = phys_addr_of_frame(addr);
@@ -225,36 +227,37 @@ int copy_on_write(uint64_t addr) {
 		decrease_ref_count(phys);
 //		printf(" allocated a new page and copied contents ");
 	}
-	return 1;
+	return stack_top;
 }
 
-uint64_t do_handle_pagefault(uint64_t error_code, uint64_t *rsp_val, uint64_t stack_top) {
+uint64_t do_handle_pagefault(uint64_t error_code, uint64_t *rsp_val,
+		uint64_t stack_top) {
 	int present = get_bit(error_code, 0);
 //	int rw = get_bit(error_code, 1);
 	int us = get_bit(error_code, 2);
 	uint64_t addr = get_faulted_addr();
 	int kernel_addr = is_kernel_addr(addr);
-//	printf(" pid:%d page fault at %p, error_code: %x ", currenttask->pid, addr,
-//			error_code);
+	printf(" pid:%d page fault at %p, error_code: %x ", currenttask->pid, addr,
+			error_code);
 	if (present == 0) {
 		if (kernel_addr) {
 			if (user_access(us)) {
-				bad_kernel_access(addr, rsp_val, stack_top);
+				return bad_kernel_access(addr, rsp_val, stack_top);
 			} else {
 				printf(" Pid:%d, kernel page fault. Do not reach here unless"
 						" testing.page fault at %p, error_code: %x  \n",
 						currenttask->pid, addr, error_code);
-				page_alloc(currenttask, addr);
+				return page_alloc(currenttask, addr, stack_top);
 			}
 		} else {
 //			printf(" Demand paging for process %d for addr %p\n",
 //					currenttask->pid, addr);
-			do_demand_paging(currenttask, addr, rsp_val, stack_top);
+			return do_demand_paging(currenttask, addr, rsp_val, stack_top);
 		}
 	} else {
 		if (kernel_addr) {
 			if (user_access(us)) {
-				bad_kernel_access(addr, rsp_val, stack_top);
+				return bad_kernel_access(addr, rsp_val, stack_top);
 			} else {
 				printf(
 						" Something wrong, kernel cant read its own mem pid:%d\n",
@@ -264,7 +267,7 @@ uint64_t do_handle_pagefault(uint64_t error_code, uint64_t *rsp_val, uint64_t st
 		} else {
 			if (is_cow_possible(addr, rsp_val, stack_top)) {
 //				printf(" Performing COW ");
-				copy_on_write(addr);
+				return copy_on_write(addr, stack_top);
 			} else {
 				printf("\nProcess %d trying to write into protected area %p ",
 						currenttask->pid, addr);

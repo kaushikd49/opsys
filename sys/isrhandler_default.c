@@ -107,7 +107,8 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 	} else if (regs.rax == SYS_chdir) {
 		return cd_system_call((char *) (regs.rdi));
 	} else if (regs.rax == SYS_lseek) {
-		return lseek_system_call((int)(regs.rdi), (uint64_t)(regs.rsi), (int)regs.rdx);
+		return lseek_system_call((int) (regs.rdi), (uint64_t) (regs.rsi),
+				(int) regs.rdx);
 	}
 	return 0;
 }
@@ -175,16 +176,18 @@ uint64_t traphandler_fourteen(regs_pushd_t regs) {
 //	uint64_t stack_top = (uint64_t)(&regs.r11)
 	uint64_t *rsp_loc = &regs.error_code + 4;
 	uint64_t *rsp_val = (uint64_t *) (*rsp_loc);
-	uint64_t stack_top = (uint64_t)(&(regs.gs));
-	uint64_t new_stack_top = do_handle_pagefault(regs.error_code, rsp_val, stack_top);
-	if(stack_top == new_stack_top){
+	uint64_t stack_top = (uint64_t) (&(regs.gs));
+	uint64_t new_stack_top = do_handle_pagefault(regs.error_code, rsp_val,
+			stack_top);
+	if (stack_top == new_stack_top) {
 		return new_stack_top;
 	}
 	uint64_t i = 0;
-	for( i = 0; i < 19 ; i++){
-		*(((uint64_t *)new_stack_top) - 1 + i*1) = *(((uint64_t *)new_stack_top) + i*1);
+	for (i = 0; i < 19; i++) {
+		*((uint64_t *) (((uint64_t) new_stack_top) - 8 + i * 8)) =
+				*((uint64_t *) (((uint64_t) new_stack_top) + i * 8));
 	}
-	*(((uint64_t *)new_stack_top) + (i-1)*1) = 0;
+	*((uint64_t *) (((uint64_t) new_stack_top) + (i - 1) * 8)) = 0;
 	return (new_stack_top - 8);
 
 }

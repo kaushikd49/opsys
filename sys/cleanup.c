@@ -175,7 +175,7 @@ void cleanup_ptables(task_struct_t * task, pv_map_t* pv_map_node,
 
 void cleanup_kernel_stack(volatile task_struct_t * task) {
 	if (task->kernel_stk_kmalloc_addr != 0) {
-		printf(" kernel stack freeing %p ", task->kernel_stk_kmalloc_addr);
+		//printf(" kernel stack freeing %p ", task->kernel_stk_kmalloc_addr);
 
 		kfree((uint64_t *) task->kernel_stk_kmalloc_addr);
 	}

@@ -1662,8 +1662,8 @@ uint64_t temp_preempt_exit(uint64_t stack_top) {
 //	process_switch_cooperative(&(last->state),&(currenttask->state), stack_top);
 //	tss.rsp0 = (uint64_t) (currenttask->state.kernel_rsp);
 	mark_as_terminated(last);
-
-	tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp) + 192);
+	if (currenttask->is_kernel_process != 1)
+		tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp) + 192);
 //	__asm__ __volatile__("movq %0, %%rsp"
 //							:
 //							:"r"(currenttask->state.kernel_rsp)

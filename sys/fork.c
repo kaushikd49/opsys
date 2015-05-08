@@ -162,6 +162,7 @@ vma_t* cp_linked_vmas(vma_t* from_vma, mem_desc_t* to) {
 	vma_t* head = NULL;
 	while (from_vma != NULL) {
 		vma_t* vma = kmalloc(sizeof(vma_t));
+		vma->vma_next = NULL;
 		cp_vma(from_vma, vma, to);
 
 		if (prev != NULL) {
