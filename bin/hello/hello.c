@@ -217,10 +217,15 @@ int main(int argc, char* argv[], char* envp[]) {
 	if (ret == 0) {
 		printf("\nCHILD ret:b:c %d:%d:%d, pid:%d parent:%d\n", ret, b, c,
 				getpid(), getppid());
-//		char buff[15];
-//		read(0, buff, 15);
-//		printf("%s", buff);
-		execve("bin/hel",argv, envp);
+		pid_t ret2 = fork();
+		if (ret2 == 0) {
+			printf("\nNESTED CHILD %d \n", ret2);
+		} else if (ret2 > 0) {
+			printf("\nNESTED PARENT %d \n", ret2);
+		} else if (ret2 < 0) {
+			printf("\nERROR \n", ret2);
+		}
+		execve("bin/hel", argv, envp);
 		exit(0);
 	} else if (ret > 0) {
 		int status;

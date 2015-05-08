@@ -1649,6 +1649,24 @@ void mark_as_terminated(task_struct_t* last) {
 	check_parent_waiting(last);
 }
 
+void mark_as_terminated_w(task_struct_t* last) {
+	task_struct_t *prev = waitingtask;
+	while (prev->next != last) {
+		prev = prev->next;
+	}
+	prev->next = last->next;
+
+	last->next = last;
+	last->p_state = STATE_TERMINATED;
+	last->pid = -1;
+	//todo: remove the proper kill is done
+	for(uint64_t i = 0; i < MAX_FILES_SYSTEM; i++){
+		file_desc_t *fd = last->filearray[i];
+		decrement_global_count_fd(fd);
+	}
+//	add_process_waitq(last);
+	check_parent_waiting(last);
+}
 //void space_msg() {
 ////	printf(" #dirty free-pages %d \n", num_free_pages(1));
 ////	printf(" #zeroed free-pages %d \n", num_free_pages(0));

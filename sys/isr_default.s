@@ -1272,8 +1272,16 @@ q2g:movq $59, %rbx
 q2h:movq $1, %rbx
 	movq 144(%rsp), %rax
 	cmp %rbx, %rax
-	jne q2
+	jne q2i
 	call handle_write
+	movq %rax, %rsp
+	movq 144(%rax),%rax
+	jmp q3
+q2i:movq $199, %rbx
+	movq 144(%rsp), %rax
+	cmp %rbx, %rax
+	jne q2
+	call handle_kill
 	movq %rax, %rsp
 	movq 144(%rax),%rax
 	jmp q3

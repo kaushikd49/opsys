@@ -62,6 +62,10 @@ uint64_t handle_execve(regs_syscall_t regs) {
 	return execve_sys_call((void *) regs.rdi, (void *) regs.rsi,
 			(void *) regs.rdx, stack_top);
 }
+uint64_t handle_kill(regs_syscall_t regs) {
+	uint64_t stack_top = (uint64_t) (&(regs.gs));
+	return kill_sys_call((int)regs.rdi, (uint64_t)stack_top);
+}
 uint64_t handle_syscall(regs_syscall_t regs) {
 	currenttask->state.kernel_rsp = (uint64_t) (&(regs.gs));
 //	if (regs.rax == ) {
@@ -100,9 +104,11 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 		return currenttask->ppid;
 	} else if (regs.rax == SYS_getps) {
 		return ps_system_call();
-	} else if (regs.rax == SYS_kill) {
-		return kill_system_call((pid_t) regs.rdi);
-	} else if (regs.rax == SYS_getcwd) {
+	}
+//	else if (regs.rax == SYS_kill) {
+//		return kill_system_call((pid_t) regs.rdi);
+//	}
+	else if (regs.rax == SYS_getcwd) {
 		return pwd_system_call((char *) (regs.rdi), (uint64_t) (regs.rsi));
 	} else if (regs.rax == SYS_chdir) {
 		return cd_system_call((char *) (regs.rdi));
