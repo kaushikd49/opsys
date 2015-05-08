@@ -197,7 +197,7 @@ uint64_t get_free_pages_logic(int order, page_t* free_list, int zeroed_only) {
 				&& (!zeroed_only || !free_list[i].dirty)) {
 			clear_array_range(free_list, i, i + limit - 1);
 			uint64_t phys_page = free_list[i].frame_addr;
-//			printf(" returning %p %d \n", phys_page, free_list[i].dirty);
+//			printf("returning %p %d \n", phys_page, free_list[i].dirty);
 			result = phys_page;
 
 //			if(free_list[i].dirty == 1){

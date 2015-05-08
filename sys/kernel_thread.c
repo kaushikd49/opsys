@@ -116,19 +116,20 @@ void add_read_blocked_list(read_blocked_t *node) {
 	node->next = read_blocked_list;
 	read_blocked_list = node;
 }
-read_blocked_t *remove_read_blocked_list(volatile read_blocked_t *current){
+read_blocked_t *remove_read_blocked_list(read_blocked_t *current){
 	volatile read_blocked_t *prev = read_blocked_list;
 	if (prev == current) {
 		read_blocked_list = current->next;
 		current->next = NULL;
-//		kfree(current);
+		void *curr_to_free = current;
+		kfree(curr_to_free);
 		return read_blocked_list;
 	} else {
 		while (prev->next != current) {
 			prev = prev->next;
 		}
 		prev->next = current->next;
-//		kfree(current);
+		kfree(current);
 		return prev->next;
 	}
 	return NULL;
@@ -608,7 +609,7 @@ void check_if_one_end_closed(volatile read_blocked_t *current){
 }
 void return_blocking_rw_to_runq_body() {
 
-	volatile read_blocked_t* current = read_blocked_list;
+	read_blocked_t* current = read_blocked_list;
 	if (current != NULL) {
 		do {
 

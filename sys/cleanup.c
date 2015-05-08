@@ -119,6 +119,7 @@ void free_ptables(task_struct_t * task, pv_map_t* pv_map_node,
 		free_process_page_for_process_virt_addr(task, pml_virt, ptable,
 				pt_pv_map);
 	}
+	free_pv_map(pt_pv_map);
 }
 
 void free_pdirs(task_struct_t * task, pv_map_t* pv_map_node, uint64_t* pml_virt) {
@@ -130,6 +131,8 @@ void free_pdirs(task_struct_t * task, pv_map_t* pv_map_node, uint64_t* pml_virt)
 		free_process_page_for_process_virt_addr(task, pml_virt, pdir,
 				pdir_pv_map);
 	}
+
+	free_pv_map(pdir_pv_map);
 }
 
 void free_pdir_ptrs(task_struct_t * task, pv_map_t* pv_map_node,
@@ -142,6 +145,8 @@ void free_pdir_ptrs(task_struct_t * task, pv_map_t* pv_map_node,
 		free_process_page_for_process_virt_addr(task, pml_virt, pdir_ptr_base,
 				pdir_ptr_pv_map);
 	}
+
+	free_pv_map(pdir_ptr_pv_map);
 }
 
 void cleanup_ptables(task_struct_t * task, pv_map_t* pv_map_node,
@@ -164,6 +169,8 @@ void cleanup_ptables(task_struct_t * task, pv_map_t* pv_map_node,
 	// free pml base
 	free_process_page_for_process_virt_addr(task, pml_virt, pml4_base_vaddr,
 			pml_pv_map);
+
+	free_pv_map(pml_pv_map);
 }
 
 void cleanup_kernel_stack(volatile task_struct_t * task) {
@@ -185,28 +192,28 @@ void cleanup_both_stk_kernel_process(task_struct_t *task) {
 
 void kfree_tstruct(task_struct_t* task) {
 	//cleanup_fds(task);
-	task->pid =0;
-	task->ppid =0;
+	task->pid = 0;
+	task->ppid = 0;
 	task->state.rsp = 0;
 	task->state.rip = 0;
 
-		//page table stuff
+	//page table stuff
 	task->state.cr3 = 0;
-		//flags
+	//flags
 	task->state.flags = 0;
 	task->state.kernel_rsp = 0;
 	task->next = NULL;
 	task->prev = NULL;
 	task->mem_map = 0;
-	for(uint64_t i = 0; i < 100; i++)
+	for (uint64_t i = 0; i < 100; i++)
 		task->executable[i] = '\0';
 	task->p_state = 0;
-	for(uint64_t i = 0; i < MAX_NUMBER_FILES; i++)
+	for (uint64_t i = 0; i < MAX_NUMBER_FILES; i++)
 		task->filearray[i] = NULL;
 	task->waiting_for = 0;
 	task->is_kernel_process = 0;
-	for(uint64_t i = 0; i < 100; i++)
-			task->pwd[i] = '\0';
+	for (uint64_t i = 0; i < 100; i++)
+		task->pwd[i] = '\0';
 	task->is_background = 0;
 	task->kernel_stk_kmalloc_addr = 0;
 	task->user_stk_kmalloc_addr = 0;
@@ -233,14 +240,15 @@ void cleanup_process(task_struct_t * task) {
 
 		cleanup_ptables(task, pv_map_node, pml_virt);
 
-//		free_pv_map(pv_map_node); --> infinite loop of get free pages called if this is enabled
+		free_pv_map(pv_map_node);
+		//--> infinite loop of get free pages called if this is enabled
 
 	} else {
 		cleanup_both_stk_kernel_process(task);
 	}
-//	cleanup_fds(task);
 	kfree_tstruct(task);
-	space_msg();
 
 	zero_dirty_free_pages(10);
+	space_msg();
+
 }

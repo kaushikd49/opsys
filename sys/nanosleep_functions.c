@@ -37,16 +37,21 @@ void remove_nanosleep_list(uint64_t seconds, uint64_t ms){
 			if(prev == NULL){
 				current->task->p_state = STATE_READY;
 				nanosleep_head = current->next;
+				kfree(current);
+				current = nanosleep_head;
+
 			}
 			else{
 				current->task->p_state = STATE_READY;
 				prev->next = current->next;
-
+				kfree(current);
+				current = prev->next;
 			}
 		}
-		prev = current;
-		if(current!=NULL)
+		else{
+			prev = current;
 			current = current->next;
+		}
 	}
 }
 

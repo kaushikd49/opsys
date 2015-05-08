@@ -547,8 +547,8 @@ void load_executable(task_struct_t *currenttask) {
 	safe_kfree(data_info);
 	safe_kfree(bss_info);
 	safe_kfree(ehframe_info);
-	safe_kfree(find_got_elf(temp));
-	safe_kfree(find_gotplt_elf(temp));
+	safe_kfree(got_info);
+	safe_kfree(gotplt_info);
 
 	currenttask->state.rip = (uint64_t) (temp->e_entry);
 
@@ -1155,6 +1155,7 @@ uint64_t temp_preempt_nanosleep(const struct timespec *rqtp,
 	move_process_runq_to_waitq(last->pid);
 	nanosleep_node_t *temp = make_nanosleep_node(rqtp, last);
 	add_nanosleep_list(temp);
+
 	update_cr3((uint64_t *) (currenttask->state.cr3));
 	//	printf("pid is %d ",currenttask->pid);
 	return (currenttask->state.kernel_rsp);
@@ -1406,6 +1407,9 @@ uint64_t setup_new_process(char *binary, char *argv[], char *envp[],
 	setup_process_page_tables((uint64_t) stack_page, (uint64_t) free_frame);
 	add_env_to_stack(currenttask);
 	tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp) + 192);
+
+	kfree(executable);
+
 	return currenttask->state.kernel_rsp;
 
 }
@@ -1462,6 +1466,9 @@ uint64_t setup_new_background_process(char *binary, char *argv[], char *envp[],
 	setup_process_page_tables((uint64_t) stack_page, (uint64_t) free_frame);
 	add_env_to_stack(currenttask);
 	tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp) + 192);
+
+	kfree(executable);
+
 	return currenttask->state.kernel_rsp;
 
 }
@@ -1562,6 +1569,9 @@ uint64_t execve_process(char *binary, char **argv, char **envp,
 		modify_envp_stack(executable, argv, envp,new_argv);
 		argv =new_argv;
 		binary = argv[0];
+
+		kfree(executable);
+
 		executable = check_binary(argv[0]);
 		char **argv_temp3 = argv;
 		i = 0;
