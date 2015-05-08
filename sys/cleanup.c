@@ -247,8 +247,9 @@ void cleanup_process(task_struct_t * task) {
 		cleanup_both_stk_kernel_process(task);
 	}
 	kfree_tstruct(task);
+//	space_msg();
 
 	zero_dirty_free_pages(10);
-	space_msg();
+//	space_msg();
 
 }

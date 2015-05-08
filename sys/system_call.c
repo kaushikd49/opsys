@@ -66,8 +66,8 @@ int kill_system_call(pid_t pid) {
 }
 
 void print_state(char state[], task_struct_t *t) {
-	printf("|  %d  |  %d   | %s |   %d   |\n", t->pid, t->ppid, state,
-			t->is_kernel_process);
+	printf("|  %d  |  %d   | %s |   %d   | %s |\n", t->pid, t->ppid, state,
+			t->is_kernel_process, t->executable);
 }
 
 void print_ps(task_struct_t * task) {
@@ -89,13 +89,13 @@ void print_ps(task_struct_t * task) {
 
 int ps_system_call() {
 
-	printf("----------PROCESS STATE----------\n");
-	printf("---------------------------------\n");
-	printf("| pid | ppid |  state  | iskrnl |\n");
-	printf("---------------------------------\n");
+	printf("--------------PROCESS STATE-------------------\n");
+	printf("-----------------------------------------------\n");
+	printf("| pid | ppid |  state  | iskrnl | Executable |\n");
+	printf("--------------------------------------------------\n");
 	print_ps(currenttask);
 	print_ps(waitingtask);
-	printf("---------------------------------\n");
+	printf("----------------------------------------------------\n");
 	return 0;
 }
 
@@ -399,4 +399,46 @@ int cd_system_call(char *buffer){
 	}
 	kfree(answer);
 	return 0;
+}
+enum {
+	SEEK_SET = 0, SEEK_CUR = 1, SEEK_END = 2
+};
+int lseek_system_call(int fd,int offset, int whence){
+	if(currenttask->filearray[fd] == NULL){
+		return -EBADF;
+	}
+	if(currenttask->filearray[fd]->size == -999){
+		return -EINVAL;
+	}
+	char *start = 0;
+
+	if(whence ==SEEK_SET){
+		start = (char *)((uint64_t)currenttask->filearray[fd]->posix_header + (uint64_t)(sizeof(struct posix_header_ustar)));
+	}
+	else if(whence == SEEK_CUR){
+		start = (char *)(currenttask->filearray[fd]->current_pointer);
+	}
+	else if(whence == SEEK_END){
+		start = (char *)((uint64_t)((uint64_t)currenttask->filearray[fd]->posix_header + (uint64_t)(sizeof(struct posix_header_ustar))) + (uint64_t)currenttask->filearray[fd]->size - 1);
+	}
+	else{
+		return -EINVAL;
+	}
+	char *new_pointer = 0;
+	if(offset < 0){
+		offset = -offset;
+		new_pointer = (char *)((uint64_t)start - (uint64_t)(offset));//being safe
+	}
+	else{
+		new_pointer = (char *)((uint64_t)start + (uint64_t)(offset));//being safe
+	}
+	uint64_t st = ((uint64_t)currenttask->filearray[fd]->posix_header + (uint64_t)(sizeof(struct posix_header_ustar)));
+	uint64_t end = (uint64_t)((uint64_t)((uint64_t)currenttask->filearray[fd]->posix_header + (uint64_t)(sizeof(struct posix_header_ustar))) + (uint64_t)currenttask->filearray[fd]->size - 1);
+	if((uint64_t)new_pointer >= st && (uint64_t)new_pointer <= end){
+		currenttask->filearray[fd]->current_pointer = new_pointer;
+		return (int)((uint64_t)(new_pointer) - (uint64_t)((uint64_t)currenttask->filearray[fd]->posix_header + (uint64_t)(sizeof(struct posix_header_ustar))));
+	}
+	else{
+		return -EINVAL;
+	}
 }

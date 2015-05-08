@@ -871,7 +871,7 @@ void add_default_env(task_struct_t *task) {
 	setup_process_page_tables((uint64_t) ENV_START, (uint64_t) free_frame);
 	char *current_env = (char *) ENV_START;
 	char *env1 = current_env;
-	copy_string("PATH=bin/", &current_env);
+	copy_string("PATH=bin:", &current_env);
 	char *argv1 = current_env;
 	copy_string(task->executable, &current_env);
 	uint64_t *stack_top = (uint64_t *) (task->state.rsp);
@@ -1284,7 +1284,7 @@ void make_new_process(char *binary, executable_t *executable) {
 	task->pid = pid;
 	task->ppid = currenttask->ppid;
 	strcpy(task->executable, binary);
-	printf(" 1: task pid : %d task ppid: %d %s\n", task->pid, task->ppid, task->executable);
+//	printf(" 1: task pid : %d task ppid: %d %s\n", task->pid, task->ppid, task->executable);
 
 	task_struct_t* parent_task = get_parent_from_ppid();
 	if (currenttask->next == currenttask) {
@@ -1304,12 +1304,13 @@ void make_new_process(char *binary, executable_t *executable) {
 
 }
 
-void make_new_process_background(executable_t *executable) {
+void make_new_process_background(char *binary, executable_t *executable) {
 	task_struct_t *task = kmalloc(sizeof(task_struct_t));
 	copy_file_dp_process_background(task, currenttask);
 	int pid = currenttask->pid;
 	task->pid = pid;
 	task->ppid = currenttask->ppid;
+	strcpy(task->executable, binary);
 	task_struct_t* parent_task = get_parent_from_ppid();
 	if (currenttask->next == currenttask) {
 		currenttask->next = task;
@@ -1450,7 +1451,7 @@ uint64_t setup_new_background_process(char *binary, char *argv[], char *envp[],
 
 	}
 	*current_stack = 0;
-	make_new_process_background(executable);
+	make_new_process_background(binary, executable);
 //	load_from_elf_execve(currenttask, executable->text_info, executable->temp, executable->rodata_info, executable->data_info,
 //			executable->bss_info, executable->ehframe_info, executable->got_info, execuatable->gotplt_info);
 
@@ -1552,7 +1553,7 @@ uint64_t execve_process(char *binary, char **argv, char **envp,
 	if (executable == NULL) {
 		executable = check_binary_with_path(binary);//not bothering changing the binary in argv first argv
 		if(executable == NULL){
-			regs->rax = (uint64_t) -EACCES;
+			regs->rax = (uint64_t) -ENOENT;
 			return (uint64_t) regs;
 		}
 	}
