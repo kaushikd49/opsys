@@ -656,11 +656,12 @@ void clean_up_process_body() {
 	if (wait_task != NULL) {
 		volatile task_struct_t* current = waitingtask;
 		volatile task_struct_t* prev = current;
-		while (prev->next != current) {
+		while (prev!= NULL && prev->next != current) {
 			prev = prev->next;
 		}
 		do {
 			if (current->p_state == STATE_TERMINATED) {
+//				printf("cleaning ");
 				volatile task_struct_t *to_be_removed = current;
 				if (prev == current) {
 					current = NULL;

@@ -4,7 +4,7 @@
 #include <sys/process.h>
 #include <sys/paging.h>
 #include <sys/utils.h>
-
+#include <sys/reclaim.h>
 page_t * free_list = NULL;
 uint64_t *free_list_location = NULL;
 uint64_t MAX_NUMBER_PAGES = 0;
@@ -188,6 +188,7 @@ void clear_array_range(page_t *free_list, uint64_t start, uint64_t end) {
 }
 
 uint64_t get_free_pages_logic(int order, page_t* free_list, int zeroed_only) {
+	reclaim_resource_if_needed();
 	uint64_t limit = 1 << order;
 	uint64_t result = 0;
 	for (uint64_t i = 0; i < MAX_NUMBER_PAGES - limit + 1; i++) {

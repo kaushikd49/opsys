@@ -8,14 +8,7 @@
 #include<sys/tarfs.h>
 #include<sys/freelist.h>
 #include<sys/isr_stuff.h>
-int is_mem_not_enough() {
-	// zeroed pages <=8 or total free pages <= 10
-	return (num_free_pages(0) <= 8 || num_free_pages(2) <= 15);
-}
 
-int pid_to_kill() {
-	return -1;
-}
 
 uint64_t strlen(const char *str) {
 	uint64_t current = 0;
@@ -51,14 +44,15 @@ int kill_from_queue(pid_t pid, task_struct_t *queue) {
 		if (t->pid == pid) {
 			if (t->is_kernel_process)
 				return -2;
-			for(uint64_t i = 0; i < MAX_FILES_SYSTEM; i++){
-				if(t->filearray[i] != NULL && t->filearray[i]->busy == 1 && t->filearray[i]->current_process == t->pid){
+			for (uint64_t i = 0; i < MAX_FILES_SYSTEM; i++) {
+				if (t->filearray[i] != NULL && t->filearray[i]->busy == 1
+						&& t->filearray[i]->current_process == t->pid) {
 					t->filearray[i]->busy = 0;
 				}
 			}
-			if(queue == currenttask)
+			if (queue == currenttask)
 				mark_as_terminated(t);
-			else if(queue == waitingtask)
+			else if (queue == waitingtask)
 				mark_as_terminated_w(t);
 			return 0;
 		}
@@ -72,23 +66,25 @@ uint64_t kill_system_call(pid_t pid, uint64_t stack_top) {
 	int wQRes = kill_from_queue(pid, waitingtask);
 
 	if (rQRes <= 0) {
-		regs_syscall_t *regs = (regs_syscall_t *)(stack_top);
+		regs_syscall_t *regs = (regs_syscall_t *) (stack_top);
 		regs->rax = rQRes;
 		return stack_top;
 	} else if (wQRes <= 0) {
-		regs_syscall_t *regs = (regs_syscall_t *)(stack_top);
+		regs_syscall_t *regs = (regs_syscall_t *) (stack_top);
 		regs->rax = wQRes;
 		return stack_top;
 	} else {
-		regs_syscall_t *regs = (regs_syscall_t *)(stack_top);
+		regs_syscall_t *regs = (regs_syscall_t *) (stack_top);
 		regs->rax = 5;
 		return stack_top;
 	}
 }
-uint64_t kill_sys_call(pid_t pid, uint64_t stack_top){
-	if(pid == currenttask->pid){
-		for(uint64_t i = 0; i < MAX_FILES_SYSTEM; i++){
-			if(currenttask->filearray[i]->busy == 1 && currenttask->filearray[i]->current_process == currenttask->pid){
+uint64_t kill_sys_call(pid_t pid, uint64_t stack_top) {
+	if (pid == currenttask->pid) {
+		for (uint64_t i = 0; i < MAX_FILES_SYSTEM; i++) {
+			if (currenttask->filearray[i]->busy == 1
+					&& currenttask->filearray[i]->current_process
+							== currenttask->pid) {
 				currenttask->filearray[i]->busy = 0;
 			}
 		}
@@ -98,6 +94,8 @@ uint64_t kill_sys_call(pid_t pid, uint64_t stack_top){
 	return kill_system_call(pid, stack_top);
 
 }
+
+
 void print_state(char state[], task_struct_t *t) {
 	printf("|  %d  |  %d   | %s |   %d   | %s |\n", t->pid, t->ppid, state,
 			t->is_kernel_process, t->executable);

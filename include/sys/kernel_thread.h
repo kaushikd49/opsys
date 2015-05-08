@@ -11,4 +11,6 @@ void clean_up_processes();
 int check_ready_read(file_desc_t *current_fd);
 int read_stdin(int fd, uint64_t size, char* buffer);
 void block_read_signal_write(pipe_struct_t* pipe_info);
+
+void clean_up_process_body();
 #endif
