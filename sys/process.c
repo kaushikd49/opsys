@@ -1192,9 +1192,10 @@ void make_new_process_state(task_struct_t *task, task_struct_t *parent_task,
 			executable->got_info, executable->gotplt_info);
 
 	task->state.rip = (uint64_t) (executable->temp->e_entry);
-	uint64_t stack_page = create_stack_vma(currenttask);
-	void *free_frame = (void *) get_free_frames(0);
-	setup_process_page_tables((uint64_t) stack_page, (uint64_t) free_frame);
+	//incase this is causing problems done twice once in setup process page tables
+//	uint64_t stack_page = create_stack_vma(currenttask);
+//	void *free_frame = (void *) get_free_frames(0);
+//	setup_process_page_tables((uint64_t) stack_page, (uint64_t) free_frame);
 
 	uint64_t stack_kernel = set_get_kernel_stck_addr(task);
 	task->state.kernel_rsp = (uint64_t) (stack_kernel + 0xfff);
@@ -1404,6 +1405,7 @@ uint64_t setup_new_process(char *binary, char *argv[], char *envp[],
 	void *free_frame = (void *) get_free_frames(0);
 	setup_process_page_tables((uint64_t) stack_page, (uint64_t) free_frame);
 	add_env_to_stack(currenttask);
+	tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp) + 192);
 	return currenttask->state.kernel_rsp;
 
 }
@@ -1459,6 +1461,7 @@ uint64_t setup_new_background_process(char *binary, char *argv[], char *envp[],
 	void *free_frame = (void *) get_free_frames(0);
 	setup_process_page_tables((uint64_t) stack_page, (uint64_t) free_frame);
 	add_env_to_stack(currenttask);
+	tss.rsp0 = (uint64_t) ((currenttask->state.kernel_rsp) + 192);
 	return currenttask->state.kernel_rsp;
 
 }
@@ -1587,10 +1590,10 @@ uint64_t execve_process(char *binary, char **argv, char **envp,
 //		printf("executable: %s", argv[0]);
 	if(*(argv_temp2[i-1]) == amb){
 		argv_temp2[i-1] = NULL;
-
 		return setup_new_background_process(binary, (char **) argv, (char **) envp, executable);
 	}
 	return setup_new_process(binary, (char **) argv, (char **) envp, executable);
+
 
 }
 void check_parent_waiting(task_struct_t *last) {

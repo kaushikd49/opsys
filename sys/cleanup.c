@@ -169,6 +169,7 @@ void cleanup_ptables(task_struct_t * task, pv_map_t* pv_map_node,
 void cleanup_kernel_stack(volatile task_struct_t * task) {
 	if (task->kernel_stk_kmalloc_addr != 0) {
 		printf(" kernel stack freeing %p ", task->kernel_stk_kmalloc_addr);
+
 		kfree((uint64_t *) task->kernel_stk_kmalloc_addr);
 	}
 }
@@ -180,6 +181,37 @@ void cleanup_both_stk_kernel_process(task_struct_t *task) {
 	if (task->user_stk_kmalloc_addr != 0) {
 		kfree((uint64_t *) task->user_stk_kmalloc_addr);
 	}
+}
+
+void kfree_tstruct(task_struct_t* task) {
+	//cleanup_fds(task);
+	task->pid =0;
+	task->ppid =0;
+	task->state.rsp = 0;
+	task->state.rip = 0;
+
+		//page table stuff
+	task->state.cr3 = 0;
+		//flags
+	task->state.flags = 0;
+	task->state.kernel_rsp = 0;
+	task->next = NULL;
+	task->prev = NULL;
+	task->mem_map = 0;
+	for(uint64_t i = 0; i < 100; i++)
+		task->executable[i] = '\0';
+	task->p_state = 0;
+	for(uint64_t i = 0; i < MAX_NUMBER_FILES; i++)
+		task->filearray[i] = NULL;
+	task->waiting_for = 0;
+	task->is_kernel_process = 0;
+	for(uint64_t i = 0; i < 100; i++)
+			task->pwd[i] = '\0';
+	task->is_background = 0;
+	task->kernel_stk_kmalloc_addr = 0;
+	task->user_stk_kmalloc_addr = 0;
+
+	kfree(task);
 }
 
 void cleanup_process(task_struct_t * task) {
@@ -197,7 +229,7 @@ void cleanup_process(task_struct_t * task) {
 
 		cleanup_mem_map(task);
 
-//		cleanup_kernel_stack(task);
+		cleanup_kernel_stack(task);
 
 		cleanup_ptables(task, pv_map_node, pml_virt);
 
@@ -206,9 +238,9 @@ void cleanup_process(task_struct_t * task) {
 	} else {
 		cleanup_both_stk_kernel_process(task);
 	}
-	//cleanup_fds(task);
-	kfree(task);
-//	space_msg();
+//	cleanup_fds(task);
+	kfree_tstruct(task);
+	space_msg();
 
 	zero_dirty_free_pages(10);
 }
