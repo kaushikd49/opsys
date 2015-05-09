@@ -144,7 +144,7 @@ int write_system_call(int fd, const void *buff, size_t count) {
 	} else {
 		//still need to test and add error cases
 		//havnt decided how to assign pages to the buffer
-		printf("other half of write");
+		//printf("other half of write");
 		char *copy_buf = (char *) buff;
 		int printed = 0;
 		while (printed < count && copy_buf[printed] != '\0') {
@@ -359,7 +359,7 @@ int is_valid_directory(char *file_name) {
 				cd_errno = -ENOTDIR;
 				return 0;
 			}
-			printf("%s %s: found file", current->name, current->magic);
+			//printf("%s %s: found file", current->name, current->magic);
 			return 1;
 		}
 		//			if(i %5 == 0)
@@ -415,10 +415,10 @@ int cd_system_call(char *buffer) {
 			kfree(answer);
 			return -EIO;
 		}
-		printf("answer: %s pwd: %s %d %d %d\n", answer, parent_process->pwd,
-				parent_process->pid, currenttask->pid, currenttask->ppid);
+		//printf("answer: %s pwd: %s %d %d %d\n", answer, parent_process->pwd,
+		//		parent_process->pid, currenttask->pid, currenttask->ppid);
 		strcpy(currenttask->pwd, answer);
-		printf("answer: %s pwd: %s\n", answer, parent_process->pwd);
+		//printf("answer: %s pwd: %s\n", answer, parent_process->pwd);
 	} else {
 		kfree(answer);
 		return cd_errno;

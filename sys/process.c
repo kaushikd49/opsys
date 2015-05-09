@@ -591,7 +591,7 @@ executable_t *check_binary(char *binary) {
 
 	while ((uint64_t) current < (uint64_t) (&_binary_tarfs_end)) {
 		if (strcmp(current->name, binary) == 0) {
-						printf("%s", current->name);
+		//				printf("%s", current->name);
 			char amb = '5';
 			if(current->typeflag[0] == amb){
 				return NULL;
@@ -920,7 +920,7 @@ void kernel_process_init() {
 	temp_create_kernel_process(waiting_to_running_q, 1);
 	temp_create_kernel_process(check_user_process_waitpid_daemon, 1);
 	temp_create_kernel_process(return_blocking_rw_to_runq, 1);
-//	temp_create_kernel_process(clean_up_processes, 1);
+	temp_create_kernel_process(clean_up_processes, 1);
 	ENV_SWAP_START = kmalloc(0x1000);
 	STACK_SWAP_START = kmalloc(0x1000);
 	temp_create_user_process("bin/sbush", 1);
@@ -1165,7 +1165,7 @@ void make_new_process_state(task_struct_t *task, task_struct_t *parent_task,
 		executable_t *executable) {
 	task->mem_map = NULL;
 	task->ppid = parent_task->pid;
-	printf(" task pid : %d task ppid %d\n", task->pid, task->ppid);
+	//printf(" task pid : %d task ppid %d\n", task->pid, task->ppid);
 	strcpy(task->pwd, parent_task->pwd);
 	task->is_background = 0;
 	task->waiting_for = DEFAULT_WAITING_FOR;

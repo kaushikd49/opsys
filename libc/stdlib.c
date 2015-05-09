@@ -669,7 +669,7 @@ int execve(const char *filename, char * const argv[], char * const envp[]) {
 	int64_t result;
 	result = syscall_3(SYS_execve, (uint64_t) filename, (uint64_t) argv,
 			(uint64_t) envp);
-	printf("result %x", result);
+	//printf("result %x", result);
 	if (result == -E2BIG) {
 		errno = E2BIG;
 		return -1;

@@ -23,7 +23,7 @@ int main(int argc, char *argv[], char *envp[]) {
 		return 1;
 	}
 
-	int status = kill((pid_t) myatoi(argv[1]));
-	printf("\n pid:%d killed status:%d", myatoi(argv[1]), status);
+	kill((pid_t) myatoi(argv[1]));
+	//printf("\n pid:%d killed status:%d", myatoi(argv[1]), status);
 	return 0;
 }

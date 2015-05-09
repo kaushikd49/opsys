@@ -65,7 +65,7 @@ int need_wait(int fd){
 					next_addr = next_addr - 0x1000;
 				}
 				if(next_addr == (uint64_t)(current->current_pointer)){
-					printf("need wait");
+					//printf("need wait");
 					return 1;
 
 				}
@@ -325,7 +325,7 @@ int handle_pipe_read(int copied, uint64_t size, file_desc_t* current_fd,
 					pipe_info->read_end->current_pointer);
 		} else {
 			if (is_write_end_dead(pipe_info)) {
-				printf("write closed");
+				//printf("write closed");
 				return copied;
 			}
 			block_read_signal_write(pipe_info);
@@ -550,7 +550,7 @@ void find_child(volatile task_struct_t *temp) {
 //	printf("daemon activated");
 	temp->waiting_for = 999;
 	temp->p_state = STATE_READY;
-	printf("%d is back", temp->pid);
+	//printf("%d is back", temp->pid);
 }
 
 void check_user_process_waitpid_daemon_body() {

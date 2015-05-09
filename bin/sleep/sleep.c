@@ -24,6 +24,6 @@ int main(int argc, char *argv[], char *envp[]) {
 	}
 
 	sleep(myatoi(argv[1]));
-	printf("\n woke up after %ds", myatoi(argv[1]));
+	//printf("\n woke up after %ds", myatoi(argv[1]));
 	return 0;
 }

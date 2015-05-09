@@ -18,7 +18,7 @@ uint64_t *find_file_tarfs(char *file_name){
 	int i =0;
 	while ((uint64_t) current < (uint64_t) (&_binary_tarfs_end)) {
 		if(strcmp(file_name, current->name) == 0){
-			printf("%s %s: found file", current->name, current->magic);
+			//printf("%s %s: found file", current->name, current->magic);
 			return (uint64_t *)current;
 		}
 //			if(i %5 == 0)

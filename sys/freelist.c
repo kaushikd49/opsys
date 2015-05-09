@@ -4,7 +4,6 @@
 #include <sys/process.h>
 #include <sys/paging.h>
 #include <sys/utils.h>
-#include <sys/reclaim.h>
 page_t * free_list = NULL;
 uint64_t *free_list_location = NULL;
 uint64_t MAX_NUMBER_PAGES = 0;
@@ -286,8 +285,8 @@ void return_page(uint64_t page, page_t *free_list) {
 			free_list[i].ref_count -= 1;
 
 			if (free_list[i].ref_count < 0) {
-				printf(
-						"free_page deallocation you have made a mistake here  mostly.\n");
+				//printf(
+				//		"free_page deallocation you have made a mistake here  mostly.\n");
 			}
 			if (free_list[i].ref_count == 0) {
 				free_list[i].is_free = 1;
@@ -330,8 +329,8 @@ void return_pages(uint64_t page, page_t *free_list, int order) {
 		if (free_list[i].frame_addr == page) {
 			free_list[i].ref_count -= 1;
 			if (free_list[i].ref_count < 0) {
-				printf(
-						"free_page deallocation you have made a mistake here  mostly.\n");
+				//printf(
+				//		"free_page deallocation you have made a mistake here  mostly.\n");
 			}
 			if (free_list[i].ref_count == 0){
 				free_list[i].is_free = 1;
@@ -341,8 +340,8 @@ void return_pages(uint64_t page, page_t *free_list, int order) {
 			for (uint64_t i = index + 1; i < index + limit; i++) {
 				free_list[i].ref_count -= 1;
 				if (free_list[i].ref_count < 0) {
-					printf(
-							"free_page deallocation you have made a mistake here  mostly.\n");
+					//printf(
+					//		"free_page deallocation you have made a mistake here  mostly.\n");
 				}
 				if (free_list[i].ref_count == 0){
 					free_list[i].is_free = 1;
@@ -371,9 +370,9 @@ uint64_t * get_free_zeroed_frame() {
 uint64_t * get_free_frames(int order) {
 	uint64_t freePage = get_free_pages(free_list, order);
 	if (freePage == 0) {
-		while (1) {
 			printf("no free physical frames");
-		}
+		while (1) {
+				}
 	}
 //	printf("returning freepages:%p ", freePage);
 	return (uint64_t *) freePage;

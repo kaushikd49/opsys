@@ -98,8 +98,8 @@ uint64_t do_demand_paging(task_struct_t * task, uint64_t virtual_addr,
 	mem_desc_t * mem_ptr = task->mem_map;
 
 	if (!is_addr_in_vma(virtual_addr, mem_ptr, rsp_val)) {
-		printf("No valid VMAs for this addr %p, pid:%d, iskrnl:%d",
-				virtual_addr, currenttask->pid, currenttask->is_kernel_process);
+	//	printf("No valid VMAs for this addr %p, pid:%d, iskrnl:%d",
+	//			virtual_addr, currenttask->pid, currenttask->is_kernel_process);
 		return seg_fault(virtual_addr, rsp_val, stack_top);
 
 	}
@@ -160,7 +160,7 @@ uint64_t do_demand_paging(task_struct_t * task, uint64_t virtual_addr,
 
 uint64_t bad_kernel_access(uint64_t addr, uint64_t *rsp_val, uint64_t stack_top) {
 	//trying to access kernel data
-	printf(" Kernel access by user\n");
+	//printf(" Kernel access by user\n");
 	return seg_fault(addr, rsp_val, stack_top);
 }
 
@@ -202,7 +202,7 @@ int is_cow_possible(uint64_t addr, uint64_t *rsp_val, uint64_t stack_top) {
 	mem_desc_t * mem_ptr = currenttask->mem_map;
 
 	if (!is_addr_writable_in_vma(addr, mem_ptr)) {
-		printf("No write perm in VMAs for this addr %p", addr);
+		//printf("No write perm in VMAs for this addr %p", addr);
 //		seg_fault(addr, rsp_val, stack_top);
 
 		return 0;
@@ -244,9 +244,9 @@ uint64_t do_handle_pagefault(uint64_t error_code, uint64_t *rsp_val,
 			if (user_access(us)) {
 				return bad_kernel_access(addr, rsp_val, stack_top);
 			} else {
-				printf(" Pid:%d, kernel page fault. Do not reach here unless"
-						" testing.page fault at %p, error_code: %x  \n",
-						currenttask->pid, addr, error_code);
+				//printf(" Pid:%d, kernel page fault. Do not reach here unless"
+				//		" testing.page fault at %p, error_code: %x  \n",
+						//currenttask->pid, addr, error_code);
 				return page_alloc(currenttask, addr, stack_top);
 			}
 		} else {
@@ -259,9 +259,9 @@ uint64_t do_handle_pagefault(uint64_t error_code, uint64_t *rsp_val,
 			if (user_access(us)) {
 				return bad_kernel_access(addr, rsp_val, stack_top);
 			} else {
-				printf(
-						" Something wrong, kernel cant read its own mem pid:%d\n",
-						currenttask->pid);
+				//printf(
+				//		" Something wrong, kernel cant read its own mem pid:%d\n",
+				//		currenttask->pid);
 				return seg_fault(addr, rsp_val, stack_top);
 			}
 		} else {
@@ -269,8 +269,8 @@ uint64_t do_handle_pagefault(uint64_t error_code, uint64_t *rsp_val,
 //				printf(" Performing COW ");
 				return copy_on_write(addr, stack_top);
 			} else {
-				printf("\nProcess %d trying to write into protected area %p ",
-						currenttask->pid, addr);
+				//printf("\nProcess %d trying to write into protected area %p ",
+				//		currenttask->pid, addr);
 				return seg_fault(addr, rsp_val, stack_top);
 			}
 		}

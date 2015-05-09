@@ -54,8 +54,12 @@ uint64_t handle_wait(regs_syscall_t regs) {
 	return wait_pid((int) regs.rdi, (int *) (regs.rsi), (int) (regs.rdx),
 			stack_top);
 }
+
 uint64_t handle_nanosleep(regs_syscall_t regs) {
 	uint64_t stack_top = (uint64_t) (&(regs.gs));
+	if (((struct timespec*) (regs.rdi))->tv_sec == 0) {
+		return temp_preempt_exit(stack_top);
+	}
 	return nanosleep_sys_call((void *) regs.rdi, (void *) regs.rsi, stack_top);
 }
 
@@ -91,7 +95,6 @@ uint64_t handle_syscall(regs_syscall_t regs) {
 		if (is_mem_not_enough()) {
 			return -1;
 		}
-		kill_processes();
 		int abc = fork_sys_call(stack_top);
 
 		return abc;
