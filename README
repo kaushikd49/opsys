@@ -63,5 +63,22 @@ Example it will not replace /bin:${PATH} to the full value.
 10.) To run an sbush script within the shell, just use <path of the script>.
 11.) Limit on shell input commands' total length is 1000 characters.
 
+---------------------------------------------------------
+					Project Updates
+=========================================================
+70 point project
 
+Team: 
+Muthukumar Suresh
+Kaushik Devarajaiah
+
+Features covered
+
+1. One space separation needed for pipe and & commands
+2. Support for COW fork, auto growing stack, seg faulting on illegal address access provided.
+3. All TARFS functionalitied 
+4. All the binaries are povided ( ls, echo, sleep, kill -9, ps). cd and ls need the '/' character as a suffix to input directory values.
+5. Support for running sbush scripts is provided (top line should be #!/bin/sbush)
+6. We have implemented kmalloc for kernel memory management and self-referencing for page table management.
+7. Additionally, binaries are provided in bin/ that can be used for testing. Ex produver, consumer can be used for testing pipes -> producer | consumer
 
