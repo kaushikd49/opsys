@@ -1,0 +1,4 @@
+.obj
+rootfs
+*.out
+*.o

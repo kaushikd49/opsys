@@ -1,0 +1,84 @@
+The provided Makefile:
+  1) builds a kernel
+  2) copies it into rootfs/boot/kernel/kernel
+  3) creates an ISO CD image with the rootfs/ contents
+
+To boot the system in QEMU, run:
+  qemu-system-x86_64 -curses -cdrom $USER.iso -drive id=disk,file=$USER.img,if=none -device ahci,id=ahci -device ide-drive,drive=disk,bus=ahci.0 -net nic -net user,hostfwd=tcp::10080-:80 -net user,hostfwd=tcp::10023-:23 --no-reboot -gdb tcp::9998
+
+  Explanation of parameters:
+  -curses         use a text console (omit this to use default SDL/VNC console)
+  -cdrom x.iso    connect a CD-ROM and insert CD with x.iso disk
+  --no-reboot     exit when guest reboots
+  -gdb tcp::9998  listen for "remote" debugging connections on port 9998
+
+  connect a hard drive with x.img disk:
+  -drive id=disk,file=$USER.img,if=none -device ahci,id=ahci -device ide-drive,drive=disk,bus=ahci.0
+  connect a NIC and forward local port 10080 into port 80 and local port 10023 to port 23
+  -net nic -net user,hostfwd=tcp::10080-:80 -net user,hostfwd=tcp::10023-:23
+
+When using the -curses mode, switch to the qemu> console with ESC-2.
+
+To connect a remote debugger to the running qemu VM:
+  gdb ./kernel
+  target remote localhost:9998
+
+
+-----------------------------
+----------README------------
+Scroll support is provided by using a buffer. 
+Buffer limit is thrice the size of video memory, beyond that the data will not be printed.
+Last line of video memory is used for displaying glyph and timer in right corner.
+Whitespaces are handled.
+Following non-displayable chars are printed as below
+		--Enter - <ENT>
+		--Tab - <TAB>
+		--Backspace - <BACKSPACE>
+TEAM:
+Muthukumar Suresh
+Kaushik Devarajaiah
+Project done by
+1) Muthukumar Suresh (109835938)
+2) Kaushik Devarajaiah (109889142)
+
+How to use
+1.) Run make clean ; make from the project root directory
+2.) Run ./rootfs/bin/sbush from the project root directory
+3.) To execute commands in the shell, please provide a single
+ space separation between commands. Same holds for pipes too. 
+Ex:
+ls
+pwd
+date
+ls | less
+ls | sort | less | grep a --color=auto
+
+4.) Handling scripts - comments in scripts can only appear at the start of a line.
+5.) Format to set environment variables - setenv VAR_NAME VAR_VALUE
+6.) Format to get environment variables - getenv VAR_NAME
+7.) setenv does not support variable substitution, only text values are allowed. 
+Example it will not replace /bin:${PATH} to the full value.
+8.) To set PS1 use - setenv PS1 my_favorite_prompt>>
+9.) To run an sbush script from outside, use sbush <script_name>
+10.) To run an sbush script within the shell, just use <path of the script>.
+11.) Limit on shell input commands' total length is 1000 characters.
+
+---------------------------------------------------------
+					Project Updates
+=========================================================
+70 point project
+
+Team: 
+Muthukumar Suresh
+Kaushik Devarajaiah
+
+Features covered
+
+1. One space separation needed for pipe and & commands
+2. Support for COW fork, auto growing stack, seg faulting on illegal address access provided.
+3. All TARFS functionalitied 
+4. All the binaries are povided ( ls, echo, sleep, kill -9, ps). cd and ls need the '/' character as a suffix to input directory values.
+5. Support for running sbush scripts is provided (top line should be #!/bin/sbush)
+6. We have implemented kmalloc for kernel memory management and self-referencing for page table management.
+7. Additionally, binaries are provided in bin/ that can be used for testing. Ex produver, consumer can be used for testing pipes -> producer | consumer
+

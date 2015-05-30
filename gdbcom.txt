@@ -1,0 +1,10 @@
+display/x $rax
+display/x $rbx
+display/x $rcx
+display/x $rdx
+display/x $rdi
+display/x $rsi
+display/x $rbp
+target remote localhost:9998 
+
+
